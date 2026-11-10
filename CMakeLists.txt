@@ -17,7 +17,10 @@ else()
 	set(SAMPLERFS_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 endif()
 
-add_library(samplerfs STATIC src/samplerfs.cpp src/image.cpp src/s700.cpp src/s700_floppy.cpp src/s550.cpp src/akai.cpp src/akai_s900.cpp src/emu.cpp src/iso9660.cpp src/roland_wave.cpp)
+add_library(samplerfs STATIC src/samplerfs.cpp src/image.cpp src/iso9660.cpp
+	src/roland/s700.cpp src/roland/s700_floppy.cpp src/roland/s550.cpp src/roland/wave.cpp
+	src/akai/s1000.cpp src/akai/s900.cpp
+	src/emu/emu.cpp)
 target_include_directories(samplerfs PUBLIC include)
 target_compile_options(samplerfs PRIVATE ${SAMPLERFS_WARNINGS})
 

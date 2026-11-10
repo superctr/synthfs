@@ -1,8 +1,10 @@
 // Copyright 2026 Ian Karlsson
 // The AKAI S1000 and S3000 partitions, and their floppies: one volume each (docs/formats.md, "AKAI")
-#include "internal.hpp"
+#include "akai.hpp"
 
 namespace sfs::akai {
+
+namespace {
 
 constexpr uint64_t BLOCK = 8192;
 constexpr int PARTITIONS = 26;
@@ -13,7 +15,7 @@ constexpr uint64_t FLOPPY_BLOCK = 1024, FLOPPY_FAT = 0x600, FLOPPY_DD = 819200, 
 constexpr uint32_t FLOPPY_FILES = 64;
 
 // the blocks the directory, the FAT and the name take: four on a 2DD floppy, five on a 2HD one
-static uint32_t system_blocks(uint64_t size)
+uint32_t system_blocks(uint64_t size)
 {
 	return size == FLOPPY_HD ? 5 : 4;
 }
@@ -25,7 +27,7 @@ struct Partition {
 	uint16_t blocks;
 };
 
-static std::vector<Partition> partitions(const Image &im)
+std::vector<Partition> partitions(const Image &im)
 {
 	std::vector<Partition> out;
 	uint64_t pos = 0;
@@ -45,7 +47,7 @@ static std::vector<Partition> partitions(const Image &im)
 	return out;
 }
 
-static std::string name_of(const uint8_t *p)
+std::string name_of(const uint8_t *p)
 {
 	std::string s;
 	for (int i = 0; i < 12; i++)
@@ -53,7 +55,7 @@ static std::string name_of(const uint8_t *p)
 	return s;
 }
 
-static samplerfs_kind kind_of(uint8_t type)
+samplerfs_kind kind_of(uint8_t type)
 {
 	switch (type & 0x7F) {
 	case 'p': return SAMPLERFS_PROGRAM;
@@ -64,12 +66,14 @@ static samplerfs_kind kind_of(uint8_t type)
 }
 
 // a volume's type: 1 an S1000's; 3 and 7 an S3000's
-static samplerfs_format format_of(uint8_t type)
+samplerfs_format format_of(uint8_t type)
 {
 	return type == 1 ? SAMPLERFS_AKAI_S1000 : SAMPLERFS_AKAI_S3000;
 }
 
-samplerfs_format probe(const Image &im)
+}
+
+samplerfs_format S1000Disk::probe(const Image &im)
 {
 	auto parts = partitions(im);
 	if (parts.empty())
@@ -89,7 +93,7 @@ samplerfs_format probe(const Image &im)
 
 // an AKAI S1000 / S3000 disk
 // floppy: 1024-byte blocks, the FAT at 0x600, the system's blocks marked 0x4000
-samplerfs_format probe_floppy(const Image &im)
+samplerfs_format S1000Floppy::probe(const Image &im)
 {
 	uint8_t fat[2 * 5];
 	if ((im.size() != FLOPPY_DD && im.size() != FLOPPY_HD) || !im.read(FLOPPY_FAT, fat, sizeof fat))
@@ -108,31 +112,8 @@ samplerfs_format probe_floppy(const Image &im)
 	return SAMPLERFS_AKAI_S1000;
 }
 
-class AkaiMedium final : public Medium {
-public:
-	AkaiMedium(const samplerfs_io &io, samplerfs_format format, bool floppy) : Medium(io, format), floppy_(floppy) {}
-	void list() override;
-	std::vector<size_t> refs(size_t i) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
-
-private:
-	// where a volume's blocks are: a partition's, or a floppy's
-	struct Store {
-		uint64_t base, block, fat;
-		uint32_t blocks;
-	};
-	bool floppy_;
-	std::vector<Store> stores_;
-	std::vector<std::pair<size_t, size_t>> volume_store_;  // a volume's entry, its store
-	void list_floppy();
-	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
-	size_t in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const;
-};
-
-void AkaiMedium::list()
+void S1000Disk::list()
 {
-	if (floppy_)
-		return list_floppy();
 	auto parts = partitions(image);
 	for (size_t p = 0; p < parts.size(); p++) {
 		const Partition &P = parts[p];
@@ -181,7 +162,7 @@ void AkaiMedium::list()
 
 // a floppy: one volume, its 64 files' directory at 0, the FAT at 0x600 (a halfword a block) and the volume's name
 // after it
-void AkaiMedium::list_floppy()
+void S1000Floppy::list()
 {
 	uint32_t blocks = uint32_t(image.size() / FLOPPY_BLOCK);
 	uint8_t name[12];
@@ -213,7 +194,7 @@ void AkaiMedium::list_floppy()
 }
 
 // file i's first max bytes, block by block along its volume's FAT
-std::vector<uint8_t> AkaiMedium::read_file(size_t i, uint64_t max) const
+std::vector<uint8_t> S1000::read_file(size_t i, uint64_t max) const
 {
 	const samplerfs_entry &e = entries[i];
 	const Store *s = nullptr;
@@ -239,7 +220,7 @@ std::vector<uint8_t> AkaiMedium::read_file(size_t i, uint64_t max) const
 }
 
 // the entry of that kind and name in volume vol, or SAMPLERFS_NONE
-size_t AkaiMedium::in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const
+size_t S1000::in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const
 {
 	for (size_t j = vol + 1; j < entries.size() && entries[j].parent == vol; j++)
 		if (entries[j].kind == kind && name == entries[j].name)
@@ -247,16 +228,20 @@ size_t AkaiMedium::in_volume(size_t vol, samplerfs_kind kind, const std::string 
 	return SAMPLERFS_NONE;
 }
 
-static void add_ref(std::vector<size_t> &out, size_t j)
+namespace {
+
+void add_ref(std::vector<size_t> &out, size_t j)
 {
 	if (j != SAMPLERFS_NONE && std::find(out.begin(), out.end(), j) == out.end())
 		out.push_back(j);
 }
 
+}
+
 // a program: a header, then its keygroups (150 bytes each on an S1000, 192 on an S3000), the count at +42; each
 // keygroup's four velocity zones name their samples at +34, +58, +82, +106.  A multi: 16 parts of 0xC0 bytes from
 // +0x400, each naming its program at +3.  Names are found in the same volume.
-std::vector<size_t> AkaiMedium::refs(size_t i) const
+std::vector<size_t> S1000::refs(size_t i) const
 {
 	const samplerfs_entry &e = entries[i];
 	std::vector<size_t> out;
@@ -291,7 +276,7 @@ std::vector<size_t> AkaiMedium::refs(size_t i) const
 // a sample's header: 3 at +0, the key at +2, the loops in use at +0x10, the loop mode at +0x13, the frames, start and
 // end at +0x1A, +0x1E, +0x22, eight loops of 12 bytes from +0x26 (the point a loop ends at, then its length at +6),
 // the rate at +0x8A
-bool AkaiMedium::sample(size_t i, samplerfs_sample &out) const
+bool S1000::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
@@ -313,14 +298,14 @@ bool AkaiMedium::sample(size_t i, samplerfs_sample &out) const
 	return true;
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S1000Disk::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<AkaiMedium>(io, format, false);
+	return std::make_unique<S1000Disk>(io, format);
 }
 
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S1000Floppy::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<AkaiMedium>(io, format, true);
+	return std::make_unique<S1000Floppy>(io, format);
 }
 
 }

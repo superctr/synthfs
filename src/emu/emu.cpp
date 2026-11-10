@@ -1,10 +1,10 @@
 // Copyright 2026 Ian Karlsson
 // E-mu disks: told apart, not listed
-#include "internal.hpp"
+#include "emu.hpp"
 
 namespace sfs::emu {
 
-samplerfs_format probe(const Image &im)
+samplerfs_format Disk::probe(const Image &im)
 {
 	uint8_t s0[4];
 	if (!im.read(0, s0, sizeof s0))
@@ -16,9 +16,9 @@ samplerfs_format probe(const Image &im)
 	return SAMPLERFS_UNKNOWN;
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> Disk::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<Medium>(io, format);
+	return std::make_unique<Disk>(io, format);
 }
 
 }

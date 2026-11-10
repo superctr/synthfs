@@ -1,9 +1,11 @@
 // Copyright 2026 Ian Karlsson
 // The Roland S-700 series volume on a floppy: one volume's lists, its records and waves (docs/formats.md, "On a
 // floppy")
-#include "internal.hpp"
+#include "roland.hpp"
 
-namespace sfs::s700 {
+namespace sfs::roland {
+
+using namespace s700;
 
 namespace {
 
@@ -32,7 +34,7 @@ bool sound(uint8_t type)
 
 }
 
-samplerfs_format probe_floppy(const Image &im)
+samplerfs_format S700Floppy::probe(const Image &im)
 {
 	uint8_t s0[0x40];
 	if (im.size() > MAX_SIZE || !im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 15) || s0[0x0F] < '0')
@@ -45,21 +47,7 @@ samplerfs_format probe_floppy(const Image &im)
 	return SAMPLERFS_S770;
 }
 
-namespace {
-
-class S700FloppyMedium final : public Medium {
-public:
-	using Medium::Medium;
-	void list() override;
-	std::vector<size_t> refs(size_t i) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
-
-private:
-	size_t volume_ = SAMPLERFS_NONE;
-	std::vector<size_t> numbered_[4];
-};
-
-void S700FloppyMedium::list()
+void S700Floppy::list()
 {
 	auto s0 = image.read(0, SECTOR);
 	if (s0.empty())
@@ -97,7 +85,7 @@ void S700FloppyMedium::list()
 
 // the volume's performances, a byte each at +0x1A0 of sector 0 up to 0xFF; a performance's parts' patches, bytes at
 // +0x10; a patch's keys' partials, bytes at +0x20; a partial's layers' samples, halfwords at +16, +32, +48, +64
-std::vector<size_t> S700FloppyMedium::refs(size_t i) const
+std::vector<size_t> S700Floppy::refs(size_t i) const
 {
 	const samplerfs_entry &e = entries[i];
 	std::vector<int32_t> nums;
@@ -141,7 +129,7 @@ std::vector<size_t> S700FloppyMedium::refs(size_t i) const
 	return out;
 }
 
-bool S700FloppyMedium::sample(size_t i, samplerfs_sample &out) const
+bool S700Floppy::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
@@ -152,11 +140,9 @@ bool S700FloppyMedium::sample(size_t i, samplerfs_sample &out) const
 	return true;
 }
 
-}
-
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S700Floppy::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S700FloppyMedium>(io, format);
+	return std::make_unique<S700Floppy>(io, format);
 }
 
 }

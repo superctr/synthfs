@@ -1,11 +1,13 @@
 // Copyright 2026 Ian Karlsson
 // The Roland S-700 series volume, the S-760's and the S-770's, on a disk and on a floppy (docs/formats.md, "S-760 and
 // S-770")
-#include "internal.hpp"
+#include "roland.hpp"
 
 #include <algorithm>
 
-namespace sfs::s700 {
+namespace sfs::roland {
+
+namespace {
 
 struct List {
 	samplerfs_kind kind;
@@ -34,6 +36,10 @@ static bool counts(const uint8_t *s0, uint16_t *out)
 	return true;
 }
 
+}
+
+namespace s700 {
+
 // the system line at +0x20, the machine that made the disc
 std::string system_line(const uint8_t *s0)
 {
@@ -42,21 +48,6 @@ std::string system_line(const uint8_t *s0)
 		line += s0[i] >= 32 && s0[i] < 127 ? char(s0[i]) : ' ';
 	size_t a = line.find_first_not_of(' ');
 	return a == std::string::npos ? "" : trimmed(line.substr(a));
-}
-
-// byte 0x0F: 0 on a disk, '@' on one the S-760's system was saved to; a floppy's kind otherwise
-static bool disk_type(uint8_t type)
-{
-	return type == 0 || type == '@' || type == 'A';
-}
-
-samplerfs_format probe(const Image &im)
-{
-	uint8_t s0[0x11E];
-	uint16_t n[5];
-	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 15) || !disk_type(s0[0x0F]) || !counts(s0, n))
-		return SAMPLERFS_UNKNOWN;
-	return system_line(s0).starts_with("S-760") ? SAMPLERFS_S760 : SAMPLERFS_S770;
 }
 
 std::string name_of(const uint8_t *p)
@@ -100,20 +91,26 @@ void sample_of(const uint8_t *rec, uint64_t frames, samplerfs_sample &out)
 	}
 }
 
-// an S-760 or S-770 disk
-class S700Medium final : public Medium {
-public:
-	using Medium::Medium;
-	void list() override;
-	std::vector<size_t> refs(size_t i) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
+}
 
-private:
-	// an entry's index by its list and number
-	std::vector<size_t> numbered_[5];
-};
+using namespace s700;
 
-void S700Medium::list()
+// byte 0x0F: 0 on a disk, '@' on one the S-760's system was saved to; a floppy's kind otherwise
+static bool disk_type(uint8_t type)
+{
+	return type == 0 || type == '@' || type == 'A';
+}
+
+samplerfs_format S700Disk::probe(const Image &im)
+{
+	uint8_t s0[0x11E];
+	uint16_t n[5];
+	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 15) || !disk_type(s0[0x0F]) || !counts(s0, n))
+		return SAMPLERFS_UNKNOWN;
+	return system_line(s0).starts_with("S-760") ? SAMPLERFS_S760 : SAMPLERFS_S770;
+}
+
+void S700Disk::list()
 {
 	auto s0 = image.read(0, SECTOR);
 	uint16_t count[5];
@@ -137,7 +134,7 @@ void S700Medium::list()
 	}
 }
 
-std::vector<size_t> S700Medium::refs(size_t i) const
+std::vector<size_t> S700Disk::refs(size_t i) const
 {
 	const samplerfs_entry &e = entries[i];
 	int l = 0;
@@ -176,7 +173,7 @@ std::vector<size_t> S700Medium::refs(size_t i) const
 	return out;
 }
 
-bool S700Medium::sample(size_t i, samplerfs_sample &out) const
+bool S700Disk::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
@@ -187,9 +184,9 @@ bool S700Medium::sample(size_t i, samplerfs_sample &out) const
 	return true;
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S700Disk::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S700Medium>(io, format);
+	return std::make_unique<S700Disk>(io, format);
 }
 
 }

@@ -1,6 +1,7 @@
 // Copyright 2026 Ian Karlsson
 // Each format's reader on a small image made here: what is listed, what is left out, what entries use
-#include "../src/internal.hpp"
+#include "../src/akai/akai.hpp"
+#include "../src/roland/roland.hpp"
 
 #include <cstdio>
 #include <algorithm>
@@ -516,7 +517,7 @@ static void test_s700_floppy()
 	fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_S760 && samplerfs_count(fs) == 0);
 	samplerfs_close(fs);
-	CHECK(sfs::s700::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN);
+	CHECK(sfs::roland::S700Disk::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN);
 }
 
 // an S-550 floppy: a patch on one tone, the area named from the function block

@@ -1,6 +1,9 @@
 // Copyright 2026 Ian Karlsson
 // The C interface: the format told, the lists read, the readers' details asked for on demand
-#include "internal.hpp"
+#include "akai/akai.hpp"
+#include "emu/emu.hpp"
+#include "iso9660.hpp"
+#include "roland/roland.hpp"
 
 #include <cstdio>
 #include <memory>
@@ -31,17 +34,23 @@ samplerfs_medium disk(const Image &) { return SAMPLERFS_MEDIUM_DISK; }
 samplerfs_medium floppy(const Image &) { return SAMPLERFS_MEDIUM_FLOPPY; }
 
 // tried in this order (docs/formats.md, "Telling them apart")
+template <class M>
+constexpr Reader reader(samplerfs_medium (*medium)(const Image &))
+{
+	return { M::probe, M::open, medium };
+}
+
 constexpr Reader readers[] = {
-	{ s700::probe, s700::open, disk },
-	{ s700::probe_floppy, s700::open_floppy, floppy },
-	{ s550::probe, s550::open, disk },
-	{ s550::probe_floppy, s550::open_floppy, floppy },
-	{ roland_wave::probe, roland_wave::open, roland_wave::medium },
-	{ akai::probe, akai::open, disk },
-	{ akai::probe_floppy, akai::open_floppy, floppy },
-	{ akai::probe_s900, akai::open_s900, floppy },
-	{ emu::probe, emu::open, disk },
-	{ iso9660::probe, iso9660::open, disk },
+	reader<roland::S700Disk>(disk),
+	reader<roland::S700Floppy>(floppy),
+	reader<roland::S550Disk>(disk),
+	reader<roland::S550Floppy>(floppy),
+	reader<roland::WaveRom>(roland::WaveRom::medium_of),
+	reader<akai::S1000Disk>(disk),
+	reader<akai::S1000Floppy>(floppy),
+	reader<akai::S900>(floppy),
+	reader<emu::Disk>(disk),
+	reader<Iso9660>(disk),
 };
 
 const Reader *reader_of(const Image &im, samplerfs_format &format)

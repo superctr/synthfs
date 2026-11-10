@@ -74,52 +74,9 @@ protected:
 // a sample's points kept within its frames, the loop within the frames played
 void clamp_points(samplerfs_sample &s);
 
-// Each format: whether an image is one (the format, else SAMPLERFS_UNKNOWN), and an image of it opened, not yet listed
-namespace s700 {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-samplerfs_format probe_floppy(const Image &im);
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format);
-// a 48-byte sample record's rate, key, points and loop; frames as stored
-void sample_of(const uint8_t *rec, uint64_t frames, samplerfs_sample &out);
-// the category code a name starts with, else ""
-std::string_view category(const uint8_t *name);
-std::string name_of(const uint8_t *p);
-// sector 0's line at +0x20: the system a disk was made with, a floppy's kind
-std::string system_line(const uint8_t *s0);
-constexpr uint32_t SECTOR = 512, SEGMENT_BYTES = 18 * SECTOR;
-}
-namespace s550 {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-samplerfs_format probe_floppy(const Image &im);
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format);
-}
-namespace akai {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-samplerfs_format probe_floppy(const Image &im);
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format);
-samplerfs_format probe_s900(const Image &im);
-std::unique_ptr<Medium> open_s900(const samplerfs_io &io, samplerfs_format format);
-// a partition header's 98 halfwords after its size: k times HEADER_STEP
-constexpr uint32_t HEADER_WORDS = 98;
-constexpr uint16_t HEADER_STEP = 0x0D05;
-}
-namespace emu {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-}
-namespace iso9660 {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-}
-namespace roland_wave {
-samplerfs_format probe(const Image &im);
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
-// a card or a board, by its size and name
-samplerfs_medium medium(const Image &im);
-}
+// Each format is a Medium subclass, in its maker's directory and namespace (src/roland, src/akai, src/emu), or here
+// for ISO 9660, with two static members: probe, whether an image is one (the format, else SAMPLERFS_UNKNOWN), and open,
+// an image of it opened, not yet listed.
 
 std::string trimmed(std::string_view s);
 

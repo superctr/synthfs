@@ -1,6 +1,6 @@
 // Copyright 2026 Ian Karlsson
 // The AKAI S900 and S950 floppy: its files, programs' samples and samples' headers (docs/formats.md, "AKAI S900")
-#include "internal.hpp"
+#include "akai.hpp"
 
 namespace sfs::akai {
 
@@ -20,19 +20,9 @@ samplerfs_kind kind_of(uint8_t type)
 	return type == 'S' ? SAMPLERFS_SAMPLE : type == 'P' ? SAMPLERFS_PROGRAM : SAMPLERFS_OTHER;
 }
 
-class S900Medium final : public Medium {
-public:
-	using Medium::Medium;
-	void list() override;
-	std::vector<size_t> refs(size_t i) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
+}
 
-private:
-	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
-	size_t named(samplerfs_kind kind, const std::string &name) const;
-};
-
-void S900Medium::list()
+void S900::list()
 {
 	auto dir = image.read(0, ENTRY * FILES);
 	for (uint32_t k = 0; k < FILES && !dir.empty(); k++) {
@@ -45,7 +35,7 @@ void S900Medium::list()
 }
 
 // file i's first max bytes along the FAT: a halfword a block, 0x8000 and above the end
-std::vector<uint8_t> S900Medium::read_file(size_t i, uint64_t max) const
+std::vector<uint8_t> S900::read_file(size_t i, uint64_t max) const
 {
 	uint64_t blocks = (image.size() + BLOCK - 1) / BLOCK, left = std::min(max, entries[i].bytes), b = where[i] / BLOCK;
 	std::vector<uint8_t> out;
@@ -63,7 +53,7 @@ std::vector<uint8_t> S900Medium::read_file(size_t i, uint64_t max) const
 	return out;
 }
 
-size_t S900Medium::named(samplerfs_kind kind, const std::string &name) const
+size_t S900::named(samplerfs_kind kind, const std::string &name) const
 {
 	for (size_t j = 0; j < entries.size(); j++)
 		if (entries[j].kind == kind && name == entries[j].name)
@@ -73,7 +63,7 @@ size_t S900Medium::named(samplerfs_kind kind, const std::string &name) const
 
 // a program: its keygroups' count at +0x17, the keygroups from +0x26, 70 bytes each, each naming two samples, at +0x18
 // and +0x2E
-std::vector<size_t> S900Medium::refs(size_t i) const
+std::vector<size_t> S900::refs(size_t i) const
 {
 	if (entries[i].kind != SAMPLERFS_PROGRAM)
 		return {};
@@ -94,7 +84,7 @@ std::vector<size_t> S900Medium::refs(size_t i) const
 // a sample's header (60 bytes, its 12-bit wave packed after it): the frames at +0x10, the rate at +0x14, the pitch in
 // sixteenths of a semitone at +0x16, the loop mode at +0x1A (O one shot, L loop, A alternating), the end at +0x1C, the
 // start at +0x20, the loop's length at +0x24, the loop ending at the end
-bool S900Medium::sample(size_t i, samplerfs_sample &out) const
+bool S900::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
@@ -117,11 +107,9 @@ bool S900Medium::sample(size_t i, samplerfs_sample &out) const
 	return true;
 }
 
-}
-
 // whole 1024-byte blocks, the first four's FAT halfwords zero, and a directory of printable names, upper-case types
 // and starts past the system's blocks, at least one file
-samplerfs_format probe_s900(const Image &im)
+samplerfs_format S900::probe(const Image &im)
 {
 	if (im.size() < IMAGE_MIN || im.size() > IMAGE_MAX || im.size() % BLOCK)
 		return SAMPLERFS_UNKNOWN;
@@ -146,9 +134,9 @@ samplerfs_format probe_s900(const Image &im)
 	return files ? SAMPLERFS_AKAI_S900 : SAMPLERFS_UNKNOWN;
 }
 
-std::unique_ptr<Medium> open_s900(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S900::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S900Medium>(io, format);
+	return std::make_unique<S900>(io, format);
 }
 
 }

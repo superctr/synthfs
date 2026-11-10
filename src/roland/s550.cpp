@@ -1,9 +1,11 @@
 // Copyright 2026 Ian Karlsson
 // The Roland S-550 / W-30 SCSI format: a directory of areas, each a floppy's patches, tones and waves; and the floppy
 // itself, the S-550's, S-330's and W-30's (docs/formats.md, "S-550")
-#include "internal.hpp"
+#include "roland.hpp"
 
-namespace sfs::s550 {
+namespace sfs::roland {
+
+namespace {
 
 constexpr uint64_t BLOCK = 512;
 constexpr uint32_t DIRECTORY = 1, DIRECTORY_END = 0x100, ENTRY = 64, COUNT_AT = 0x139;
@@ -14,14 +16,16 @@ constexpr uint32_t SEGMENT_WORDS = 12288, KEYS = 109, LAST_TONE = 31;
 constexpr uint64_t FLOPPY_AREA = 126 * BLOCK, FLOPPY_MAX = 2 * 1024 * 1024;
 constexpr uint32_t FUNCTION_BLOCK = 8, DISK_NAME = 0x33;
 
-samplerfs_format probe(const Image &im)
+}
+
+samplerfs_format S550Disk::probe(const Image &im)
 {
 	uint8_t s0[16];
 	return im.read(0, s0, sizeof s0) && !memcmp(s0, "* ROLAND S-550 *", 16) ? SAMPLERFS_S550 : SAMPLERFS_UNKNOWN;
 }
 
 // four zero bytes and the system's ID
-samplerfs_format probe_floppy(const Image &im)
+samplerfs_format S550Floppy::probe(const Image &im)
 {
 	uint8_t s0[14];
 	if (im.size() > FLOPPY_MAX || !im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0", 4))
@@ -38,7 +42,9 @@ samplerfs_format probe_floppy(const Image &im)
 	return SAMPLERFS_UNKNOWN;
 }
 
-static std::string text(const uint8_t *p, size_t n)
+namespace {
+
+std::string text(const uint8_t *p, size_t n)
 {
 	std::string s;
 	for (size_t i = 0; i < n; i++)
@@ -46,7 +52,7 @@ static std::string text(const uint8_t *p, size_t n)
 	return s;
 }
 
-static bool blank(const uint8_t *p, size_t n)
+bool blank(const uint8_t *p, size_t n)
 {
 	for (size_t i = 0; i < n; i++)
 		if (p[i] != ' ' && p[i] != 0)
@@ -54,25 +60,10 @@ static bool blank(const uint8_t *p, size_t n)
 	return true;
 }
 
-// an S-550 / W-30 SCSI disk
-class S550Medium final : public Medium {
-public:
-	S550Medium(const samplerfs_io &io, samplerfs_format format, bool floppy) : Medium(io, format), floppy_(floppy) {}
-	void list() override;
-	std::vector<size_t> refs(size_t i) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
+}
 
-private:
-	bool floppy_;
-	void list_floppy();
-	// an area's patches and tones, from its parameters at start
-	void list_area(size_t ai, uint64_t start);
-};
-
-void S550Medium::list()
+void S550Disk::list()
 {
-	if (floppy_)
-		return list_floppy();
 	auto s0 = image.read(0, BLOCK);
 	if (s0.empty())
 		return;
@@ -99,7 +90,7 @@ void S550Medium::list()
 
 // a floppy: the system line at +0x20, the area from block 126, its name at +0x33 of its function block; an S-50's
 // is told apart only
-void S550Medium::list_floppy()
+void S550Floppy::list()
 {
 	auto s0 = image.read(0, BLOCK);
 	if (s0.empty())
@@ -120,7 +111,7 @@ void S550Medium::list_floppy()
 	}
 }
 
-void S550Medium::list_area(size_t ai, uint64_t start)
+void S550::list_area(size_t ai, uint64_t start)
 {
 	auto par = image.read(start, PARAMETER_BLOCKS * BLOCK);
 	if (par.empty())
@@ -137,7 +128,7 @@ void S550Medium::list_area(size_t ai, uint64_t start)
 }
 
 // a patch's key maps: the first at +0x1A, the second at +0x87 where the key mode (+0x0F) is 1 to 3; a tone number a key
-std::vector<size_t> S550Medium::refs(size_t i) const
+std::vector<size_t> S550::refs(size_t i) const
 {
 	const samplerfs_entry &e = entries[i];
 	if (e.kind != SAMPLERFS_PATCH)
@@ -160,7 +151,7 @@ std::vector<size_t> S550Medium::refs(size_t i) const
 
 // a tone: 30 kHz where +0x0B is 0, else 15 kHz; the original key at +0x0C; its segments at +0x0F; its start, end and
 // loop point at +0x10, +0x13 and +0x16, 24-bit big-endian words from its first segment; the loop mode at +0x19
-bool S550Medium::sample(size_t i, samplerfs_sample &out) const
+bool S550::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_TONE)
 		return false;
@@ -184,14 +175,14 @@ bool S550Medium::sample(size_t i, samplerfs_sample &out) const
 	return true;
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S550Disk::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S550Medium>(io, format, false);
+	return std::make_unique<S550Disk>(io, format);
 }
 
-std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S550Floppy::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S550Medium>(io, format, true);
+	return std::make_unique<S550Floppy>(io, format);
 }
 
 }

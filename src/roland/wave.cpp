@@ -1,11 +1,11 @@
 // Copyright 2026 Ian Karlsson
 // Roland's wave expansion boards and PCM cards as dumped: SR-JV80 boards and SO-PCM1 cards, SRX boards; their banks of
 // patches and rhythm sets and their waves, by name (docs/formats.md, "Roland wave expansion boards and cards")
-#include "internal.hpp"
+#include "roland.hpp"
 
 #include <map>
 
-namespace sfs::roland_wave {
+namespace sfs::roland {
 
 namespace {
 
@@ -15,6 +15,8 @@ constexpr uint64_t MB = 1024 * 1024;
 constexpr uint8_t SRJV80_LINES[19] = { 2, 0, 3, 4, 1, 9, 13, 10, 18, 17, 6, 15, 11, 16, 8, 5, 12, 7, 14 };
 constexpr uint8_t SRX_LINES[18] = { 0, 4, 2, 3, 1, 13, 7, 12, 5, 10, 16, 9, 6, 8, 14, 17, 11, 15 };
 constexpr uint8_t DATA_LINES[8] = { 2, 0, 4, 5, 7, 6, 3, 1 };
+
+}
 
 // the ROM as the socket presents it, read from the image as dumped a block at a time
 class Socket {
@@ -79,6 +81,8 @@ private:
 	mutable std::map<uint64_t, std::vector<uint8_t>> blocks_;
 };
 
+namespace {
+
 std::string plain(const uint8_t *p, size_t n)
 {
 	std::string s;
@@ -117,26 +121,16 @@ bool srx(const uint8_t *h, uint64_t size)
 	return !memcmp(h, "Roland SRX", 10) && size == 32 * MB;
 }
 
-class RolandWaveMedium final : public Medium {
-public:
-	using Medium::Medium;
-	void list() override;
+}
 
-private:
-	void list_srjv80(const Socket &s);
-	void list_srx(const Socket &s);
-	size_t bank(std::string_view shape);
-	uint32_t banks_ = 0;
-};
-
-size_t RolandWaveMedium::bank(std::string_view shape)
+size_t WaveRom::bank(std::string_view shape)
 {
 	size_t b = add(SAMPLERFS_BANK, format, banks_++, SAMPLERFS_NONE, "", 0, 0);
 	tag(b, shape);
 	return b;
 }
 
-void RolandWaveMedium::list()
+void WaveRom::list()
 {
 	uint8_t h[32];
 	if (!image.read(0, h, sizeof h))
@@ -152,7 +146,7 @@ void RolandWaveMedium::list()
 // Each 1 MB block's header: per slot n a type byte at +0x50 + n, a count at +0x60 + 2n and an address at +0x80 + 4n
 // (big-endian); slot 1 the waves (60 bytes, the name first), slot 3 the patches, slot 4 the rhythm sets, each in the
 // shape the type gives
-void RolandWaveMedium::list_srjv80(const Socket &s)
+void WaveRom::list_srjv80(const Socket &s)
 {
 	struct Shape { int slot; uint8_t type; samplerfs_kind kind; uint32_t size; int name; };  // name: 0 none, 1 plain, 2 packed
 	static constexpr Shape shapes[] = {
@@ -194,7 +188,7 @@ void RolandWaveMedium::list_srjv80(const Socket &s)
 // of its table and its length; a table's head a count, the offset of its records from the head and their stride.
 // Class 2 the waves, each record the offset of its definition from the head (a long) and its length, the definition
 // starting with the name; class 4 a bank of patches, class 5 of rhythm sets, each record starting with its name
-void RolandWaveMedium::list_srx(const Socket &s)
+void WaveRom::list_srx(const Socket &s)
 {
 	uint32_t entries_n = std::min<uint32_t>(s.be(0x42, 2), 64);
 	for (uint32_t e = 0; e < entries_n; e++) {
@@ -228,9 +222,7 @@ void RolandWaveMedium::list_srx(const Socket &s)
 	}
 }
 
-}
-
-samplerfs_format probe(const Image &im)
+samplerfs_format WaveRom::probe(const Image &im)
 {
 	uint8_t h[16];
 	if (!im.read(0, h, sizeof h))
@@ -243,7 +235,7 @@ samplerfs_format probe(const Image &im)
 }
 
 // an SR-JV80-format ROM of 1 MB, or of 2 MB named SO-PCM1 or Card, is a card; any other a board
-samplerfs_medium medium(const Image &im)
+samplerfs_medium WaveRom::medium_of(const Image &im)
 {
 	uint8_t h[32];
 	if (!im.read(0, h, sizeof h))
@@ -257,9 +249,9 @@ samplerfs_medium medium(const Image &im)
 	return SAMPLERFS_MEDIUM_BOARD;
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> WaveRom::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<RolandWaveMedium>(io, format);
+	return std::make_unique<WaveRom>(io, format);
 }
 
 }

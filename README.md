@@ -35,6 +35,12 @@ where samplerfs is the top level (`SAMPLERFS_TOOLS`, `SAMPLERFS_TESTS`).
 `samplerfs-ls IMAGE...` prints each image's format, counts and label; `-l` lists every entry under what holds
 it, `-r` adds what each uses and each sample's header.
 
+## Layout
+
+`src/` holds the interface (`samplerfs.cpp`, with the order formats are tried in), the image reader and ISO 9660; each
+maker has a directory and a namespace (`src/roland`, `src/akai`, `src/emu`) declaring its formats in one header, each
+a class with a static `probe` and `open`.
+
 ## Later
 
 Reading a sample's wave out (to WAV), and writing sounds into an image.

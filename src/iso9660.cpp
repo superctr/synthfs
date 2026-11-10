@@ -1,32 +1,26 @@
 // Copyright 2026 Ian Karlsson
 // A plain CD-ROM: its WAV and AIFF files (docs/formats.md, "ISO 9660")
-#include "internal.hpp"
+#include "iso9660.hpp"
 
 #include <algorithm>
 #include <cctype>
 
-namespace sfs::iso9660 {
+namespace sfs {
+
+namespace {
 
 constexpr uint64_t BLOCK = 2048;
 constexpr int DEPTH = 8;
 constexpr size_t ENTRIES = 1 << 16;
 constexpr uint32_t DIR_BYTES = 1 << 22;
 
-samplerfs_format probe(const Image &im)
+}
+
+samplerfs_format Iso9660::probe(const Image &im)
 {
 	uint8_t pvd[6];
 	return im.read(16 * BLOCK, pvd, sizeof pvd) && !memcmp(pvd, "\1CD001", 6) ? SAMPLERFS_ISO9660 : SAMPLERFS_UNKNOWN;
 }
-
-// a plain CD-ROM
-class IsoMedium final : public Medium {
-public:
-	using Medium::Medium;
-	void list() override;
-
-private:
-	bool walk(uint32_t extent, uint32_t bytes, size_t parent, int depth);
-};
 
 static bool audio(std::string_view name)
 {
@@ -40,7 +34,7 @@ static bool audio(std::string_view name)
 }
 
 // a directory's audio files and the directories that hold some; whether it held any
-bool IsoMedium::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
+bool Iso9660::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
 {
 	if (depth > DEPTH || entries.size() >= ENTRIES)
 		return false;
@@ -84,7 +78,7 @@ bool IsoMedium::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
 	return any;
 }
 
-void IsoMedium::list()
+void Iso9660::list()
 {
 	auto pvd = image.read(16 * BLOCK, BLOCK);
 	if (pvd.empty())
@@ -94,9 +88,9 @@ void IsoMedium::list()
 	walk(le32(root + 2), le32(root + 10), SAMPLERFS_NONE, 0);
 }
 
-std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> Iso9660::open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<IsoMedium>(io, format);
+	return std::make_unique<Iso9660>(io, format);
 }
 
 }
