@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <cstdio>
 
-namespace scd {
+namespace sfs {
 
 static const uint8_t sync[12] = { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };
 
-Image::Image(const samplecd_io &io) : io_(io), size_(io.size)
+Image::Image(const samplerfs_io &io) : io_(io), size_(io.size)
 {
 	uint8_t head[16];
 	if (io_.read && io_.size >= 2352 && io_.read(io_.user, 0, head, 16) == 16 && !memcmp(head, sync, 12)
@@ -46,10 +46,10 @@ std::vector<uint8_t> Image::read(uint64_t offset, size_t n) const
 	return v;
 }
 
-size_t Disc::add(samplecd_kind kind, samplecd_format fmt, uint32_t number, size_t parent, std::string_view name,
+size_t Medium::add(samplerfs_kind kind, samplerfs_format fmt, uint32_t number, size_t parent, std::string_view name,
 	uint64_t bytes, uint64_t at)
 {
-	samplecd_entry e {};
+	samplerfs_entry e {};
 	e.kind = kind;
 	e.format = fmt;
 	e.number = number;
@@ -62,17 +62,17 @@ size_t Disc::add(samplecd_kind kind, samplecd_format fmt, uint32_t number, size_
 	return entries.size() - 1;
 }
 
-void Disc::tag(size_t i, std::string_view t)
+void Medium::tag(size_t i, std::string_view t)
 {
 	snprintf(entries[i].tag, sizeof entries[i].tag, "%.*s", int(t.size()), t.data());
 }
 
-size_t Disc::child(size_t parent, samplecd_kind kind, uint32_t number) const
+size_t Medium::child(size_t parent, samplerfs_kind kind, uint32_t number) const
 {
 	for (size_t i = parent + 1; i < entries.size(); i++)
 		if (entries[i].parent == parent && entries[i].kind == kind && entries[i].number == number)
 			return i;
-	return SAMPLECD_NONE;
+	return SAMPLERFS_NONE;
 }
 
 std::string trimmed(std::string_view s)
@@ -82,14 +82,14 @@ std::string trimmed(std::string_view s)
 	return std::string(s);
 }
 
-void clamp_points(samplecd_sample &s)
+void clamp_points(samplerfs_sample &s)
 {
 	s.end = std::min(s.end, s.frames);
 	s.start = std::min(s.start, s.end);
 	s.loop_end = std::min(std::max(s.loop_end, s.start), s.end);
 	s.loop_start = std::min(std::max(s.loop_start, s.start), s.loop_end);
 	if (s.loop_start == s.loop_end)
-		s.loop = SAMPLECD_LOOP_NONE;
+		s.loop = SAMPLERFS_LOOP_NONE;
 }
 
 }

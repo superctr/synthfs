@@ -1,17 +1,18 @@
 // Copyright 2026 Ian Karlsson
 #pragma once
 
-#include <samplecd/samplecd.h>
+#include <samplerfs/samplerfs.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace scd {
+namespace sfs {
 
 inline uint16_t le16(const uint8_t *p) { return uint16_t(p[0] | p[1] << 8); }
 inline uint32_t le24(const uint8_t *p) { return uint32_t(p[0] | p[1] << 8 | p[2] << 16); }
@@ -22,7 +23,7 @@ inline uint32_t be32(const uint8_t *p) { return uint32_t(p[0]) << 24 | uint32_t(
 // The disc's 2048-byte user data, from a plain image or one of raw 2352-byte sectors (a .bin: mode 1 or mode 2 form 1)
 class Image {
 public:
-	explicit Image(const samplecd_io &io);
+	explicit Image(const samplerfs_io &io);
 	// n bytes at offset of the user data; false where any is missing
 	bool read(uint64_t offset, void *buf, size_t n) const;
 	std::vector<uint8_t> read(uint64_t offset, size_t n) const;
@@ -30,60 +31,70 @@ public:
 	bool raw() const { return raw_; }
 
 private:
-	samplecd_io io_;
+	samplerfs_io io_;
 	bool raw_ = false;
 	unsigned data_at_ = 0;
 	uint64_t size_ = 0;
 };
 
-struct Disc {
-	Image image;
-	samplecd_format format = SAMPLECD_UNKNOWN;
+// An opened image: its label and entries, read by its format's subclass, which also answers what an entry uses and
+// a sample's header
+class Medium {
+public:
+	Medium(const samplerfs_io &io, samplerfs_format format) : image(io), format(format) {}
+	virtual ~Medium() = default;
+	Medium(const Medium &) = delete;
+	Medium &operator=(const Medium &) = delete;
+
+	// the label and the entries read from the image
+	virtual void list() {}
+	// the entries entry i uses, by index, each once in the order first used
+	virtual std::vector<size_t> refs(size_t) const { return {}; }
+	// entry i's wave and how it plays; false where it is no sample or its header cannot be read
+	virtual bool sample(size_t, samplerfs_sample &) const { return false; }
+
+	const Image image;
+	const samplerfs_format format;
 	std::string label;
-	std::vector<samplecd_entry> entries;
+	std::vector<samplerfs_entry> entries;
+
+protected:
 	// where each entry's record or data starts in the image, beside entries
 	std::vector<uint64_t> where;
-	// an entry's index by its kind's list and number (the S-760/S-770 lists)
-	std::vector<size_t> numbered[5];
 
-	explicit Disc(const samplecd_io &io) : image(io) {}
-	size_t add(samplecd_kind kind, samplecd_format format, uint32_t number, size_t parent, std::string_view name,
+	size_t add(samplerfs_kind kind, samplerfs_format format, uint32_t number, size_t parent, std::string_view name,
 		uint64_t bytes, uint64_t at);
 	void tag(size_t i, std::string_view t);
-	// the entry of a kind with the number under parent, or SAMPLECD_NONE
-	size_t child(size_t parent, samplecd_kind kind, uint32_t number) const;
+	// the entry of a kind with the number under parent, or SAMPLERFS_NONE
+	size_t child(size_t parent, samplerfs_kind kind, uint32_t number) const;
 };
 
-// one per format: whether the image is one, its lists, what an entry uses, a sample's header
 // a sample's points kept within its frames, the loop within the frames played
-void clamp_points(samplecd_sample &s);
+void clamp_points(samplerfs_sample &s);
 
+// Each format: whether an image is one (the format, else SAMPLERFS_UNKNOWN), and an image of it opened, not yet listed
 namespace s7 {
-// S-760 or S-770, else unknown
-samplecd_format probe(const Image &im);
-void list(Disc &d);
-std::vector<size_t> refs(const Disc &d, size_t i);
-bool sample(const Disc &d, size_t i, samplecd_sample &out);
+samplerfs_format probe(const Image &im);
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+}
+namespace s550 {
+samplerfs_format probe(const Image &im);
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 }
 namespace akai {
+samplerfs_format probe(const Image &im);
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 // a partition header's 98 halfwords after its size: k times HEADER_STEP
 constexpr uint32_t HEADER_WORDS = 98;
 constexpr uint16_t HEADER_STEP = 0x0D05;
-// S1000 or S3000, else unknown
-samplecd_format probe(const Image &im);
-void list(Disc &d);
-std::vector<size_t> refs(const Disc &d, size_t i);
-bool sample(const Disc &d, size_t i, samplecd_sample &out);
 }
-namespace s550 {
-bool probe(const Image &im);
-void list(Disc &d);
-std::vector<size_t> refs(const Disc &d, size_t i);
-bool sample(const Disc &d, size_t i, samplecd_sample &out);
+namespace emu {
+samplerfs_format probe(const Image &im);
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 }
 namespace iso9660 {
-bool probe(const Image &im);
-void list(Disc &d);
+samplerfs_format probe(const Image &im);
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 }
 
 std::string trimmed(std::string_view s);

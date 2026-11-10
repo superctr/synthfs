@@ -4,23 +4,23 @@
 
 #include <algorithm>
 
-namespace scd::s7 {
+namespace sfs::s7 {
 
 constexpr uint32_t SECTOR = 512;
 
 struct List {
-	samplecd_kind kind;
+	samplerfs_kind kind;
 	uint32_t dir;     // first directory sector
 	uint32_t cap;     // entries, 16 to a sector
 	uint32_t record;  // first parameter sector
 	uint32_t size;    // bytes a record
 };
 constexpr List lists[5] = {
-	{ SAMPLECD_VOLUME, 0x504, 128, 0x86C, 256 },
-	{ SAMPLECD_PERFORMANCE, 0x50C, 512, 0x8AC, 512 },
-	{ SAMPLECD_PATCH, 0x52C, 1024, 0xAAC, 512 },
-	{ SAMPLECD_PARTIAL, 0x56C, 4096, 0xEAC, 128 },
-	{ SAMPLECD_SAMPLE, 0x66C, 8192, 0x12AC, 48 },
+	{ SAMPLERFS_VOLUME, 0x504, 128, 0x86C, 256 },
+	{ SAMPLERFS_PERFORMANCE, 0x50C, 512, 0x8AC, 512 },
+	{ SAMPLERFS_PATCH, 0x52C, 1024, 0xAAC, 512 },
+	{ SAMPLERFS_PARTIAL, 0x56C, 4096, 0xEAC, 128 },
+	{ SAMPLERFS_SAMPLE, 0x66C, 8192, 0x12AC, 48 },
 };
 constexpr uint32_t SEGMENT_BYTES = 18 * SECTOR;
 
@@ -46,13 +46,13 @@ static std::string system_line(const uint8_t *s0)
 	return a == std::string::npos ? "" : trimmed(line.substr(a));
 }
 
-samplecd_format probe(const Image &im)
+samplerfs_format probe(const Image &im)
 {
 	uint8_t s0[0x11E];
 	uint16_t n[5];
 	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 14) || !counts(s0, n))
-		return SAMPLECD_UNKNOWN;
-	return system_line(s0).starts_with("S-760") ? SAMPLECD_S760 : SAMPLECD_S770;
+		return SAMPLERFS_UNKNOWN;
+	return system_line(s0).starts_with("S-760") ? SAMPLERFS_S760 : SAMPLERFS_S770;
 }
 
 static std::string name_of(const uint8_t *p)
@@ -63,54 +63,67 @@ static std::string name_of(const uint8_t *p)
 	return s;
 }
 
-void list(Disc &d)
+// an S-760 or S-770 disk
+class S7Medium final : public Medium {
+public:
+	using Medium::Medium;
+	void list() override;
+	std::vector<size_t> refs(size_t i) const override;
+	bool sample(size_t i, samplerfs_sample &out) const override;
+
+private:
+	// an entry's index by its list and number
+	std::vector<size_t> numbered_[5];
+};
+
+void S7Medium::list()
 {
-	auto s0 = d.image.read(0, SECTOR);
+	auto s0 = image.read(0, SECTOR);
 	uint16_t count[5];
 	if (s0.empty() || !counts(s0.data(), count))
 		return;
-	d.label = system_line(s0.data());
+	label = system_line(s0.data());
 	for (int l = 0; l < 5; l++) {
 		const List &L = lists[l];
-		d.numbered[l].assign(L.cap, SAMPLECD_NONE);
+		numbered_[l].assign(L.cap, SAMPLERFS_NONE);
 		// the header's count of slots, each listed where its name starts printable
-		auto dir = d.image.read(uint64_t(L.dir) * SECTOR, count[l] * 32u);
+		auto dir = image.read(uint64_t(L.dir) * SECTOR, count[l] * 32u);
 		for (uint32_t n = 0; n < count[l] && !dir.empty(); n++) {
 			const uint8_t *e = &dir[n * 32];
 			if (e[0] < 32 || e[0] > 126)
 				continue;
-			uint64_t bytes = L.kind == SAMPLECD_SAMPLE ? uint64_t(le16(e + 30)) * SEGMENT_BYTES : 0;
-			size_t i = d.add(L.kind, d.format, n, SAMPLECD_NONE, name_of(e), bytes, uint64_t(L.record) * SECTOR + uint64_t(n) * L.size);
+			uint64_t bytes = L.kind == SAMPLERFS_SAMPLE ? uint64_t(le16(e + 30)) * SEGMENT_BYTES : 0;
+			size_t i = add(L.kind, format, n, SAMPLERFS_NONE, name_of(e), bytes, uint64_t(L.record) * SECTOR + uint64_t(n) * L.size);
 			for (const char *c : categories)
 				if (!memcmp(e, c, 3))
-					d.tag(i, c);
-			d.numbered[l][n] = i;
+					tag(i, c);
+			numbered_[l][n] = i;
 		}
 	}
 }
 
-std::vector<size_t> refs(const Disc &d, size_t i)
+std::vector<size_t> S7Medium::refs(size_t i) const
 {
-	const samplecd_entry &e = d.entries[i];
+	const samplerfs_entry &e = entries[i];
 	int l = 0;
 	while (l < 4 && lists[l].kind != e.kind)
 		l++;
-	if (l == 4 || d.numbered[l + 1].empty())
+	if (l == 4 || numbered_[l + 1].empty())
 		return {};
-	auto rec = d.image.read(d.where[i], lists[l].size);
+	auto rec = image.read(where[i], lists[l].size);
 	if (rec.empty())
 		return {};
 	std::vector<int32_t> nums;
 	switch (e.kind) {
-	case SAMPLECD_VOLUME:
+	case SAMPLERFS_VOLUME:
 		for (int k = 0; k < 64; k++)
 			nums.push_back(le16(&rec[32 + 2 * k]));
 		break;
-	case SAMPLECD_PERFORMANCE:
+	case SAMPLERFS_PERFORMANCE:
 		for (int k = 0; k < 32; k++)
 			nums.push_back(le16(&rec[0x100 + 2 * k]));
 		break;
-	case SAMPLECD_PATCH:
+	case SAMPLERFS_PATCH:
 		for (int k = 0; k < 88; k++)
 			if (rec[32 + k] != 255)
 				nums.push_back(le16(&rec[0x100 + 2 * k]));
@@ -120,24 +133,24 @@ std::vector<size_t> refs(const Disc &d, size_t i)
 			nums.push_back(int16_t(le16(&rec[16 + 16 * k])));
 		break;
 	}
-	const auto &to = d.numbered[l + 1];
+	const auto &to = numbered_[l + 1];
 	std::vector<size_t> out;
 	for (int32_t n : nums)
-		if (n >= 0 && size_t(n) < to.size() && to[n] != SAMPLECD_NONE && std::find(out.begin(), out.end(), to[n]) == out.end())
+		if (n >= 0 && size_t(n) < to.size() && to[n] != SAMPLERFS_NONE && std::find(out.begin(), out.end(), to[n]) == out.end())
 			out.push_back(to[n]);
 	return out;
 }
 
-bool sample(const Disc &d, size_t i, samplecd_sample &out)
+bool S7Medium::sample(size_t i, samplerfs_sample &out) const
 {
-	if (d.entries[i].kind != SAMPLECD_SAMPLE)
+	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
-	auto rec = d.image.read(d.where[i], 48);
+	auto rec = image.read(where[i], 48);
 	if (rec.empty())
 		return false;
 	out.rate = rates[rec[44] & 7];
 	out.key = rec[45] <= 127 ? rec[45] : -1;
-	out.frames = d.entries[i].bytes / 2;
+	out.frames = entries[i].bytes / 2;
 	// the start, the sustain loop's start and end, the release loop's (24.8 words, from the sample's first)
 	uint64_t p[5];
 	for (int k = 0; k < 5; k++)
@@ -148,14 +161,19 @@ bool sample(const Disc &d, size_t i, samplecd_sample &out)
 	out.loop_start = p[1];
 	out.loop_end = p[2] + 1;
 	switch (out.mode) {
-	case 0: out.loop = SAMPLECD_LOOP_FORWARD; break;
-	case 1: case 3: out.loop = SAMPLECD_LOOP_FORWARD; out.end = p[4] + 1; break;
-	case 4: out.loop = SAMPLECD_LOOP_ALTERNATE; break;
+	case 0: out.loop = SAMPLERFS_LOOP_FORWARD; break;
+	case 1: case 3: out.loop = SAMPLERFS_LOOP_FORWARD; out.end = p[4] + 1; break;
+	case 4: out.loop = SAMPLERFS_LOOP_ALTERNATE; break;
 	case 5: out.reverse = 1; break;
-	case 6: out.reverse = 1; out.loop = SAMPLECD_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
+	case 6: out.reverse = 1; out.loop = SAMPLERFS_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
 	default: break;
 	}
 	return true;
+}
+
+std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
+{
+	return std::make_unique<S7Medium>(io, format);
 }
 
 }

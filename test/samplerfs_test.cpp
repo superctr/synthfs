@@ -29,7 +29,7 @@ static size_t mem_read(void *user, uint64_t offset, void *buf, size_t n)
 	return n;
 }
 
-static samplecd_io io_of(Bytes &b)
+static samplerfs_io io_of(Bytes &b)
 {
 	return { &b, mem_read, b.size() };
 }
@@ -52,31 +52,31 @@ static void put_name(Bytes &b, size_t at, const char *name, size_t len)
 	memcpy(&b[at], name, strlen(name));
 }
 
-static std::vector<std::string> names(samplecd *cd, samplecd_kind kind)
+static std::vector<std::string> names(samplerfs *fs, samplerfs_kind kind)
 {
 	std::vector<std::string> out;
-	for (size_t i = 0; i < samplecd_count(cd); i++)
-		if (samplecd_entry_at(cd, i)->kind == kind)
-			out.push_back(samplecd_entry_at(cd, i)->name);
+	for (size_t i = 0; i < samplerfs_count(fs); i++)
+		if (samplerfs_entry_at(fs, i)->kind == kind)
+			out.push_back(samplerfs_entry_at(fs, i)->name);
 	return out;
 }
 
 // the first entry of the name, of the kind where one is given
-static size_t find(samplecd *cd, const char *name, int kind = -1)
+static size_t find(samplerfs *fs, const char *name, int kind = -1)
 {
-	for (size_t i = 0; i < samplecd_count(cd); i++)
-		if (!strcmp(samplecd_entry_at(cd, i)->name, name) && (kind < 0 || samplecd_entry_at(cd, i)->kind == kind))
+	for (size_t i = 0; i < samplerfs_count(fs); i++)
+		if (!strcmp(samplerfs_entry_at(fs, i)->name, name) && (kind < 0 || samplerfs_entry_at(fs, i)->kind == kind))
 			return i;
-	return SAMPLECD_NONE;
+	return SAMPLERFS_NONE;
 }
 
-static std::vector<std::string> used(samplecd *cd, size_t i)
+static std::vector<std::string> used(samplerfs *fs, size_t i)
 {
 	size_t out[64];
-	size_t n = samplecd_refs(cd, i, out, 64);
+	size_t n = samplerfs_refs(fs, i, out, 64);
 	std::vector<std::string> v;
 	for (size_t k = 0; k < n && k < 64; k++)
-		v.push_back(samplecd_entry_at(cd, out[k])->name);
+		v.push_back(samplerfs_entry_at(fs, out[k])->name);
 	return v;
 }
 
@@ -130,35 +130,35 @@ static Bytes s7_image(const char *system)
 	return b;
 }
 
-static void test_s7(Bytes b, samplecd_format format, const char *label)
+static void test_s7(Bytes b, samplerfs_format format, const char *label)
 {
-	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == format);
+	samplerfs_io io = io_of(b);
+	CHECK(samplerfs_probe(&io) == format);
 	char err[64];
-	samplecd *cd = samplecd_open(&io, err, sizeof err);
-	CHECK(cd);
-	if (!cd)
+	samplerfs *fs = samplerfs_open(&io, err, sizeof err);
+	CHECK(fs);
+	if (!fs)
 		return;
-	CHECK(!strcmp(samplecd_label(cd), label));
-	CHECK(samplecd_format_of(cd) == format && samplecd_entry_at(cd, 0)->format == format);
-	CHECK((names(cd, SAMPLECD_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
-	CHECK((names(cd, SAMPLECD_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
-	size_t strings = find(cd, "STR:Strings");
-	CHECK(strings != SAMPLECD_NONE && !strcmp(samplecd_entry_at(cd, strings)->tag, "STR"));
-	CHECK(!samplecd_entry_at(cd, find(cd, "PRT:Low"))->tag[0]);
-	CHECK((used(cd, find(cd, "VOL:One")) == std::vector<std::string> { "PRF:One" }));
-	CHECK((used(cd, find(cd, "PRF:One")) == std::vector<std::string> { "STR:Strings" }));
-	CHECK((used(cd, strings) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
-	CHECK((used(cd, find(cd, "PRT:Low")) == std::vector<std::string> { "SMP:Low" }));
-	CHECK(used(cd, find(cd, "SMP:Low")).empty());
-	size_t high = find(cd, "SMP:High");
-	CHECK(samplecd_entry_at(cd, high)->number == 2 && samplecd_entry_at(cd, high)->bytes == 9216);
-	samplecd_sample s;
-	CHECK(samplecd_sample_info(cd, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
-	CHECK(s.start == 10 && s.end == 200 && s.loop == SAMPLECD_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
+	CHECK(!strcmp(samplerfs_label(fs), label));
+	CHECK(samplerfs_format_of(fs) == format && samplerfs_entry_at(fs, 0)->format == format);
+	CHECK((names(fs, SAMPLERFS_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
+	CHECK((names(fs, SAMPLERFS_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
+	size_t strings = find(fs, "STR:Strings");
+	CHECK(strings != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, strings)->tag, "STR"));
+	CHECK(!samplerfs_entry_at(fs, find(fs, "PRT:Low"))->tag[0]);
+	CHECK((used(fs, find(fs, "VOL:One")) == std::vector<std::string> { "PRF:One" }));
+	CHECK((used(fs, find(fs, "PRF:One")) == std::vector<std::string> { "STR:Strings" }));
+	CHECK((used(fs, strings) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
+	CHECK((used(fs, find(fs, "PRT:Low")) == std::vector<std::string> { "SMP:Low" }));
+	CHECK(used(fs, find(fs, "SMP:Low")).empty());
+	size_t high = find(fs, "SMP:High");
+	CHECK(samplerfs_entry_at(fs, high)->number == 2 && samplerfs_entry_at(fs, high)->bytes == 9216);
+	samplerfs_sample s;
+	CHECK(samplerfs_sample_info(fs, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
+	CHECK(s.start == 10 && s.end == 200 && s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
 	CHECK(s.mode == 4 && !s.reverse);
-	CHECK(!samplecd_sample_info(cd, strings, &s));
-	samplecd_close(cd);
+	CHECK(!samplerfs_sample_info(fs, strings, &s));
+	samplerfs_close(fs);
 }
 
 // the same image as raw 2352-byte sectors of mode 1
@@ -190,9 +190,9 @@ static void akai_name(Bytes &b, size_t at, const char *name)
 static void akai_partition(Bytes &b, uint64_t base, uint16_t blocks, const std::function<void(uint64_t)> &fill)
 {
 	put16(b, base, blocks);
-	for (uint32_t k = 0; k < scd::akai::HEADER_WORDS; k++) {
-		b[base + 2 + 2 * k] = uint8_t(k * scd::akai::HEADER_STEP);
-		b[base + 3 + 2 * k] = uint8_t(k * scd::akai::HEADER_STEP >> 8);
+	for (uint32_t k = 0; k < sfs::akai::HEADER_WORDS; k++) {
+		b[base + 2 + 2 * k] = uint8_t(k * sfs::akai::HEADER_STEP);
+		b[base + 3 + 2 * k] = uint8_t(k * sfs::akai::HEADER_STEP >> 8);
 	}
 	fill(base);
 }
@@ -277,44 +277,44 @@ static Bytes akai_image(bool s3000_partition)
 static void test_akai()
 {
 	Bytes b = akai_image(true);
-	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_AKAI_S3000);
-	samplecd *cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd);
-	if (!cd)
+	samplerfs_io io = io_of(b);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_AKAI_S3000);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
 		return;
-	CHECK((names(cd, SAMPLECD_PARTITION) == std::vector<std::string> { "A", "B" }));
-	CHECK((names(cd, SAMPLECD_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
-	CHECK((names(cd, SAMPLECD_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS", "LONG" }));
-	CHECK((names(cd, SAMPLECD_MULTI) == std::vector<std::string> { "SPLIT" }));
-	CHECK((names(cd, SAMPLECD_OTHER) == std::vector<std::string> { "FX" }));
-	size_t piano = find(cd, "PIANO"), c3 = find(cd, "PIANO C3"), a4 = find(cd, "STRINGS A4");
-	CHECK(samplecd_entry_at(cd, c3)->parent == piano && samplecd_entry_at(cd, piano)->parent == find(cd, "A"));
-	CHECK(samplecd_entry_at(cd, piano)->format == SAMPLECD_AKAI_S1000 && samplecd_entry_at(cd, find(cd, "A"))->format == SAMPLECD_AKAI_S1000);
-	CHECK(samplecd_entry_at(cd, a4)->format == SAMPLECD_AKAI_S3000 && samplecd_entry_at(cd, a4)->number == 400);
-	CHECK(samplecd_entry_at(cd, find(cd, "B"))->format == SAMPLECD_AKAI_S3000);
-	CHECK(!strcmp(samplecd_entry_at(cd, c3)->tag, "s") && !strcmp(samplecd_entry_at(cd, a4)->tag, "s"));
-	CHECK(!strcmp(samplecd_entry_at(cd, find(cd, "FX"))->tag, "x"));
-	CHECK((used(cd, find(cd, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
-	CHECK((used(cd, find(cd, "STRINGS", SAMPLECD_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
-	CHECK((used(cd, find(cd, "LONG")) == std::vector<std::string> { "STRINGS A4" }));
-	CHECK((used(cd, find(cd, "SPLIT")) == std::vector<std::string> { "LONG", "STRINGS" }));
-	CHECK(!strcmp(samplecd_entry_at(cd, find(cd, "SPLIT"))->tag, "m"));
-	samplecd_sample s;
-	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
-	CHECK(s.start == 2 && s.end == 500 && s.loop == SAMPLECD_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
-	CHECK(!samplecd_sample_info(cd, a4, &s));  // no header
-	samplecd_close(cd);
+	CHECK((names(fs, SAMPLERFS_PARTITION) == std::vector<std::string> { "A", "B" }));
+	CHECK((names(fs, SAMPLERFS_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
+	CHECK((names(fs, SAMPLERFS_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS", "LONG" }));
+	CHECK((names(fs, SAMPLERFS_MULTI) == std::vector<std::string> { "SPLIT" }));
+	CHECK((names(fs, SAMPLERFS_OTHER) == std::vector<std::string> { "FX" }));
+	size_t piano = find(fs, "PIANO"), c3 = find(fs, "PIANO C3"), a4 = find(fs, "STRINGS A4");
+	CHECK(samplerfs_entry_at(fs, c3)->parent == piano && samplerfs_entry_at(fs, piano)->parent == find(fs, "A"));
+	CHECK(samplerfs_entry_at(fs, piano)->format == SAMPLERFS_AKAI_S1000 && samplerfs_entry_at(fs, find(fs, "A"))->format == SAMPLERFS_AKAI_S1000);
+	CHECK(samplerfs_entry_at(fs, a4)->format == SAMPLERFS_AKAI_S3000 && samplerfs_entry_at(fs, a4)->number == 400);
+	CHECK(samplerfs_entry_at(fs, find(fs, "B"))->format == SAMPLERFS_AKAI_S3000);
+	CHECK(!strcmp(samplerfs_entry_at(fs, c3)->tag, "s") && !strcmp(samplerfs_entry_at(fs, a4)->tag, "s"));
+	CHECK(!strcmp(samplerfs_entry_at(fs, find(fs, "FX"))->tag, "x"));
+	CHECK((used(fs, find(fs, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
+	CHECK((used(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
+	CHECK((used(fs, find(fs, "LONG")) == std::vector<std::string> { "STRINGS A4" }));
+	CHECK((used(fs, find(fs, "SPLIT")) == std::vector<std::string> { "LONG", "STRINGS" }));
+	CHECK(!strcmp(samplerfs_entry_at(fs, find(fs, "SPLIT"))->tag, "m"));
+	samplerfs_sample s;
+	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
+	CHECK(s.start == 2 && s.end == 500 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
+	CHECK(!samplerfs_sample_info(fs, a4, &s));  // no header
+	samplerfs_close(fs);
 
 	b = akai_image(false);
 	io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_AKAI_S1000);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_AKAI_S1000);
 
 	// a size out of range is no partition
 	b = akai_image(true);
 	put16(b, 0, 0x1E01);
 	io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_UNKNOWN);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_UNKNOWN);
 }
 
 // ---- S-550: a directory of one area, its patch using tones by two key maps
@@ -364,26 +364,26 @@ static void test_s550()
 	put_be(b, t2 + 0x13, 0x1FF, 3);
 	b[t2 + 0x19] = 3;
 
-	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_S550);
-	samplecd *cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd);
-	if (!cd)
+	samplerfs_io io = io_of(b);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_S550);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
 		return;
-	CHECK(!strcmp(samplecd_label(cd), "Roland Sound Library    L-CD9"));
-	CHECK((names(cd, SAMPLECD_AREA) == std::vector<std::string> { "Pianos #1" }));
-	CHECK((names(cd, SAMPLECD_PATCH) == std::vector<std::string> { "Piano Split" }));
-	CHECK((names(cd, SAMPLECD_TONE) == std::vector<std::string> { "P-C3", "P-C5" }));
-	size_t pianos = find(cd, "Pianos #1"), c3 = find(cd, "P-C3"), c5 = find(cd, "P-C5");
-	CHECK(!strcmp(samplecd_entry_at(cd, pianos)->tag, "0") && samplecd_entry_at(cd, c5)->number == 2);
-	CHECK(samplecd_entry_at(cd, c3)->parent == pianos && samplecd_entry_at(cd, c3)->bytes == 24576);
-	CHECK((used(cd, find(cd, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
-	samplecd_sample s;
-	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
-	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLECD_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
-	CHECK(samplecd_sample_info(cd, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
-	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SAMPLECD_LOOP_NONE && s.mode == 3);
-	samplecd_close(cd);
+	CHECK(!strcmp(samplerfs_label(fs), "Roland Sound Library    L-CD9"));
+	CHECK((names(fs, SAMPLERFS_AREA) == std::vector<std::string> { "Pianos #1" }));
+	CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Piano Split" }));
+	CHECK((names(fs, SAMPLERFS_TONE) == std::vector<std::string> { "P-C3", "P-C5" }));
+	size_t pianos = find(fs, "Pianos #1"), c3 = find(fs, "P-C3"), c5 = find(fs, "P-C5");
+	CHECK(!strcmp(samplerfs_entry_at(fs, pianos)->tag, "0") && samplerfs_entry_at(fs, c5)->number == 2);
+	CHECK(samplerfs_entry_at(fs, c3)->parent == pianos && samplerfs_entry_at(fs, c3)->bytes == 24576);
+	CHECK((used(fs, find(fs, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
+	samplerfs_sample s;
+	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
+	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
+	CHECK(samplerfs_sample_info(fs, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
+	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SAMPLERFS_LOOP_NONE && s.mode == 3);
+	samplerfs_close(fs);
 }
 
 // ---- ISO 9660: the audio files and the directories holding them
@@ -423,45 +423,45 @@ static void test_iso()
 	iso_dir(b, 20, 20, { { "README.TXT;1", 23 }, { "DRUMS", 21 }, { "DOCS", 22 } });
 	iso_dir(b, 21, 20, { { "KICK.WAV;1", 23 }, { "SNARE.AIF;1", 23 } });
 	iso_dir(b, 22, 20, { { "INFO.TXT;1", 23 } });
-	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_ISO9660);
-	samplecd *cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd);
-	if (!cd)
+	samplerfs_io io = io_of(b);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_ISO9660);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
 		return;
-	CHECK(!strcmp(samplecd_label(cd), "LOOPS"));
-	CHECK((names(cd, SAMPLECD_DIRECTORY) == std::vector<std::string> { "DRUMS" }));
-	CHECK((names(cd, SAMPLECD_FILE) == std::vector<std::string> { "KICK.WAV", "SNARE.AIF" }));
-	size_t kick = find(cd, "KICK.WAV");
-	CHECK(samplecd_entry_at(cd, kick)->bytes == 1234 && samplecd_entry_at(cd, kick)->parent == find(cd, "DRUMS"));
-	CHECK(samplecd_entry_at(cd, kick)->format == SAMPLECD_ISO9660);
-	samplecd_close(cd);
+	CHECK(!strcmp(samplerfs_label(fs), "LOOPS"));
+	CHECK((names(fs, SAMPLERFS_DIRECTORY) == std::vector<std::string> { "DRUMS" }));
+	CHECK((names(fs, SAMPLERFS_FILE) == std::vector<std::string> { "KICK.WAV", "SNARE.AIF" }));
+	size_t kick = find(fs, "KICK.WAV");
+	CHECK(samplerfs_entry_at(fs, kick)->bytes == 1234 && samplerfs_entry_at(fs, kick)->parent == find(fs, "DRUMS"));
+	CHECK(samplerfs_entry_at(fs, kick)->format == SAMPLERFS_ISO9660);
+	samplerfs_close(fs);
 }
 
 static void test_others()
 {
 	Bytes b(4096, 0);
-	samplecd_io io = io_of(b);
-	samplecd *cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd && samplecd_format_of(cd) == SAMPLECD_UNKNOWN && samplecd_count(cd) == 0);
-	samplecd_close(cd);
+	samplerfs_io io = io_of(b);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_UNKNOWN && samplerfs_count(fs) == 0);
+	samplerfs_close(fs);
 
 	memcpy(&b[0], "EMU3", 4);
-	CHECK(samplecd_probe(&io) == SAMPLECD_EMU3);
+	CHECK(samplerfs_probe(&io) == SAMPLERFS_EMU3);
 
 	Bytes tiny(100, 0);
 	io = io_of(tiny);
 	char err[64] = "";
-	CHECK(!samplecd_open(&io, err, sizeof err) && err[0]);
-	CHECK(!samplecd_open_file("/nonexistent/disc.iso", err, sizeof err));
+	CHECK(!samplerfs_open(&io, err, sizeof err) && err[0]);
+	CHECK(!samplerfs_open_file("/nonexistent/disc.iso", err, sizeof err));
 }
 
 int main()
 {
 	Bytes s760 = s7_image(" S-760 System Disk    Ver. 2.24");
-	test_s7(s760, SAMPLECD_S760, "S-760 System Disk    Ver. 2.24");
-	test_s7(raw_of(s760), SAMPLECD_S760, "S-760 System Disk    Ver. 2.24");
-	test_s7(s7_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLECD_S770, "SYS-772 HardDisk Sys Ver. 2.25");
+	test_s7(s760, SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
+	test_s7(raw_of(s760), SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
+	test_s7(s7_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLERFS_S770, "SYS-772 HardDisk Sys Ver. 2.25");
 	test_akai();
 	test_s550();
 	test_iso();

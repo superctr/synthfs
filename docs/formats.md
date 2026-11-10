@@ -1,6 +1,6 @@
 # The formats
 
-What samplecd reads of each format.  Every number is little-endian unless it says otherwise.  **[seen]** marks
+What samplerfs reads of each format.  Every number is little-endian unless it says otherwise.  **[seen]** marks
 what the discs at hand show and the library relies on without a machine's reading behind it.
 
 ## Telling them apart
