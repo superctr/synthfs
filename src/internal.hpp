@@ -98,6 +98,10 @@ std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format for
 namespace akai {
 samplerfs_format probe(const Image &im);
 std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+samplerfs_format probe_floppy(const Image &im);
+std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format);
+samplerfs_format probe_s900(const Image &im);
+std::unique_ptr<Medium> open_s900(const samplerfs_io &io, samplerfs_format format);
 // a partition header's 98 halfwords after its size: k times HEADER_STEP
 constexpr uint32_t HEADER_WORDS = 98;
 constexpr uint16_t HEADER_STEP = 0x0D05;

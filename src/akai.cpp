@@ -1,5 +1,5 @@
 // Copyright 2026 Ian Karlsson
-// The AKAI S1000 and S3000 partitions (docs/formats.md, "AKAI")
+// The AKAI S1000 and S3000 partitions, and their floppies: one volume each (docs/formats.md, "AKAI")
 #include "internal.hpp"
 
 namespace sfs::akai {
@@ -9,6 +9,14 @@ constexpr int PARTITIONS = 26;
 constexpr uint32_t VOLUMES_AT = 0xCA, VOLUMES = 100, FAT_AT = 0x70A;
 constexpr uint16_t BLOCKS_MIN = 4, BLOCKS_MAX = 0x1E00;
 constexpr size_t MULTI_PARTS_AT = 0x400, MULTI_PARTS = 16, MULTI_PART = 0xC0;
+constexpr uint64_t FLOPPY_BLOCK = 1024, FLOPPY_FAT = 0x600, FLOPPY_DD = 819200, FLOPPY_HD = 1638400;
+constexpr uint32_t FLOPPY_FILES = 64;
+
+// the blocks the directory, the FAT and the name take: four on a 2DD floppy, five on a 2HD one
+static uint32_t system_blocks(uint64_t size)
+{
+	return size == FLOPPY_HD ? 5 : 4;
+}
 
 constexpr char charset[] = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ#+-.";
 
@@ -80,20 +88,51 @@ samplerfs_format probe(const Image &im)
 }
 
 // an AKAI S1000 / S3000 disk
+// floppy: 1024-byte blocks, the FAT at 0x600, the system's blocks marked 0x4000
+samplerfs_format probe_floppy(const Image &im)
+{
+	uint8_t fat[2 * 5];
+	if ((im.size() != FLOPPY_DD && im.size() != FLOPPY_HD) || !im.read(FLOPPY_FAT, fat, sizeof fat))
+		return SAMPLERFS_UNKNOWN;
+	for (uint32_t b = 0; b < system_blocks(im.size()); b++)
+		if (le16(fat + 2 * b) != 0x4000)
+			return SAMPLERFS_UNKNOWN;
+	uint8_t dir[24 * FLOPPY_FILES];
+	if (!im.read(0, dir, sizeof dir))
+		return SAMPLERFS_UNKNOWN;
+	for (uint32_t k = 0; k < FLOPPY_FILES; k++) {
+		uint8_t t = dir[24 * k + 16];
+		if (t == 0xF0 || t == 0xF3 || t == 0xED)
+			return SAMPLERFS_AKAI_S3000;
+	}
+	return SAMPLERFS_AKAI_S1000;
+}
+
 class AkaiMedium final : public Medium {
 public:
-	using Medium::Medium;
+	AkaiMedium(const samplerfs_io &io, samplerfs_format format, bool floppy) : Medium(io, format), floppy_(floppy) {}
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 
 private:
+	// where a volume's blocks are: a partition's, or a floppy's
+	struct Store {
+		uint64_t base, block, fat;
+		uint32_t blocks;
+	};
+	bool floppy_;
+	std::vector<Store> stores_;
+	std::vector<std::pair<size_t, size_t>> volume_store_;  // a volume's entry, its store
+	void list_floppy();
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
 	size_t in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const;
 };
 
 void AkaiMedium::list()
 {
+	if (floppy_)
+		return list_floppy();
 	auto parts = partitions(image);
 	for (size_t p = 0; p < parts.size(); p++) {
 		const Partition &P = parts[p];
@@ -102,6 +141,7 @@ void AkaiMedium::list()
 			continue;
 		size_t pi = add(SAMPLERFS_PARTITION, SAMPLERFS_AKAI_S1000, uint32_t(p), SAMPLERFS_NONE, std::string(1, char('A' + p)),
 			P.blocks * BLOCK, P.base);
+		stores_.push_back({ P.base, BLOCK, P.base + FAT_AT, P.blocks });
 		for (uint32_t v = 0; v < VOLUMES; v++) {
 			const uint8_t *e = &h[VOLUMES_AT + 16 * v];
 			uint8_t type = e[12];
@@ -124,6 +164,7 @@ void AkaiMedium::list()
 				entries[pi].format = SAMPLERFS_AKAI_S3000;
 			}
 			size_t vi = add(SAMPLERFS_VOLUME, fmt, v, pi, name_of(e), 0, P.base + start * BLOCK);
+			volume_store_.emplace_back(vi, stores_.size() - 1);
 			uint64_t bytes = 0;
 			for (uint32_t k = 0; k < count; k++) {
 				const uint8_t *f = &dir[24 * k];
@@ -138,24 +179,59 @@ void AkaiMedium::list()
 	}
 }
 
-// file i's first max bytes, block by block along its partition's FAT
+// a floppy: one volume, its 64 files' directory at 0, the FAT at 0x600 (a halfword a block) and the volume's name
+// after it
+void AkaiMedium::list_floppy()
+{
+	uint32_t blocks = uint32_t(image.size() / FLOPPY_BLOCK);
+	uint8_t name[12];
+	auto dir = image.read(0, 24 * FLOPPY_FILES);
+	if (dir.empty() || !image.read(FLOPPY_FAT + 2 * blocks, name, sizeof name))
+		return;
+	label = trimmed(name_of(name));
+	stores_.push_back({ 0, FLOPPY_BLOCK, FLOPPY_FAT, blocks });
+	size_t vi = add(SAMPLERFS_VOLUME, format, 0, SAMPLERFS_NONE, label, 0, 0);
+	volume_store_.emplace_back(vi, 0);
+	uint64_t bytes = 0;
+	for (uint32_t k = 0; k < FLOPPY_FILES; k++) {
+		const uint8_t *f = &dir[24 * k];
+		uint16_t start = le16(f + 20);
+		if (!f[16] || start < system_blocks(image.size()) || start >= blocks)
+			continue;
+		size_t fi = add(kind_of(f[16]), format, k, vi, name_of(f), le24(f + 17), start * FLOPPY_BLOCK);
+		char t = char(f[16] & 0x7F);
+		if (t >= 'a' && t <= 'z')
+			tag(fi, std::string(1, t));
+		else {
+			char hex[4];
+			snprintf(hex, sizeof hex, "%02X", f[16]);
+			tag(fi, hex);
+		}
+		bytes += le24(f + 17);
+	}
+	entries[vi].bytes = bytes;
+}
+
+// file i's first max bytes, block by block along its volume's FAT
 std::vector<uint8_t> AkaiMedium::read_file(size_t i, uint64_t max) const
 {
 	const samplerfs_entry &e = entries[i];
-	if (e.parent == SAMPLERFS_NONE || entries[e.parent].parent == SAMPLERFS_NONE)
+	const Store *s = nullptr;
+	for (auto [v, k] : volume_store_)
+		if (v == e.parent)
+			s = &stores_[k];
+	if (!s)
 		return {};
-	size_t part = entries[e.parent].parent;
-	uint64_t base = where[part], blocks = entries[part].bytes / BLOCK;
-	uint64_t left = std::min(max, e.bytes), b = (where[i] - base) / BLOCK;
+	uint64_t left = std::min(max, e.bytes), b = (where[i] - s->base) / s->block;
 	std::vector<uint8_t> out;
-	while (left && b && b < blocks) {
-		auto chunk = image.read(base + b * BLOCK, size_t(std::min(left, BLOCK)));
+	while (left && b && b < s->blocks) {
+		auto chunk = image.read(s->base + b * s->block, size_t(std::min(left, s->block)));
 		if (chunk.empty())
 			break;
 		out.insert(out.end(), chunk.begin(), chunk.end());
 		left -= chunk.size();
 		uint8_t next[2];
-		if (!left || !image.read(base + FAT_AT + 2 * b, next, 2))
+		if (!left || !image.read(s->fat + 2 * b, next, 2))
 			break;
 		b = le16(next);
 	}
@@ -239,7 +315,12 @@ bool AkaiMedium::sample(size_t i, samplerfs_sample &out) const
 
 std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<AkaiMedium>(io, format);
+	return std::make_unique<AkaiMedium>(io, format, false);
+}
+
+std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format)
+{
+	return std::make_unique<AkaiMedium>(io, format, true);
 }
 
 }

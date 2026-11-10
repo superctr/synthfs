@@ -19,6 +19,8 @@ Tried in this order:
 | SR-JV80 | card, board | `Roland JV80`, `O` at byte 0x0C and `S` at 0x0E, 1, 2, 4 or 8 MB |
 | SRX | board | `Roland SRX` at byte 0, 32 MB |
 | AKAI S1000, S3000 | disk | a partition header at byte 0 (below); S3000 where any volume is one |
+| AKAI S1000, S3000 | floppy | 800 or 1600 KB, the FAT's first four halfwords (five on 2HD) 0x4000; S3000 where any file's type has its top bit set |
+| AKAI S900 | floppy | whole 1024-byte blocks, 700 to 1600 KB, the FAT's first four halfwords zero, and a directory of at least one file, each with a printable name, an upper-case type and a start past block 3 |
 | E-mu | disk | `EMU3` (EIII, E-IV) or `EMX2` (Emax II) at byte 0 |
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 
@@ -273,6 +275,32 @@ the same sounds in each of its banks, one per host family; each bank is listed a
 host picks the one its machine reads **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only
 **[seen]**.
 
+### On a floppy
+
+An S1000 or S3000 floppy is one volume in 1024-byte blocks (800 on 2DD, 1600 on 2HD): its directory's 64 entries
+from byte 0 (a volume directory's 24-byte entries), the FAT from 0x600, a halfword a block as on a disk (0x4000 the
+system's blocks, 0xC000 and above the end), and the volume's name (12 characters, AKAI's set) straight after the FAT.
+Files are a disk's: the same programs, samples and others.  The system's blocks are the first four on 2DD and the first
+five on 2HD; an operating system disk may mark every block so (a CD3000's) **[seen]**.  Besides the disk's types,
+floppies hold `a` and `b` files (on the S20's) and type 0xFF (an operating system), tagged in hex **[seen]**.
+
+## AKAI S900
+
+The S900's and S950's floppy, 2DD (800 KB) or 2HD (1600 KB), in 1024-byte blocks **[seen]**.  The directory: 64
+entries of 24 bytes from byte 0, each a name (10 ASCII characters, spaces after), its type at +16 (`S` sample, `P`
+program, and `O`, `D`, `F`, listed as others), its size at +17 (three bytes) and its first block at +20.  The FAT from
+0x600, a halfword a block: the next block, 0x8000 the end; the first four blocks (directory and FAT) stay zero.
+
+**A sample** (`S`): a 60-byte header, then the wave, 12-bit samples packed three bytes to two (the file is 60 + 1.5
+bytes a frame on all 3472 samples here).  The name (10), the frames at +0x10 (a long), the rate in Hz at +0x14, the
+pitch at +0x16 in sixteenths of a semitone (C1 576, AKAI numbering the octaves from C1 = 36), the loop mode at +0x1A
+(`O` one shot, `L` loop, `A` alternating), the end at +0x1C, the start at +0x20 and the loop's length at +0x24 (longs),
+the loop running up to the end **[seen]**: the S20 conversions of the same disks keep the frames and starts.
+
+**A program** (`P`): a 0x26-byte header with the keygroups' count at +0x17, then the keygroups, 70 bytes each: the
+highest key at +0, the lowest at +1, and two sample names at +0x18 and +0x2E (the second for loud notes; often an
+unused default such as "SAMPLE 2") **[seen]**: the first name is a sample of the disk in 96 % of the keygroups here.
+
 ## ISO 9660
 
 The primary volume descriptor at sector 16: the volume's ID at +40, the root directory's record at +156.  The tree
@@ -286,6 +314,6 @@ only where it holds some, at any depth.  Rock Ridge and Joliet names are not rea
 - S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves across its disks.
 - Boards and cards: the samples' and waves' parameters and the patches' other fields; the SO-JD80 cards (JD-800,
   JD-990), another format.
-- AKAI floppies: none at hand.
+- AKAI S900: the `O`, `D` and `F` files; the programs' other parameters.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.

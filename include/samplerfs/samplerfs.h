@@ -24,8 +24,8 @@ typedef enum samplerfs_format {
 	SAMPLERFS_S550,        /* Roland S-550 / W-30 SCSI format: areas of patches and tones */
 	SAMPLERFS_S760,        /* Roland S-700 series volumes, the disk made on an S-760 */
 	SAMPLERFS_S770,        /* Roland S-700 series volumes, the disk made on an S-770 or S-750 (SYS-772) */
-	SAMPLERFS_AKAI_S1000,  /* AKAI partitions, S1000 volumes */
-	SAMPLERFS_AKAI_S3000,  /* AKAI partitions, S3000 volumes (a disk with any is S3000) */
+	SAMPLERFS_AKAI_S1000,  /* AKAI partitions, S1000 volumes; an S1000 floppy */
+	SAMPLERFS_AKAI_S3000,  /* AKAI partitions, S3000 volumes (a disk with any is S3000); an S3000 floppy */
 	SAMPLERFS_ISO9660,     /* a plain CD-ROM; its WAV and AIFF files listed */
 	SAMPLERFS_EMU3,        /* E-mu EIII / E-IV */
 	SAMPLERFS_EMAX2,       /* E-mu Emax II */
@@ -35,6 +35,7 @@ typedef enum samplerfs_format {
 	SAMPLERFS_DJ70,        /* Roland S-700 series volume on a floppy made on a DJ-70 or DJ-70mkII */
 	SAMPLERFS_SRJV80,      /* Roland SR-JV80 wave expansion board or SO-PCM1 card, as dumped */
 	SAMPLERFS_SRX,         /* Roland SRX wave expansion board, as dumped */
+	SAMPLERFS_AKAI_S900,   /* AKAI S900 / S950 floppy */
 } samplerfs_format;
 
 /* What the image is of.  A hard disk, an MO and a CD-ROM share their layout and are all DISK; the host knows which
@@ -49,13 +50,14 @@ typedef enum samplerfs_medium {
 
 typedef enum samplerfs_kind {
 	SAMPLERFS_PARTITION,    /* AKAI: a partition, named A to Z */
-	SAMPLERFS_VOLUME,       /* S-760/S-770 and AKAI */
+	SAMPLERFS_VOLUME,       /* S-760/S-770 and AKAI (an S1000/S3000 floppy is one) */
 	SAMPLERFS_PERFORMANCE,  /* S-760/S-770 */
 	SAMPLERFS_PATCH,        /* S-760/S-770 and S-550 */
 	SAMPLERFS_PARTIAL,      /* S-760/S-770 */
 	SAMPLERFS_SAMPLE,       /* S-760/S-770 and AKAI */
 	SAMPLERFS_PROGRAM,      /* AKAI */
-	SAMPLERFS_OTHER,        /* AKAI: a file of another type (drum inputs, effects, cue or take list); its letter in tag */
+	SAMPLERFS_OTHER,        /* AKAI: a file of another type (drum inputs, effects, cue or take list, an operating
+	                           system); its letter, or its type in hex, in tag */
 	SAMPLERFS_DIRECTORY,    /* ISO 9660: a directory holding audio files */
 	SAMPLERFS_FILE,         /* ISO 9660: a WAV or AIFF file */
 	SAMPLERFS_AREA,         /* S-550: an area, a disk's worth of patches and tones */

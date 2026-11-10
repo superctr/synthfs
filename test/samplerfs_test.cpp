@@ -662,6 +662,97 @@ static void test_boards()
 	}
 }
 
+// an S1000 floppy (2HD): a program over two blocks, a sample, the name after the FAT
+static void test_akai_floppy()
+{
+	const size_t K = 1024, blocks = 1600;
+	Bytes b(blocks * K, 0);
+	for (uint32_t k = 0; k < 5; k++)
+		put16(b, 0x600 + 2 * k, 0x4000);
+	akai_name(b, 0x600 + 2 * blocks, "MY FLOPPY");
+	akai_file(b, 0, "PIANO", 'p', 150 * 8, 5);
+	akai_file(b, 24, "PIANO C3", 's', 0x8C + 2 * 300, 7);
+	put16(b, 0x600 + 2 * 5, 6);
+	put16(b, 0x600 + 2 * 6, 0xC000);
+	put16(b, 0x600 + 2 * 7, 0xC000);
+	Bytes pr(150 * 8, 0);
+	akai_program(pr, 0, 150, { { "PIANO C3" } });
+	memcpy(&b[5 * K], pr.data(), pr.size());
+	size_t smp = 7 * K;
+	b[smp] = 3;
+	b[smp + 2] = 60;
+	put32(b, smp + 0x1A, 300);
+	put32(b, smp + 0x22, 299);
+	put16(b, smp + 0x8A, 44100);
+
+	samplerfs_io io = io_of(b);
+	samplerfs_medium medium;
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S1000 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK(!strcmp(samplerfs_label(fs), "MY FLOPPY"));
+	CHECK((names(fs, SAMPLERFS_VOLUME) == std::vector<std::string> { "MY FLOPPY" }));
+	CHECK((used(fs, find(fs, "PIANO")) == std::vector<std::string> { "PIANO C3" }));
+	samplerfs_sample info;
+	CHECK(samplerfs_sample_info(fs, find(fs, "PIANO C3"), &info) && info.rate == 44100 && info.frames == 300 && info.end == 300);
+	samplerfs_close(fs);
+
+	b[16] = 0xF0;
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S3000);
+}
+
+// an S900 floppy: a program on one sample, the sample's header (60 bytes) and its loop
+static void test_s900()
+{
+	const size_t K = 1024;
+	Bytes b(800 * K, 0);
+	auto file = [&](size_t at, const char *name, uint8_t type, uint32_t size, uint16_t start) {
+		put_name(b, at, name, 10);
+		b[at + 16] = type;
+		b[at + 17] = uint8_t(size), b[at + 18] = uint8_t(size >> 8), b[at + 19] = uint8_t(size >> 16);
+		put16(b, at + 20, start);
+	};
+	file(0, "BASS", 'P', 0x26 + 70, 4);
+	file(24, "BASS E1", 'S', 60 + 1500, 5);
+	put16(b, 0x600 + 2 * 4, 0x8000);
+	put16(b, 0x600 + 2 * 5, 6);
+	put16(b, 0x600 + 2 * 6, 0x8000);
+	put_name(b, 4 * K, "BASS", 16);
+	b[4 * K + 0x17] = 1;
+	put_name(b, 4 * K + 0x26 + 0x18, "BASS E1", 10);
+	put_name(b, 4 * K + 0x26 + 0x2E, "SAMPLE 2", 10);
+	size_t smp = 5 * K;
+	put_name(b, smp, "BASS E1", 16);
+	put32(b, smp + 0x10, 1000);
+	put16(b, smp + 0x14, 25000);
+	put16(b, smp + 0x16, 40 * 16);
+	b[smp + 0x1A] = 'L';
+	put32(b, smp + 0x1C, 1000);
+	put32(b, smp + 0x20, 10);
+	put32(b, smp + 0x24, 200);
+
+	samplerfs_io io = io_of(b);
+	samplerfs_medium medium;
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S900 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK((names(fs, SAMPLERFS_PROGRAM) == std::vector<std::string> { "BASS" }));
+	CHECK((used(fs, find(fs, "BASS")) == std::vector<std::string> { "BASS E1" }));
+	samplerfs_sample info;
+	CHECK(samplerfs_sample_info(fs, find(fs, "BASS E1"), &info) && info.rate == 25000 && info.key == 40);
+	CHECK(info.frames == 1000 && info.start == 10 && info.end == 1000);
+	CHECK(info.loop == SAMPLERFS_LOOP_FORWARD && info.loop_start == 800 && info.loop_end == 1000);
+	samplerfs_close(fs);
+
+	// a lower-case type is no S900's
+	b[24 + 16] = 's';
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
+}
+
 int main()
 {
 	Bytes s760 = s700_image(" S-760 System Disk    Ver. 2.24");
@@ -673,6 +764,8 @@ int main()
 	test_s700_floppy();
 	test_s550_floppy();
 	test_boards();
+	test_akai_floppy();
+	test_s900();
 	test_iso();
 	test_others();
 	if (failures)

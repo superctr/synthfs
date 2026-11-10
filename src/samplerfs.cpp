@@ -38,6 +38,8 @@ constexpr Reader readers[] = {
 	{ s550::probe_floppy, s550::open_floppy, floppy },
 	{ roland_wave::probe, roland_wave::open, roland_wave::medium },
 	{ akai::probe, akai::open, disk },
+	{ akai::probe_floppy, akai::open_floppy, floppy },
+	{ akai::probe_s900, akai::open_s900, floppy },
 	{ emu::probe, emu::open, disk },
 	{ iso9660::probe, iso9660::open, disk },
 };
@@ -179,6 +181,7 @@ const char *samplerfs_format_name(samplerfs_format format)
 	case SAMPLERFS_DJ70: return "DJ-70";
 	case SAMPLERFS_SRJV80: return "SR-JV80";
 	case SAMPLERFS_SRX: return "SRX";
+	case SAMPLERFS_AKAI_S900: return "AKAI S900";
 	default: return "unknown";
 	}
 }
