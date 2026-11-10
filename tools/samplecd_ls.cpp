@@ -2,7 +2,7 @@
 // samplecd-ls: an image's format, its lists and what each entry uses
 //   samplecd-ls IMAGE...          one line each: the format, the counts, the label
 //   samplecd-ls -l IMAGE...       every entry, indented under what holds it
-//   samplecd-ls -r IMAGE...       also what each S-7xx entry uses, and each sample's rate and key
+//   samplecd-ls -r IMAGE...       also what each entry uses, and each sample's rate and key
 #include <samplecd/samplecd.h>
 
 #include <cstdio>
@@ -12,9 +12,9 @@
 #include <vector>
 
 static const char *kinds[] = { "partition", "volume", "performance", "patch", "partial", "sample", "program", "other",
-	"directory", "file", "area", "tone" };
+	"directory", "file", "area", "tone", "multi" };
 static const char *plurals[] = { "partitions", "volumes", "performances", "patches", "partials", "samples", "programs", "others",
-	"directories", "files", "areas", "tones" };
+	"directories", "files", "areas", "tones", "multis" };
 
 static const char *base(const char *path)
 {
@@ -64,7 +64,14 @@ int main(int argc, char **argv)
 					printf("  %llu bytes", (unsigned long long)e->bytes);
 				samplecd_sample s;
 				if (refs && samplecd_sample_info(cd, i, &s))
-					printf("  %u Hz key %d %llu frames", s.rate, s.key, (unsigned long long)s.frames);
+				{
+					static const char *loops[] = { "", " loop", " alt" };
+					printf("  %u Hz key %d %llu frames, plays %llu-%llu%s", s.rate, s.key, (unsigned long long)s.frames,
+						(unsigned long long)s.start, (unsigned long long)s.end, s.reverse ? " reversed" : "");
+					if (s.loop)
+						printf("%s %llu-%llu", loops[s.loop], (unsigned long long)s.loop_start, (unsigned long long)s.loop_end);
+					printf(" mode %d", s.mode);
+				}
 				if (refs) {
 					size_t used[512];
 					size_t k = samplecd_refs(cd, i, used, 512);

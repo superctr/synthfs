@@ -58,9 +58,21 @@ Record *n* of a list is at *n* times its size from the list's first record secto
 
 A number outside its list, or naming an empty slot, uses nothing.
 
-**A sample's record**: the start, the sustain loop's start and end, the release loop's (+16 to +32, each an
-address in the upper 24 bits and 256ths in the low byte), the loop mode (+36), the rate (+44: 0 48 kHz, 1 44.1,
-2 24, 3 22.05, 4 30, 5 15, 6 32, 7 16) and the original key (+45).  The wave is 16-bit linear, mono (a stereo
+**A sample's record**: the start, the sustain loop's start and end, the release loop's (+16 to +32, each a word
+of the sample's own wave, counted from its first, in the upper 24 bits and 256ths in the low byte **[seen]**), the
+loop mode (+36), the rate (+44: 0 48 kHz, 1 44.1, 2 24, 3 22.05, 4 30, 5 15, 6 32, 7 16) and the original key
+(+45).  The loop modes, and how the library gives each:
+
+| Mode | | Plays | Loop |
+|---|---|---|---|
+| 0 | Forward | start to the sustain loop's end | the sustain loop, forward |
+| 1 | Fwd+Rel | start to the release loop's end | the sustain loop (the release loop left to the host) |
+| 2 | One-shot | start to the sustain loop's end | none |
+| 3 | Fwd+One | start to the release loop's end | the sustain loop |
+| 4 | Alt | start to the sustain loop's end | the sustain loop, back and forth |
+| 5 | Rev One | the sustain loop's end down to the start | none |
+| 6 | Rev | the same | from the start to the sustain loop's start |
+  The wave is 16-bit linear, mono (a stereo
 sound is two samples), in segments of 18 sectors (4608 frames): segment *n* (from 2) at sector 0x15AC + 18 × (*n* −
 2), the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above end it).
 
@@ -92,16 +104,17 @@ disc; the categories run 0 to 34 in the order of the instruments (0 acoustic pia
 | 0x2200 | the tone list: each tone's first 16 bytes |
 | 0x2400 | the waves: two banks of 18 segments, 12 288 words a segment |
 
-A blank name (spaces) is an empty slot.
+The area count is the big-endian halfword at +0x139 of block 0 (165 on L-CD1; the directory is read up to it).  A
+blank name (spaces) is an empty slot.
 
 **A patch**: the name (12 characters), the key mode at +0x0F, the first key map at +0x1A and the second at +0x87
 (109 bytes each, a tone number a key: 0 to 31, anything above none; 0xDF on the discs **[seen]**); the second
 map is used where the key mode is 1 to 3.
 
 **A tone**: the name (8 characters), +0x0B 0 for 30 kHz else 15 kHz, +0x0C the original key, +0x0D the wave bank,
-+0x0E the first segment in it, +0x0F the segments, then the start (+0x10), the end (+0x13) and the loop point
-(+0x16) as 24-bit words counted from that first segment, and the loop mode (+0x19: 0 forward, 1 alternate,
-2 one shot, 3 reverse).  The tone's wave is at word bank × 18 × 12 288 + first segment × 12 288 of the area's
++0x0E the first segment in it, +0x0F the segments, then the start (+0x10), the end (+0x13, the last word played)
+and the loop point (+0x16) as 24-bit words counted from that first segment, and the loop mode (+0x19: 0 forward,
+1 alternate, the loop running from the loop point to the end; 2 one shot; 3 reverse, one shot).  The tone's wave is at word bank × 18 × 12 288 + first segment × 12 288 of the area's
 waves.
 
 **The waves** are 12-bit samples left in 16-bit little-endian words, the low four bits zero **[seen]**.
@@ -111,22 +124,30 @@ waves.
 S1000 and S3000 discs share the layout; 8192-byte blocks.
 
 **Partitions** follow one another from byte 0, 26 at most (A to Z).  A header's first halfword is the partition's
-size in blocks, 4 to 0x1E00, and the 196 bytes after it are the same on every partition of every disc (the table in
-`src/akai.cpp`); the walk stops at the first header that is not so.
+size in blocks, 4 to 0x1E00, and the 98 halfwords after it are the same on every partition of every disc,
+halfword *k* being *k* × 0x0D05 (low 16 bits); the walk stops at the first header that is not so.
 
 **A partition's header**: 100 volume entries of 16 bytes from +0xCA: the name, 12 characters of AKAI's set
 `0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ#+-.` (a code each, 10 a space); the type at +12, 0 for an empty entry, 1 an
-S1000 volume, 3 an S3000 one, 7 the S3000 volumes on AKAI's own S3000 and CD3000 discs **[seen]**; the directory's
-first block at +14.  Then the FAT from +0x70A, a halfword a block: the next block of its chain, 0xC000 and above
-the end **[seen]**.  Over the 133 AKAI discs here, the types are 1, 3 and 7 only **[seen]**.
+S1000 volume, 3 an S3000 one, 7 the S3000 volumes on AKAI's own S3000 and CD3000 discs **[seen]**; at +13 a number
+counting the volumes across the whole disc from 1 (or 2) on seven S1000 discs, 0 on the rest, a load number by its
+look **[seen]**; the directory's first block at +14.  Then the FAT from +0x70A, a halfword a block: the next block
+of its chain, 0xC000 and above the end, 0x4000 and 0x8000 the header's own blocks **[seen]**.  Over the 133 AKAI
+discs here, the types are 1, 3 and 7 only **[seen]**.
+
+**A file** is read block by block along the FAT from its first block: 663 of the 350 000 files here (samples
+nearly all, five programs) do not lie in order **[seen]**.
 
 **A volume's directory**: 24-byte entries: the name (12), the type at +16, the size at +17 (three bytes) and the
 file's first block at +20.  An S1000 volume has 126 entries in its block (its own settings follow); an S3000 one has
 510, running on into the block the FAT names after the first **[seen]**: no disc here fills more than the first.
 
-**The file types** are letters: `p` program, `s` sample, and the others seen, `d`, `q`, `t`, `x`, `m`, `c`
-**[seen]**.  An S3000 sets the top bit of `p`, `s` and `m` (0xF0, 0xF3, 0xED); the rest stay plain on both.  An
-entry's tag is the letter without the top bit.
+**The file types** are letters: `p` program, `s` sample, `m` multi (S3000 only), and the others seen, `d`, `q`,
+`t`, `x`, `c` **[seen]**.  An S3000 sets the top bit of `p`, `s` and `m` (0xF0, 0xF3, 0xED); the rest stay plain on
+both.  An entry's tag is the letter without the top bit.  A file of any type but `c` starts with three bytes and
+its own name (+3, 12 characters): `d` files are named "DRUM INPUTS" (162 bytes), `x` "EFFECTS FILE" (7312 bytes),
+`q` "QL1" and `t` "TL1" (160 bytes, cue and take lists by their names) **[seen]**; the one `c` file here holds PC
+code.
 
 **A program**: a header (1 at +0, the name at +3, the keygroups' count at +42), then its keygroups, each 2 at +0;
 header and keygroups are 150 bytes on an S1000, 192 on an S3000, so the file's size is (count + 1) × that **[seen]**.
@@ -134,8 +155,17 @@ A keygroup's four velocity zones name their samples at +34, +58, +82 and +106, b
 of the same volume **[seen]**: 97 % of the programs here find all of theirs, the rest name samples of other volumes
 or none (copyright notes).
 
-**A sample's header** at the file's start: 3 at +0, the original key at +2, the frames at +0x1A (a long), the
-rate at +0x8A (a halfword, in Hz); 150 bytes on an S1000, 192 on an S3000, the 16-bit wave after it.
+**A multi** (4096 bytes): its name at +3, then from +0x400 16 parts of 0xC0 bytes, each naming its program at +3,
+blank for none.  Of the 2491 parts naming one here, 2375 name a program of the same volume; the rest name
+programs of other volumes, or the default "TEST PROGRAM" **[seen]**.
+
+**A sample's header** at the file's start: 3 at +0, the original key at +2, the name at +3, the loops in use at
++0x10 (0 to 4 here), the loop mode at +0x13, the frames, start and end at +0x1A, +0x1E and +0x22 (longs), eight
+loops of 12 bytes from +0x26 and the rate at +0x8A (a halfword, in Hz); 150 bytes on an S1000, 192 on an S3000, the
+16-bit wave after it: every sample here is the header and two bytes a frame **[seen]**.  A loop: the frame it
+ends at (a long), a fraction (+4), its length (+6, a long) and a hold time (+10, 9999 the most seen).  Mode 2
+samples hold loops that fall outside them, and the library takes it as no loop; on the others it gives the first
+loop where it lies within the sample **[seen]**.
 
 ## ISO 9660
 
@@ -146,7 +176,6 @@ only where it holds some, at any depth.  Rock Ridge and Joliet names are not rea
 ## Not read yet
 
 - The S-760's extended records on a hard disk or CD-ROM.
-- S-550: the patches' and tones' other parameters; how many areas a W-30 hard disk holds.
-- AKAI: the multi, drum and effects files; what the volume entry's byte +13 holds (0, or 2 to 10 on a few S1000
-  discs).
+- S-550: the patches' and tones' other parameters; a W-30 hard disk's layout.
+- AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.

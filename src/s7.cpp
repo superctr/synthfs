@@ -138,6 +138,23 @@ bool sample(const Disc &d, size_t i, samplecd_sample &out)
 	out.rate = rates[rec[44] & 7];
 	out.key = rec[45] <= 127 ? rec[45] : -1;
 	out.frames = d.entries[i].bytes / 2;
+	// the start, the sustain loop's start and end, the release loop's (24.8 words, from the sample's first)
+	uint64_t p[5];
+	for (int k = 0; k < 5; k++)
+		p[k] = le32(&rec[16 + 4 * k]) >> 8;
+	out.mode = rec[36];
+	out.start = p[0];
+	out.end = p[2] + 1;
+	out.loop_start = p[1];
+	out.loop_end = p[2] + 1;
+	switch (out.mode) {
+	case 0: out.loop = SAMPLECD_LOOP_FORWARD; break;
+	case 1: case 3: out.loop = SAMPLECD_LOOP_FORWARD; out.end = p[4] + 1; break;
+	case 4: out.loop = SAMPLECD_LOOP_ALTERNATE; break;
+	case 5: out.reverse = 1; break;
+	case 6: out.reverse = 1; out.loop = SAMPLECD_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
+	default: break;
+	}
 	return true;
 }
 

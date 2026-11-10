@@ -5,7 +5,7 @@
 namespace scd::s550 {
 
 constexpr uint64_t BLOCK = 512;
-constexpr uint32_t DIRECTORY = 1, DIRECTORY_END = 0x100, ENTRY = 64;
+constexpr uint32_t DIRECTORY = 1, DIRECTORY_END = 0x100, ENTRY = 64, COUNT_AT = 0x139;
 constexpr uint32_t PARAMETER_BLOCKS = 18;
 constexpr uint32_t PATCHES = 16, PATCH = 256, TONES = 32, TONES_AT = 0x1200, TONE = 128;
 constexpr uint32_t SEGMENT_WORDS = 12288, KEYS = 109, LAST_TONE = 31;
@@ -41,7 +41,11 @@ void list(Disc &d)
 	uint64_t room = d.image.size() > DIRECTORY * BLOCK ? d.image.size() - DIRECTORY * BLOCK : 0;
 	auto dir = d.image.read(DIRECTORY * BLOCK, size_t(std::min<uint64_t>((DIRECTORY_END - DIRECTORY) * BLOCK, room)));
 	uint64_t blocks = d.image.size() / BLOCK;
-	for (uint32_t n = 0; n < dir.size() / ENTRY; n++) {
+	// the areas' count at +0x139 (big-endian, 0 none); the directory ends there or at an entry starting 0xFF
+	uint32_t count = uint32_t(s0[COUNT_AT]) << 8 | s0[COUNT_AT + 1];
+	if (!count)
+		count = UINT32_MAX;
+	for (uint32_t n = 0; n < dir.size() / ENTRY && n < count; n++) {
 		const uint8_t *e = &dir[n * ENTRY];
 		if (e[0] == 0xFF)
 			break;
@@ -87,19 +91,29 @@ std::vector<size_t> refs(const Disc &d, size_t i)
 	return out;
 }
 
-// a tone: 30 kHz where +0x0B is 0, else 15 kHz; the original key at +0x0C; its start and end at +0x10 and +0x13,
-// 24-bit big-endian words from its first segment
+// a tone: 30 kHz where +0x0B is 0, else 15 kHz; the original key at +0x0C; its segments at +0x0F; its start, end and
+// loop point at +0x10, +0x13 and +0x16, 24-bit big-endian words from its first segment; the loop mode at +0x19
 bool sample(const Disc &d, size_t i, samplecd_sample &out)
 {
 	if (d.entries[i].kind != SAMPLECD_TONE)
 		return false;
-	uint8_t t[0x16];
+	uint8_t t[0x1A];
 	if (!d.image.read(d.where[i], t, sizeof t))
 		return false;
-	uint32_t start = be24(t + 0x10), end = be24(t + 0x13);
 	out.rate = t[0x0B] ? 15000 : 30000;
 	out.key = t[0x0C] <= 127 ? t[0x0C] : -1;
-	out.frames = end >= start ? end - start + 1 : 0;
+	out.frames = uint64_t(t[0x0F]) * SEGMENT_WORDS;
+	out.start = be24(t + 0x10);
+	out.end = be24(t + 0x13) + 1;
+	out.loop_start = be24(t + 0x16);
+	out.loop_end = out.end;
+	out.mode = t[0x19];
+	switch (out.mode) {
+	case 0: out.loop = SAMPLECD_LOOP_FORWARD; break;
+	case 1: out.loop = SAMPLECD_LOOP_ALTERNATE; break;
+	case 3: out.reverse = 1; break;
+	default: break;
+	}
 	return true;
 }
 

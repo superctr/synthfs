@@ -3,6 +3,7 @@
 #include "../src/internal.hpp"
 
 #include <cstdio>
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <vector>
@@ -37,6 +38,12 @@ static void put16(Bytes &b, size_t at, uint16_t v)
 {
 	b[at] = uint8_t(v);
 	b[at + 1] = uint8_t(v >> 8);
+}
+
+static void put32(Bytes &b, size_t at, uint32_t v)
+{
+	put16(b, at, uint16_t(v));
+	put16(b, at + 2, uint16_t(v >> 16));
 }
 
 static void put_name(Bytes &b, size_t at, const char *name, size_t len)
@@ -116,6 +123,10 @@ static Bytes s7_image(const char *system)
 	size_t smp = 0x12AC * 512 + 2 * 48;
 	b[smp + 44] = 1;
 	b[smp + 45] = 72;
+	const uint32_t points[5] = { 10, 100, 199, 250, 299 };
+	for (int k = 0; k < 5; k++)
+		put32(b, smp + 16 + 4 * k, points[k] << 8 | 0x80);
+	b[smp + 36] = 4;
 	return b;
 }
 
@@ -144,6 +155,8 @@ static void test_s7(Bytes b, samplecd_format format, const char *label)
 	CHECK(samplecd_entry_at(cd, high)->number == 2 && samplecd_entry_at(cd, high)->bytes == 9216);
 	samplecd_sample s;
 	CHECK(samplecd_sample_info(cd, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
+	CHECK(s.start == 10 && s.end == 200 && s.loop == SAMPLECD_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
+	CHECK(s.mode == 4 && !s.reverse);
 	CHECK(!samplecd_sample_info(cd, strings, &s));
 	samplecd_close(cd);
 }
@@ -177,7 +190,10 @@ static void akai_name(Bytes &b, size_t at, const char *name)
 static void akai_partition(Bytes &b, uint64_t base, uint16_t blocks, const std::function<void(uint64_t)> &fill)
 {
 	put16(b, base, blocks);
-	memcpy(&b[base + 2], scd::akai::partition_header, 196);
+	for (uint32_t k = 0; k < scd::akai::HEADER_WORDS; k++) {
+		b[base + 2 + 2 * k] = uint8_t(k * scd::akai::HEADER_STEP);
+		b[base + 3 + 2 * k] = uint8_t(k * scd::akai::HEADER_STEP >> 8);
+	}
 	fill(base);
 }
 
@@ -206,7 +222,7 @@ static void akai_program(Bytes &b, size_t at, size_t block, const std::vector<st
 
 static Bytes akai_image(bool s3000_partition)
 {
-	Bytes b(16 * AKAI_BLOCK, 0);
+	Bytes b(20 * AKAI_BLOCK, 0);
 	akai_partition(b, 0, 8, [&](uint64_t base) {
 		akai_name(b, base + 0xCA, "PIANO");
 		b[base + 0xCA + 12] = 1;
@@ -222,9 +238,14 @@ static Bytes akai_image(bool s3000_partition)
 		b[smp + 0x1A] = 0xF4;
 		b[smp + 0x1B] = 0x01;
 		put16(b, smp + 0x8A, 22050);
+		b[smp + 0x10] = 1;
+		put32(b, smp + 0x1E, 2);
+		put32(b, smp + 0x22, 499);
+		put32(b, smp + 0x26, 400);
+		put32(b, smp + 0x2C, 100);
 	});
 	if (s3000_partition)
-		akai_partition(b, 8 * AKAI_BLOCK, 8, [&](uint64_t base) {
+		akai_partition(b, 8 * AKAI_BLOCK, 12, [&](uint64_t base) {
 			akai_name(b, base + 0xCA, "STRINGS");
 			b[base + 0xCA + 12] = 3;
 			put16(b, base + 0xCA + 14, 3);
@@ -233,6 +254,22 @@ static Bytes akai_image(bool s3000_partition)
 			akai_file(b, base + 3 * AKAI_BLOCK + 24, "FX", 'x', 100, 7);
 			akai_file(b, base + 5 * AKAI_BLOCK + (400 * 24 - AKAI_BLOCK), "STRINGS A4", 0xF3, 2000, 7);
 			akai_program(b, base + 6 * AKAI_BLOCK, 192, { { "", "STRINGS A4" } });
+			// a program of two blocks out of order (8, then 10), its last keygroup in the second
+			std::vector<std::vector<const char *>> kgs(49, std::vector<const char *> { "" });
+			kgs.push_back({ "STRINGS A4" });
+			Bytes long_program(2 * AKAI_BLOCK, 0);
+			akai_program(long_program, 0, 192, kgs);
+			std::copy_n(long_program.begin(), AKAI_BLOCK, b.begin() + base + 8 * AKAI_BLOCK);
+			std::copy_n(long_program.begin() + AKAI_BLOCK, AKAI_BLOCK, b.begin() + base + 10 * AKAI_BLOCK);
+			akai_file(b, base + 3 * AKAI_BLOCK + 48, "LONG", 0xF0, 51 * 192, 8);
+			put16(b, base + 0x70A + 2 * 8, 10);
+			put16(b, base + 0x70A + 2 * 10, 0xC000);
+			// a multi whose parts name a program of the volume, one of another, and none
+			akai_file(b, base + 3 * AKAI_BLOCK + 72, "SPLIT", 0xED, 4096, 11);
+			akai_name(b, base + 11 * AKAI_BLOCK + 0x400 + 3, "LONG");
+			akai_name(b, base + 11 * AKAI_BLOCK + 0x400 + 0xC0 + 3, "PIANO PROG");
+			akai_name(b, base + 11 * AKAI_BLOCK + 0x400 + 2 * 0xC0 + 3, "");
+			akai_name(b, base + 11 * AKAI_BLOCK + 0x400 + 15 * 0xC0 + 3, "STRINGS");
 		});
 	return b;
 }
@@ -248,7 +285,8 @@ static void test_akai()
 		return;
 	CHECK((names(cd, SAMPLECD_PARTITION) == std::vector<std::string> { "A", "B" }));
 	CHECK((names(cd, SAMPLECD_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
-	CHECK((names(cd, SAMPLECD_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS" }));
+	CHECK((names(cd, SAMPLECD_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS", "LONG" }));
+	CHECK((names(cd, SAMPLECD_MULTI) == std::vector<std::string> { "SPLIT" }));
 	CHECK((names(cd, SAMPLECD_OTHER) == std::vector<std::string> { "FX" }));
 	size_t piano = find(cd, "PIANO"), c3 = find(cd, "PIANO C3"), a4 = find(cd, "STRINGS A4");
 	CHECK(samplecd_entry_at(cd, c3)->parent == piano && samplecd_entry_at(cd, piano)->parent == find(cd, "A"));
@@ -259,8 +297,13 @@ static void test_akai()
 	CHECK(!strcmp(samplecd_entry_at(cd, find(cd, "FX"))->tag, "x"));
 	CHECK((used(cd, find(cd, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
 	CHECK((used(cd, find(cd, "STRINGS", SAMPLECD_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
+	CHECK((used(cd, find(cd, "LONG")) == std::vector<std::string> { "STRINGS A4" }));
+	CHECK((used(cd, find(cd, "SPLIT")) == std::vector<std::string> { "LONG", "STRINGS" }));
+	CHECK(!strcmp(samplecd_entry_at(cd, find(cd, "SPLIT"))->tag, "m"));
 	samplecd_sample s;
 	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
+	CHECK(s.start == 2 && s.end == 500 && s.loop == SAMPLECD_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
+	CHECK(!samplecd_sample_info(cd, a4, &s));  // no header
 	samplecd_close(cd);
 
 	b = akai_image(false);
@@ -293,6 +336,9 @@ static void test_s550()
 	put_be(b, 512 + 0x34, length, 4);
 	b[512 + 0x38] = 'A';
 	b[512 + 0x39] = 0;
+	memcpy(&b[512 + 64], &b[512], 64);  // past the count of one
+	put_name(b, 512 + 64, "Stale", 32);
+	b[0x13A] = 1;
 	size_t area = start * 512;
 	for (int k = 0; k < 16; k++)
 		put_name(b, area + k * 256, "", 12);
@@ -309,12 +355,14 @@ static void test_s550()
 	b[t0 + 0x0C] = 60;
 	b[t0 + 0x0F] = 1;
 	put_be(b, t0 + 0x13, 0x2FFF, 3);
+	put_be(b, t0 + 0x16, 0x1000, 3);
 	put_name(b, t2, "P-C5", 8);
 	b[t2 + 0x0B] = 1;
 	b[t2 + 0x0C] = 84;
 	b[t2 + 0x0F] = 1;
 	put_be(b, t2 + 0x10, 0x100, 3);
 	put_be(b, t2 + 0x13, 0x1FF, 3);
+	b[t2 + 0x19] = 3;
 
 	samplecd_io io = io_of(b);
 	CHECK(samplecd_probe(&io) == SAMPLECD_S550);
@@ -332,7 +380,9 @@ static void test_s550()
 	CHECK((used(cd, find(cd, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
 	samplecd_sample s;
 	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
-	CHECK(samplecd_sample_info(cd, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x100);
+	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLECD_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
+	CHECK(samplecd_sample_info(cd, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
+	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SAMPLECD_LOOP_NONE && s.mode == 3);
 	samplecd_close(cd);
 }
 

@@ -201,10 +201,13 @@ int samplecd_sample_info(samplecd *cd, size_t i, samplecd_sample *out)
 	if (i >= cd->disc.entries.size() || !out)
 		return 0;
 	try {
-		samplecd_sample s { 0, -1, 0 };
+		samplecd_sample s {};
+		s.key = -1;
 		bool ok = sample_of(cd->disc, i, s);
-		if (ok)
+		if (ok) {
+			scd::clamp_points(s);
 			*out = s;
+		}
 		return ok;
 	} catch (...) {
 		return 0;

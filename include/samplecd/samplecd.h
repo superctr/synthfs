@@ -38,11 +38,12 @@ typedef enum samplecd_kind {
 	SAMPLECD_PARTIAL,      /* S-760/S-770 */
 	SAMPLECD_SAMPLE,       /* S-760/S-770 and AKAI */
 	SAMPLECD_PROGRAM,      /* AKAI */
-	SAMPLECD_OTHER,        /* AKAI: a file of another type; its type letter in tag */
+	SAMPLECD_OTHER,        /* AKAI: a file of another type (drum inputs, effects, cue or take list); its letter in tag */
 	SAMPLECD_DIRECTORY,    /* ISO 9660: a directory holding audio files */
 	SAMPLECD_FILE,         /* ISO 9660: a WAV or AIFF file */
 	SAMPLECD_AREA,         /* S-550: an area, a disk's worth of patches and tones */
 	SAMPLECD_TONE,         /* S-550: a tone, a wave and its settings */
+	SAMPLECD_MULTI,        /* AKAI S3000: a multi, its parts' programs */
 } samplecd_kind;
 
 #define SAMPLECD_NONE ((size_t)-1)
@@ -58,10 +59,23 @@ typedef struct samplecd_entry {
 	uint64_t bytes;          /* its size on the disc: a sample's or tone's wave room, a file's length; 0 where unknown */
 } samplecd_entry;
 
+typedef enum samplecd_loop {
+	SAMPLECD_LOOP_NONE,       /* played once, start to end */
+	SAMPLECD_LOOP_FORWARD,    /* loop_start to loop_end over and over */
+	SAMPLECD_LOOP_ALTERNATE,  /* back and forth between them */
+} samplecd_loop;
+
+/* A sample's wave and how it plays.  Points are frames from the first frame stored, the ends exclusive.  A
+ * format's finer behaviour (an S-760/S-770 release loop, an AKAI sample's other seven loops) is left to mode. */
 typedef struct samplecd_sample {
-	uint32_t rate;       /* Hz */
-	int32_t key;         /* the original key, MIDI number; -1 unknown */
-	uint64_t frames;     /* the wave's length in sample frames (S-760/S-770: at most) */
+	uint32_t rate;           /* Hz */
+	int32_t key;             /* the original key, MIDI number; -1 unknown */
+	uint64_t frames;         /* the frames stored (S-760/S-770, S-550: the segments', the end padded) */
+	uint64_t start, end;     /* the frames played */
+	uint64_t loop_start, loop_end;  /* equal where loop is NONE */
+	samplecd_loop loop;
+	int reverse;             /* played from the end down to the start (and the loop, where one, run there) */
+	int mode;                /* the format's own loop mode code */
 } samplecd_sample;
 
 typedef struct samplecd samplecd;
@@ -86,11 +100,12 @@ const samplecd_entry *samplecd_entry_at(const samplecd *cd, size_t i);
 
 /* The entries entry i uses, by index, read from its record, each once in the order first used: an S-760/S-770
  * volume's performances, a performance's patches, a patch's partials, a partial's samples; an AKAI program's
- * samples (by name, in its volume); an S-550 patch's tones.  The count found is returned; at most max are written
- * to out.  0 for kinds that use nothing. */
+ * samples and a multi's programs (by name, in its volume); an S-550 patch's tones.  The count found is returned;
+ * at most max are written to out.  0 for kinds that use nothing. */
 size_t samplecd_refs(samplecd *cd, size_t i, size_t *out, size_t max);
 
-/* A sample's or tone's rate, key and length, read from its header; 0 where entry i has none or it cannot be read */
+/* A sample's or tone's rate, key, length and loop, read from its header; 0 where entry i has none or it cannot be
+ * read */
 int samplecd_sample_info(samplecd *cd, size_t i, samplecd_sample *out);
 
 #ifdef __cplusplus

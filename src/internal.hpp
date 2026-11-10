@@ -55,6 +55,9 @@ struct Disc {
 };
 
 // one per format: whether the image is one, its lists, what an entry uses, a sample's header
+// a sample's points kept within its frames, the loop within the frames played
+void clamp_points(samplecd_sample &s);
+
 namespace s7 {
 // S-760 or S-770, else unknown
 samplecd_format probe(const Image &im);
@@ -63,7 +66,9 @@ std::vector<size_t> refs(const Disc &d, size_t i);
 bool sample(const Disc &d, size_t i, samplecd_sample &out);
 }
 namespace akai {
-extern const uint8_t partition_header[196];
+// a partition header's 98 halfwords after its size: k times HEADER_STEP
+constexpr uint32_t HEADER_WORDS = 98;
+constexpr uint16_t HEADER_STEP = 0x0D05;
 // S1000 or S3000, else unknown
 samplecd_format probe(const Image &im);
 void list(Disc &d);

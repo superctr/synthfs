@@ -8,23 +8,7 @@ constexpr uint64_t BLOCK = 8192;
 constexpr int PARTITIONS = 26;
 constexpr uint32_t VOLUMES_AT = 0xCA, VOLUMES = 100, FAT_AT = 0x70A;
 constexpr uint16_t BLOCKS_MIN = 4, BLOCKS_MAX = 0x1E00;
-
-// what every partition header holds after its size
-const uint8_t partition_header[196] = {
-	0x00, 0x00, 0x05, 0x0D, 0x0A, 0x1A, 0x0F, 0x27, 0x14, 0x34, 0x19, 0x41, 0x1E, 0x4E, 0x23, 0x5B,
-	0x28, 0x68, 0x2D, 0x75, 0x32, 0x82, 0x37, 0x8F, 0x3C, 0x9C, 0x41, 0xA9, 0x46, 0xB6, 0x4B, 0xC3,
-	0x50, 0xD0, 0x55, 0xDD, 0x5A, 0xEA, 0x5F, 0xF7, 0x64, 0x04, 0x69, 0x11, 0x6E, 0x1E, 0x73, 0x2B,
-	0x78, 0x38, 0x7D, 0x45, 0x82, 0x52, 0x87, 0x5F, 0x8C, 0x6C, 0x91, 0x79, 0x96, 0x86, 0x9B, 0x93,
-	0xA0, 0xA0, 0xA5, 0xAD, 0xAA, 0xBA, 0xAF, 0xC7, 0xB4, 0xD4, 0xB9, 0xE1, 0xBE, 0xEE, 0xC3, 0xFB,
-	0xC8, 0x08, 0xCD, 0x15, 0xD2, 0x22, 0xD7, 0x2F, 0xDC, 0x3C, 0xE1, 0x49, 0xE6, 0x56, 0xEB, 0x63,
-	0xF0, 0x70, 0xF5, 0x7D, 0xFA, 0x8A, 0xFF, 0x97, 0x04, 0xA5, 0x09, 0xB2, 0x0E, 0xBF, 0x13, 0xCC,
-	0x18, 0xD9, 0x1D, 0xE6, 0x22, 0xF3, 0x27, 0x00, 0x2C, 0x0D, 0x31, 0x1A, 0x36, 0x27, 0x3B, 0x34,
-	0x40, 0x41, 0x45, 0x4E, 0x4A, 0x5B, 0x4F, 0x68, 0x54, 0x75, 0x59, 0x82, 0x5E, 0x8F, 0x63, 0x9C,
-	0x68, 0xA9, 0x6D, 0xB6, 0x72, 0xC3, 0x77, 0xD0, 0x7C, 0xDD, 0x81, 0xEA, 0x86, 0xF7, 0x8B, 0x04,
-	0x90, 0x11, 0x95, 0x1E, 0x9A, 0x2B, 0x9F, 0x38, 0xA4, 0x45, 0xA9, 0x52, 0xAE, 0x5F, 0xB3, 0x6C,
-	0xB8, 0x79, 0xBD, 0x86, 0xC2, 0x93, 0xC7, 0xA0, 0xCC, 0xAD, 0xD1, 0xBA, 0xD6, 0xC7, 0xDB, 0xD4,
-	0xE0, 0xE1, 0xE5, 0xEE
-};
+constexpr size_t MULTI_PARTS_AT = 0x400, MULTI_PARTS = 16, MULTI_PART = 0xC0;
 
 constexpr char charset[] = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ#+-.";
 
@@ -37,10 +21,15 @@ static std::vector<Partition> partitions(const Image &im)
 {
 	std::vector<Partition> out;
 	uint64_t pos = 0;
-	uint8_t h[198];
+	uint8_t h[2 + 2 * HEADER_WORDS];
 	while (out.size() < PARTITIONS && im.read(pos, h, sizeof h)) {
 		uint16_t blocks = le16(h);
-		if (blocks < BLOCKS_MIN || blocks > BLOCKS_MAX || memcmp(h + 2, partition_header, sizeof partition_header))
+		if (blocks < BLOCKS_MIN || blocks > BLOCKS_MAX)
+			break;
+		bool ok = true;
+		for (uint32_t k = 0; k < HEADER_WORDS && ok; k++)
+			ok = le16(h + 2 + 2 * k) == uint16_t(k * HEADER_STEP);
+		if (!ok)
 			break;
 		out.push_back({ pos, blocks });
 		pos += blocks * BLOCK;
@@ -61,6 +50,7 @@ static samplecd_kind kind_of(uint8_t type)
 	switch (type & 0x7F) {
 	case 'p': return SAMPLECD_PROGRAM;
 	case 's': return SAMPLECD_SAMPLE;
+	case 'm': return SAMPLECD_MULTI;
 	default: return SAMPLECD_OTHER;
 	}
 }
@@ -135,47 +125,102 @@ void list(Disc &d)
 	}
 }
 
+// file i's first max bytes, block by block along its partition's FAT
+static std::vector<uint8_t> read_file(const Disc &d, size_t i, uint64_t max)
+{
+	const samplecd_entry &e = d.entries[i];
+	if (e.parent == SAMPLECD_NONE || d.entries[e.parent].parent == SAMPLECD_NONE)
+		return {};
+	size_t part = d.entries[e.parent].parent;
+	uint64_t base = d.where[part], blocks = d.entries[part].bytes / BLOCK;
+	uint64_t left = std::min(max, e.bytes), b = (d.where[i] - base) / BLOCK;
+	std::vector<uint8_t> out;
+	while (left && b && b < blocks) {
+		auto chunk = d.image.read(base + b * BLOCK, size_t(std::min(left, BLOCK)));
+		if (chunk.empty())
+			break;
+		out.insert(out.end(), chunk.begin(), chunk.end());
+		left -= chunk.size();
+		uint8_t next[2];
+		if (!left || !d.image.read(base + FAT_AT + 2 * b, next, 2))
+			break;
+		b = le16(next);
+	}
+	return out;
+}
+
+// the entry of that kind and name in volume vol, or SAMPLECD_NONE
+static size_t in_volume(const Disc &d, size_t vol, samplecd_kind kind, const std::string &name)
+{
+	for (size_t j = vol + 1; j < d.entries.size() && d.entries[j].parent == vol; j++)
+		if (d.entries[j].kind == kind && name == d.entries[j].name)
+			return j;
+	return SAMPLECD_NONE;
+}
+
+static void add_ref(std::vector<size_t> &out, size_t j)
+{
+	if (j != SAMPLECD_NONE && std::find(out.begin(), out.end(), j) == out.end())
+		out.push_back(j);
+}
+
 // a program: a header, then its keygroups (150 bytes each on an S1000, 192 on an S3000), the count at +42; each
-// keygroup's four velocity zones name their samples at +34, +58, +82, +106, found by name in the volume
+// keygroup's four velocity zones name their samples at +34, +58, +82, +106.  A multi: 16 parts of 0xC0 bytes from
+// +0x400, each naming its program at +3.  Names are found in the same volume.
 std::vector<size_t> refs(const Disc &d, size_t i)
 {
 	const samplecd_entry &e = d.entries[i];
-	if (e.kind != SAMPLECD_PROGRAM || e.parent == SAMPLECD_NONE)
+	std::vector<size_t> out;
+	if (e.kind == SAMPLECD_MULTI) {
+		auto m = read_file(d, i, MULTI_PARTS_AT + MULTI_PARTS * MULTI_PART);
+		for (size_t k = 0; k < MULTI_PARTS && MULTI_PARTS_AT + (k + 1) * MULTI_PART <= m.size(); k++) {
+			std::string name = trimmed(name_of(&m[MULTI_PARTS_AT + k * MULTI_PART + 3]));
+			if (!name.empty())
+				add_ref(out, in_volume(d, e.parent, SAMPLECD_PROGRAM, name));
+		}
+		return out;
+	}
+	if (e.kind != SAMPLECD_PROGRAM)
 		return {};
 	size_t block = e.format == SAMPLECD_AKAI_S1000 ? 150 : 192;
-	auto pr = d.image.read(d.where[i], std::min<uint64_t>(e.bytes, block * 100));
+	auto pr = read_file(d, i, block * 100);
 	if (pr.size() < block || pr[0] != 1)
 		return {};
-	std::vector<size_t> out;
 	for (size_t k = 0; k < pr[42] && (k + 2) * block <= pr.size(); k++) {
 		const uint8_t *kg = &pr[(k + 1) * block];
 		if (kg[0] != 2)
 			break;
 		for (int z = 0; z < 4; z++) {
 			std::string name = trimmed(name_of(kg + 34 + 24 * z));
-			if (name.empty())
-				continue;
-			for (size_t j = e.parent + 1; j < d.entries.size() && d.entries[j].parent == e.parent; j++)
-				if (d.entries[j].kind == SAMPLECD_SAMPLE && name == d.entries[j].name) {
-					if (std::find(out.begin(), out.end(), j) == out.end())
-						out.push_back(j);
-					break;
-				}
+			if (!name.empty())
+				add_ref(out, in_volume(d, e.parent, SAMPLECD_SAMPLE, name));
 		}
 	}
 	return out;
 }
 
+// a sample's header: 3 at +0, the key at +2, the loops in use at +0x10, the loop mode at +0x13, the frames, start and
+// end at +0x1A, +0x1E, +0x22, eight loops of 12 bytes from +0x26 (the point a loop ends at, then its length at +6),
+// the rate at +0x8A
 bool sample(const Disc &d, size_t i, samplecd_sample &out)
 {
 	if (d.entries[i].kind != SAMPLECD_SAMPLE)
 		return false;
-	uint8_t h[0x8C];
-	if (!d.image.read(d.where[i], h, sizeof h) || h[0] != 3)
+	auto h = read_file(d, i, 0x8C);
+	if (h.size() < 0x8C || h[0] != 3)
 		return false;
-	out.rate = le16(h + 0x8A);
+	out.rate = le16(&h[0x8A]);
 	out.key = h[2] <= 127 ? h[2] : -1;
-	out.frames = le32(h + 0x1A);
+	out.frames = le32(&h[0x1A]);
+	out.start = le32(&h[0x1E]);
+	out.end = uint64_t(le32(&h[0x22])) + 1;
+	out.mode = h[0x13];
+	uint32_t at = le32(&h[0x26]), length = le32(&h[0x2C]);
+	if (h[0x10] && out.mode != 2 && length && length <= at && at <= out.frames) {
+		out.loop = SAMPLECD_LOOP_FORWARD;
+		out.loop_start = at - length;
+		out.loop_end = at;
+	}
 	return true;
 }
 

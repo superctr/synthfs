@@ -82,4 +82,14 @@ std::string trimmed(std::string_view s)
 	return std::string(s);
 }
 
+void clamp_points(samplecd_sample &s)
+{
+	s.end = std::min(s.end, s.frames);
+	s.start = std::min(s.start, s.end);
+	s.loop_end = std::min(std::max(s.loop_end, s.start), s.end);
+	s.loop_start = std::min(std::max(s.loop_start, s.start), s.loop_end);
+	if (s.loop_start == s.loop_end)
+		s.loop = SAMPLECD_LOOP_NONE;
+}
+
 }
