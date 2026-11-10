@@ -214,6 +214,22 @@ static int formatted(bool (*format)(const samplerfs_write_io &, const char *, st
 	return 0;
 }
 
+static int formatted_as(bool (*format)(const samplerfs_write_io &, std::string &), const samplerfs_write_io *io, char *err,
+	size_t err_size)
+{
+	if (!io || !io->write)
+		return say(err, err_size, "no writer given"), 0;
+	try {
+		std::string why;
+		if (format(*io, why))
+			return 1;
+		say(err, err_size, why.c_str());
+	} catch (...) {
+		say(err, err_size, "the image could not be written");
+	}
+	return 0;
+}
+
 int samplerfs_format_dos_floppy(const samplerfs_write_io *io, const char *label, char *err, size_t err_size)
 {
 	return formatted(fat::format_floppy, io, label, err, err_size);
@@ -222,6 +238,26 @@ int samplerfs_format_dos_floppy(const samplerfs_write_io *io, const char *label,
 int samplerfs_format_fat_disk(const samplerfs_write_io *io, const char *label, char *err, size_t err_size)
 {
 	return formatted(fat::format_disk, io, label, err, err_size);
+}
+
+int samplerfs_format_s760_disk(const samplerfs_write_io *io, char *err, size_t err_size)
+{
+	return formatted_as(roland::s700::format_s760_disk, io, err, err_size);
+}
+
+int samplerfs_format_s770_disk(const samplerfs_write_io *io, char *err, size_t err_size)
+{
+	return formatted_as(roland::s700::format_s770_disk, io, err, err_size);
+}
+
+int samplerfs_format_s760_floppy(const samplerfs_write_io *io, char *err, size_t err_size)
+{
+	return formatted_as(roland::s700::format_s760_floppy, io, err, err_size);
+}
+
+int samplerfs_format_s770_floppy(const samplerfs_write_io *io, char *err, size_t err_size)
+{
+	return formatted_as(roland::s700::format_s770_floppy, io, err, err_size);
 }
 
 const char *samplerfs_label(const samplerfs *fs)

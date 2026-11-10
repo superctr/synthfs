@@ -18,7 +18,7 @@ else()
 endif()
 
 add_library(samplerfs STATIC src/samplerfs.cpp src/image.cpp src/iso9660.cpp src/audio.cpp src/fat.cpp src/fat_format.cpp
-	src/roland/s700.cpp src/roland/s700_floppy.cpp src/roland/s550.cpp src/roland/wave.cpp
+	src/roland/s700.cpp src/roland/s700_floppy.cpp src/roland/s700_format.cpp src/roland/s550.cpp src/roland/wave.cpp
 	src/akai/s1000.cpp src/akai/s900.cpp
 	src/emu/emu.cpp)
 target_include_directories(samplerfs PUBLIC include)

@@ -16,6 +16,12 @@ std::string_view category(const uint8_t *name);
 std::string name_of(const uint8_t *p);
 // sector 0's line at +0x20: the system a disk was made with, a floppy's kind
 std::string system_line(const uint8_t *s0);
+// an empty volume written as the machine's own format leaves it: an S-760's or S-770's hard disk, an S-760's or
+// S-770's floppy; false with why where the image's size cannot be had
+bool format_s760_disk(const samplerfs_write_io &io, std::string &why);
+bool format_s770_disk(const samplerfs_write_io &io, std::string &why);
+bool format_s760_floppy(const samplerfs_write_io &io, std::string &why);
+bool format_s770_floppy(const samplerfs_write_io &io, std::string &why);
 }
 
 // an S-760's or S-770's disk: five lists of directory entries and records

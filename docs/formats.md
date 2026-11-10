@@ -36,8 +36,9 @@ volumes side by side.
 The S-700 series' disk layout, the same on a hard disk's, an MO's and a CD-ROM's: 512-byte sectors from the start
 of the image.
 
-**Sector 0**: four zero bytes, `S770 MR25A` at +4, the system line at +0x20 (32 characters), and at +0x114 five
-halfwords: how many slots each list has.  A count above its list's capacity is no volume.  The system line names
+**Sector 0**: four zero bytes, `S770 MR25A` at +4, the system line at +0x20 (32 characters), the disk's name at
++0x100 (16 characters), its last sector at +0x110 (a long), and at +0x114 five halfwords: how many slots each list
+has.  A count above its list's capacity is no volume.  The system line names
 the system the disc was made with, "S-760 System Disk Ver. 2.24" or "SYS-772 HardDisk Sys Ver. 2.25" (the S-770's
 and S-750's): a disc whose line starts `S-760` is an S-760 disc **[seen]**.  Sectors 2 to 0x403 hold that system's
 program where one was installed (zero on a disc without); nothing here reads them.
@@ -84,10 +85,13 @@ loop mode (+36), the rate (+44: 0 48 kHz, 1 44.1, 2 24, 3 22.05, 4 30, 5 15, 6 3
 | 6 | Rev | the same | from the start to the sustain loop's start |
   The wave is 16-bit linear, mono (a stereo
 sound is two samples), in segments of 18 sectors (4608 frames): segment *n* (from 2) at sector 0x15AC + 18 × (*n* −
-2), the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above end it).
+2), the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above end it).  The
+table's entry 0 is 0xFFFA and entry 1 the count of free segments; a free segment is 0, one past the disk's end
+0xFFFF.
 
-**The S-760's extended records** **[seen]**: a disc made on an S-760 reserves segments 2 to 58 (0xFFFE in the
-segment table, left zero) and 59 to 115 (0xFFFD): the latter hold the extended partials, 4096 records of 128
+**The S-760's extended records**: a disc formatted on an S-760 reserves segments 2 to 58 (0xFFFE in the segment
+table, left as they were) and 59 to 115 (0xFFFD), and marks the table's entry 0xFFFE with 0xFFFE (0xFFFF on an
+S-770's disc; an S-760 refuses a disc with anything else there): the reserved segments hold the extended partials, 4096 records of 128
 bytes from sector 0x19AE, record *n* the partial *n*'s four sub-sample blocks (32 bytes each, a copy of a sample
 record's bytes 16 to 47) and their enable bytes at +0x7C to +0x7F.  The extended performance is the last 128 bytes
 of the performance record (+0x180).  None of the discs here uses a sub-sample; the library reads neither.
@@ -362,7 +366,8 @@ the whole file, start to end.  Neither the channels nor the sample width are giv
 ## Formatting
 
 A formatter writes an empty volume over a blank image of the size the host gives, writing the volume's structures
-only (its reserved area, FATs and root directory zeroed first) and leaving the data area as it was.  A size the
+only (a FAT volume's reserved area, FATs and root directory zeroed first) and leaving the data area as it was; an
+S-700 series floppy is written whole, as the machines' format writes it.  A size the
 layout cannot have, or a label it cannot hold, fails before anything is written.
 
 **A DOS floppy**: FAT12 with Microsoft's standard geometry, 512-byte sectors, one reserved sector, two FATs:
@@ -391,18 +396,47 @@ FATs' first entries (the media byte, end marks; on FAT32 cluster 2's end mark to
 volume label entry in the root directory where a label is given (up to 11 characters a short name may hold, letters
 upper-cased), dated now.
 
-**S-760 and S-770 media are not formatted.**  What this file knows of the S-700 series' layout is what a reader
-needs, and a blank volume needs more.  Undetermined for an empty disk: sector 0's bytes other than the ID, the
-zero at 0x0E and 0x0F, and the counts (0x10 to 0x1F, 0x40 to 0x113, 0x11E to the end); what its system line says
-when no system was installed; whether an empty disk's five counts are zero; where (if anywhere) the disk's size
-in segments is kept; sector 1; the segment table's mark for a free segment, its entries for segments 0 and 1 and
-past the disk's end, and whether an S-760's reserved segments (0xFFFE, 0xFFFD) are marked at formatting or at the
-first save; the bytes of an empty directory slot (only its first byte's not being printable is read) and of an
-unused record, the S-760's extended partial records among them.  Undetermined for an empty floppy: which of `:` and
-`;` is 2HD and which 2DD; the lines at 0x10, 0x20 and 0x30 of a formatted disk; the rest of sector 0 (the counts,
-the volume's name, the bytes between the documented fields); sectors 1 to 8 and 247 to 251; the bytes of the
-empty name and record areas; and whether a formatted disk (`:`, `;`) or an empty sound disk is what a machine
-saves to.
+**An S-760 or S-770 hard disk** (or MO), as the machine's own format leaves it.  The two differ only where said:
+
+| Sectors | What the format writes |
+|---|---|
+| 0 | the header below |
+| 1 | 0xFF |
+| 2 to 0x403 | nothing: the system's room, left as it was |
+| 0x404 to 0x503 | the segment table, 65 536 halfwords, below |
+| 0x504 to 0x86B | the five directories, zero |
+| 0x86C to 0x15AB | the five record areas, 0xFF |
+| 0x19AE to 0x1DAD | S-760 only: the extended partial table (segments 59 to 115), 0xFF |
+| the rest | nothing |
+
+Sector 0: four zero bytes, `S770 MR25A`, zero at 0x0E and 0x0F; at 0x10 fifteen spaces and a zero; at 0x20 the system
+line and a zero (" S-760 System Disk    Ver. 2.24" on an S-760, " SYS-772 HardDisk Sys Ver. 2.25" on an S-770 or
+S-750, each with its leading space); at 0x40 "       Copyright   Roland      " and a zero; 0xFF from 0x60 to 0xFF; the
+name "ID0:Formatted   " at 0x100, whatever the drive's SCSI ID; at 0x110 the last sector (a long, below); the five
+counts zero; 0xFF from 0x11E to the end.  Byte 0x0F stays zero: an S-760 sets it to `@` only when its system is saved
+to the disk.
+
+The size: the last sector kept at 0x110 is the disk's last (its sector count less one), at most 0x1214D4; the segments
+are the whole ones from sector 0x15AC up to that sector, (last − 0x15AC) ÷ 18 rounded down, at most 65 524
+(segments 2 to 65 525).  A disk with a whole segment ending exactly on its last sector does not use that segment.  A
+disk larger than about 579 MB has the same table as one of that size, and its rest is never used.  The segment table:
+entry 0 0xFFFA; entry 1 the free segments (all of them on an S-770; 114 fewer on an S-760); a zero for each segment
+the disk has (on an S-760, 0xFFFE for segments 2 to 58 and 0xFFFD for 59 to 115 instead); 0xFFFF for the rest, but for
+entry 0xFFFE, which an S-760 sets to 0xFFFE.  A disk needs at least one free segment: more than 7 618 sectors on an
+S-760 (3.9 MB), 5 566 on an S-770.  The machines' own format writes these bytes and no others whatever the disk's size
+(tried from 10 MB to 2 GB) and SCSI ID, whether or not it is asked to format the medium first.
+
+When it mounts a disk, an S-760 checks sector 0's first 15 bytes (the zeros, the ID and the zero at 0x0E) and the
+segment table's entry 0xFFFE (0xFFFF or 0xFFFE, else it calls the disk unformatted); an S-770 checks the 15 bytes.
+
+**An S-760 or S-770 floppy**: the machines format a floppy as their formatted disk, the kind a sound volume is saved
+to (neither makes an empty sound disk: a sound disk is what a save leaves).  Every sector is written: sector 0 the
+header, every other sector the format's fill, 0x0F.  Sector 0 as on a hard disk to 0x60, with the kind at 0x0F, `:`
+on a 2HD disk and `;` on a 2DD one, and the line " S-760 Formatted Disk Ver. 2.24" or " SYS-772 Formatted    Ver.
+2.25" at 0x20; 0xFF from 0x60 to the end.  Each machine saves to either's formatted disk.
+
+**What is not formatted**: an S-760's Volume Dump FD disk (kind `<`, `=`: the format's floppy with a header of its
+own) and the system disks; a DJ-70's floppy, whose format was not read.
 
 ## Not read yet
 

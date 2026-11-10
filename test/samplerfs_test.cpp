@@ -9,6 +9,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 static int failures = 0;
@@ -948,6 +949,122 @@ static void test_format_fat()
 	CHECK(!samplerfs_format_fat_disk(&none, nullptr, err, sizeof err));
 }
 
+// ---- S-700 series formatting: each layout checked byte by byte against what the machines' own format writes, and
+// read back as an empty volume
+
+// the first 96 bytes of an S-700 series sector 0 as a machine writes them: the ID, the kind at 0x0F, a line of 15
+// spaces, the system line, the copyright line, each line ending in a zero
+static Bytes s700_head(uint8_t kind, const char *line)
+{
+	Bytes h(0x60, 0);
+	memcpy(&h[4], "S770 MR25A", 10);
+	h[0x0F] = kind;
+	memset(&h[0x10], ' ', 15);
+	memcpy(&h[0x20], line, 31);
+	memcpy(&h[0x40], "       Copyright   Roland      ", 31);
+	return h;
+}
+
+static bool all_of_byte(const Sparse &img, uint64_t sector, uint64_t sectors, uint8_t b)
+{
+	Bytes s(sectors * 512), want(sectors * 512);
+	img.get(sector * 512, s.data(), s.size());
+	memset(want.data(), b, want.size());
+	return !memcmp(s.data(), want.data(), s.size());
+}
+
+static void check_s700_read(Sparse &img, samplerfs_format format, samplerfs_medium medium, const char *label)
+{
+	samplerfs_io io = io_of(img);
+	samplerfs_medium m;
+	CHECK(samplerfs_probe(&io, &m) == format && m == medium);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs && samplerfs_format_of(fs) == format && samplerfs_medium_of(fs) == medium);
+	if (fs) {
+		CHECK(samplerfs_count(fs) == 0 && !strcmp(samplerfs_label(fs), label));
+		samplerfs_close(fs);
+	}
+}
+
+static void test_format_s700()
+{
+	char err[128];
+	// disks: the last sector kept (up to 0x1214D4), the whole segments below it from sector 0x15AC (a segment ending
+	// on the last sector not among them)
+	struct Case {
+		uint64_t sectors;
+		uint32_t last, segments;
+	};
+	for (bool s760 : { true, false })
+		for (Case c : { Case { 19999, 19998, 802 }, Case { 0x15AC + 18 * 300, 0x15AC + 18 * 300 - 1, 299 },
+			     Case { 2048000, 0x1214D4, 65524 } }) {
+			Sparse img(c.sectors * 512);
+			const uint8_t junk[512] = { 0xA5 };
+			img.put(2 * 512, junk, 512);
+			img.put(0x15AC * 512, junk, 512);
+			samplerfs_write_io w = writer_of(img);
+			CHECK(s760 ? samplerfs_format_s760_disk(&w, err, sizeof err) : samplerfs_format_s770_disk(&w, err, sizeof err));
+			uint8_t s0[512];
+			img.get(0, s0, 512);
+			Bytes head = s700_head(0, s760 ? " S-760 System Disk    Ver. 2.24" : " SYS-772 HardDisk Sys Ver. 2.25");
+			CHECK(!memcmp(s0, head.data(), 0x60));
+			CHECK(std::all_of(s0 + 0x60, s0 + 0x100, [](uint8_t b) { return b == 0xFF; }));
+			CHECK(!memcmp(s0 + 0x100, "ID0:Formatted   ", 16) && img.get32(0x110) == c.last);
+			CHECK(std::all_of(s0 + 0x114, s0 + 0x11E, [](uint8_t b) { return !b; }));
+			CHECK(std::all_of(s0 + 0x11E, s0 + 512, [](uint8_t b) { return b == 0xFF; }));
+			CHECK(all_of_byte(img, 1, 1, 0xFF));
+			// the segment table
+			const uint64_t t = 0x404 * 512;
+			uint32_t reserved = s760 ? 114 : 0;
+			CHECK(img.get16(t) == 0xFFFA && img.get16(t + 2) == c.segments - reserved);
+			Bytes table(0x100 * 512);
+			img.get(t, table.data(), table.size());
+			bool same = true;
+			for (uint32_t n = 2; n < 65536; n++) {
+				uint16_t want = n >= 2 + c.segments ? 0xFFFF : n < 59 && s760 ? 0xFFFE : n < 116 && s760 ? 0xFFFD : 0;
+				if (n == 0xFFFE && s760)
+					want = 0xFFFE;
+				same = same && (table[2 * n] | table[2 * n + 1] << 8) == want;
+			}
+			CHECK(same);
+			CHECK(all_of_byte(img, 0x504, 0x368, 0) && all_of_byte(img, 0x86C, 0xD40, 0xFF));
+			// the S-760's extended partials 0xFF; segments 2 to 58 and the system's sectors left as they were
+			CHECK(all_of_byte(img, 0x19AE, 0x400, 0xFF) == s760);
+			CHECK(img.get16(2 * 512) == 0xA5 && img.get16(0x15AC * 512) == 0xA5);
+			check_s700_read(img, s760 ? SAMPLERFS_S760 : SAMPLERFS_S770, SAMPLERFS_MEDIUM_DISK,
+				s760 ? "S-760 System Disk    Ver. 2.24" : "SYS-772 HardDisk Sys Ver. 2.25");
+		}
+	for (auto [sectors, ok760, ok770] : std::vector<std::tuple<uint64_t, bool, bool>> { { 7619, true, true },
+		     { 7618, false, true }, { 5567, false, true }, { 5566, false, false }, { 100, false, false } }) {
+		Sparse img(sectors * 512);
+		samplerfs_write_io w = writer_of(img);
+		err[0] = 0;
+		CHECK(samplerfs_format_s760_disk(&w, err, sizeof err) == ok760 && (ok760 || err[0]));
+		CHECK(samplerfs_format_s770_disk(&w, err, sizeof err) == ok770);
+	}
+	Sparse odd(100000 * 512 + 1);
+	samplerfs_write_io w = writer_of(odd);
+	CHECK(!samplerfs_format_s760_disk(&w, err, sizeof err));
+
+	// floppies: sector 0, every other sector the format's fill
+	for (bool s760 : { true, false })
+		for (uint64_t sectors : { 1440, 2880 }) {
+			Sparse img(sectors * 512);
+			samplerfs_write_io fw = writer_of(img);
+			CHECK(s760 ? samplerfs_format_s760_floppy(&fw, err, sizeof err) : samplerfs_format_s770_floppy(&fw, err, sizeof err));
+			uint8_t s0[512];
+			img.get(0, s0, 512);
+			const char *line = s760 ? " S-760 Formatted Disk Ver. 2.24" : " SYS-772 Formatted    Ver. 2.25";
+			Bytes head = s700_head(sectors == 2880 ? ':' : ';', line);
+			CHECK(!memcmp(s0, head.data(), 0x60) && std::all_of(s0 + 0x60, s0 + 512, [](uint8_t b) { return b == 0xFF; }));
+			CHECK(all_of_byte(img, 1, sectors - 1, 0x0F));
+			check_s700_read(img, s760 ? SAMPLERFS_S760 : SAMPLERFS_S770, SAMPLERFS_MEDIUM_FLOPPY, line + 1);
+		}
+	Sparse other(1200 * 1024);
+	w = writer_of(other);
+	CHECK(!samplerfs_format_s760_floppy(&w, err, sizeof err) && !samplerfs_format_s770_floppy(&w, err, sizeof err));
+}
+
 static void test_others()
 {
 	Bytes b(4096, 0);
@@ -1279,6 +1396,7 @@ int main()
 	test_iso();
 	test_fat();
 	test_format_fat();
+	test_format_s700();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);

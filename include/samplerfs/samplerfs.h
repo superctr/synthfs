@@ -156,6 +156,17 @@ int samplerfs_format_dos_floppy(const samplerfs_write_io *io, const char *label,
  * (docs/formats.md, "Formatting") */
 int samplerfs_format_fat_disk(const samplerfs_write_io *io, const char *label, char *err, size_t err_size);
 
+/* The S-700 series' media, as the machines' own format leaves them; they hold no label.  A hard disk (or MO) of
+ * whole sectors, its segments counted from its size (up to about 579 MB; a larger disk's rest is unused): */
+/* as an S-760 (system 2.24) formats it, with the S-760's reserved segments; more than 3.9 MB */
+int samplerfs_format_s760_disk(const samplerfs_write_io *io, char *err, size_t err_size);
+/* as an S-770 or S-750 (SYS-772 2.25) formats it; more than 2.9 MB */
+int samplerfs_format_s770_disk(const samplerfs_write_io *io, char *err, size_t err_size);
+/* A formatted floppy, what a sound volume is saved to: 720 KB (2DD) or 1.44 MB (2HD), every sector written, as an
+ * S-760 or as an S-770 formats it */
+int samplerfs_format_s760_floppy(const samplerfs_write_io *io, char *err, size_t err_size);
+int samplerfs_format_s770_floppy(const samplerfs_write_io *io, char *err, size_t err_size);
+
 #ifdef __cplusplus
 }
 #endif
