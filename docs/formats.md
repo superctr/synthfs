@@ -76,8 +76,11 @@ loop mode (+36), the rate (+44: 0 48 kHz, 1 44.1, 2 24, 3 22.05, 4 30, 5 15, 6 3
 sound is two samples), in segments of 18 sectors (4608 frames): segment *n* (from 2) at sector 0x15AC + 18 × (*n* −
 2), the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above end it).
 
-**Open**: on a floppy an S-760 volume carries extended performance and partial records (the sub-samples); where
-an S-760 keeps them on a hard disk or CD-ROM is not known.
+**The S-760's extended records** **[seen]**: a disc made on an S-760 reserves segments 2 to 58 (0xFFFE in the
+segment table, left zero) and 59 to 115 (0xFFFD): the latter hold the extended partials, 4096 records of 128
+bytes from sector 0x19AE, record *n* the partial *n*'s four sub-sample blocks (32 bytes each, a copy of a sample
+record's bytes 16 to 47) and their enable bytes at +0x7C to +0x7F.  The extended performance is the last 128 bytes
+of the performance record (+0x180).  None of the discs here uses a sub-sample; the library reads neither.
 
 ## S-550
 
@@ -175,7 +178,6 @@ only where it holds some, at any depth.  Rock Ridge and Joliet names are not rea
 
 ## Not read yet
 
-- The S-760's extended records on a hard disk or CD-ROM.
 - S-550: the patches' and tones' other parameters; a W-30 hard disk's layout.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.
