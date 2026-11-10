@@ -1,13 +1,14 @@
 # samplerfs
 
-Sampler disk images (CD-ROMs, hard disks) read: the format told (Roland S-550, S-760, S-770, AKAI S1000 and S3000,
-E-mu, ISO 9660), the sounds listed, what each uses (an S-760/S-770 volume's performances down to a partial's
-samples, an AKAI program's samples and a multi's programs, an S-550 patch's tones) and a sample's rate, key, length
-and loop.  C++20 inside, a C interface (`include/samplerfs/samplerfs.h`), no dependencies.
+Sampler disk images (CD-ROMs, hard disks, floppies) and wave expansion ROMs read: the format and the medium told
+(Roland S-550, S-330, W-30, S-760, S-770 and DJ-70, AKAI S1000 and S3000, E-mu and ISO 9660 disks; Roland SR-JV80 and
+SRX boards and SO-PCM1 cards), the sounds listed, what each uses (an S-760/S-770 volume's performances down to a
+partial's samples, an AKAI program's samples and a multi's programs, an S-550 patch's tones), a sample's rate, key,
+length and loop, and a board's banks of patches and rhythm sets and its waves by name.  C++20 inside, a C interface (`include/samplerfs/samplerfs.h`), no dependencies.
 
 The image is read through the host's callback (`samplerfs_io`: n bytes at an offset), so a file, a buffer or a
-stream all work; `samplerfs_open_file` opens a file.  Plain images (`.iso`, `.cdr`) and raw sector ones (`.bin`) both
-read.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).
+stream all work; `samplerfs_open_file` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`)
+both read; a board or card is read as dumped.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).
 
 ```c
 samplerfs *fs = samplerfs_open_file("disc.iso", err, sizeof err);

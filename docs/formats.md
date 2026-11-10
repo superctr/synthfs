@@ -1,19 +1,26 @@
 # The formats
 
 What samplerfs reads of each format.  Every number is little-endian unless it says otherwise.  **[seen]** marks
-what the discs at hand show and the library relies on without a machine's reading behind it.
+what the images at hand show and the library relies on without a machine's reading behind it.
+
+Each image is also of a medium: a disk (a hard disk's, MO's or CD-ROM's image, which share their layouts), a
+floppy, a card or a board.
 
 ## Telling them apart
 
 Tried in this order:
 
-| Format | Test |
-|---|---|
-| S-760, S-770 | four zero bytes and `S770 MR25A` at byte 0, five list counts within their capacities; the system line tells which |
-| S-550 | `* ROLAND S-550 *` at byte 0 |
-| AKAI S1000, S3000 | a partition header at byte 0 (below); S3000 where any volume is one |
-| E-mu | `EMU3` (EIII, E-IV) or `EMX2` (Emax II) at byte 0 |
-| ISO 9660 | `\1CD001` at byte 0x8000 |
+| Format | Medium | Test |
+|---|---|---|
+| S-760, S-770 | disk | four zero bytes and `S770 MR25A` at byte 0, then a zero, byte 0x0F zero or `@`, five list counts within their capacities; the system line tells which |
+| S-760, S-770, DJ-70 | floppy | four zero bytes, `S770 MR25A` and a zero at byte 0, a kind character at 0x0F, 2 MB at most; the kind line tells which |
+| S-550 | disk | `* ROLAND S-550 *` at byte 0 |
+| S-550, S-330, W-30, S-50 | floppy | four zero bytes and the system's ID at byte 0, 2 MB at most |
+| SR-JV80 | card, board | `Roland JV80`, `O` at byte 0x0C and `S` at 0x0E, 1, 2, 4 or 8 MB |
+| SRX | board | `Roland SRX` at byte 0, 32 MB |
+| AKAI S1000, S3000 | disk | a partition header at byte 0 (below); S3000 where any volume is one |
+| E-mu | disk | `EMU3` (EIII, E-IV) or `EMX2` (Emax II) at byte 0 |
+| ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 
 An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -82,6 +89,42 @@ bytes from sector 0x19AE, record *n* the partial *n*'s four sub-sample blocks (3
 record's bytes 16 to 47) and their enable bytes at +0x7C to +0x7F.  The extended performance is the last 128 bytes
 of the performance record (+0x180).  None of the discs here uses a sub-sample; the library reads neither.
 
+### On a floppy
+
+A volume on a floppy has the same records in another map; 512-byte sectors, 1440 of them on a 2DD disk and 2880 on
+a 2HD one.
+
+| Sectors | What |
+|---|---|
+| 0 | the header and the volume |
+| 9-10, 11-14, 15-22, 23-38 | the names of the performances (64), patches (128), partials (256) and samples (512), 16 bytes each |
+| 39-70 | performance records, 256 bytes, two to a sector |
+| 71-134 | patch records, 256 bytes |
+| 135-198 | partial records, 128 bytes, four to a sector |
+| 199-246 | sample records, 48 bytes, ten to a sector (the last 32 bytes of each unused): 480 samples |
+| 252- | the waves, segment *n* at sector 252 + 18*n* |
+
+**Sector 0**: four zero bytes, `S770 MR25A`, a zero, and at 0x0F the disk's kind: `2` and `3` a sound disk (2HD,
+2DD), `>` a DJ-70's sound disk **[seen]**, `P` and `Q` an S-760 system disk, `:` and `;` a formatted one, `<` and
+`=` a Volume Dump FD disk, `0` and `1` an S-770 system disk.  Then three 32-byte lines from 0x10, the second the
+kind and the system that wrote it ("S-760 Sound Disk     Ver. 2.24", "SYS-772 Sound Disk   Ver. 2.0Q", "DJ-70
+Sound Disk   Ver. 1.02"), which tells the format and is the label.  At 0x100 the disk's number in a set and at
+0x101 1 where the volume runs over several disks (0xFF while a save is under way: such a disk lists nothing); the
+counts of volumes (0 or 1), performances, patches, partials and samples, halfwords from 0x106; the volume's segment
+total at 0x110; its name at 0x180 and its performances from 0x1A0, a byte each up to 0xFF.  Only sound disks list
+anything.
+
+**The lists**: the first *count* names of each, an entry whose first byte is not printable an empty slot.  A
+performance names its parts' patches in bytes at +0x10 (0xFF none), a patch its keys' partials in 88 bytes at
++0x20, a partial its samples as on a disk.  A sample record is the disk's, with the sample's place at +0x28 (the
+disk of its set in the high byte, the segment in the low) and its segments at +0x2A.  Every disk of a set carries
+the whole volume's lists and records; a sample's wave may lie on another disk of the set, or run over two.  An S-760
+disk whose byte 0x1FF is 0xFE keeps its extended records in sectors 252 to 331 of its first disk, and its waves start
+at segment 5; the library reads neither.
+
+A volume may be saved without its upper levels: some of Roland's S-760 disks hold a patch and its partials with no
+volume or performance **[seen]**.
+
 ## S-550
 
 The S-550's and W-30's SCSI format, as Roland's S-550 library CD-ROMs have it; 512-byte blocks, numbers
@@ -121,6 +164,17 @@ and the loop point (+0x16) as 24-bit words counted from that first segment, and 
 waves.
 
 **The waves** are 12-bit samples left in 16-bit little-endian words, the low four bits zero **[seen]**.
+
+### On a floppy
+
+A 2DD floppy of 512-byte sectors.  Sector 0: four zero bytes and the system's ID (`S550 MT25B` and `S500 MT25B` an
+S-550's, `S330 MT25C` and `S300 MT25C` an S-330's, `W-30` a W-30's, `S-50 MT25A` and `S-51 MT25A` an S-50's), two
+bytes, and the system line at 0x20, the label.  The area is sectors 126 to 143 and the waves after them, as on a
+disk, but packed: three bytes hold two 12-bit samples, `b0 b1 b2` giving `b0 << 4 | b1 >> 4` and `b2 << 4 | b1 &
+0x0F`.  The disk's name, at +0x33 of the function sector (134), names the area; a disk whose patches and tones are
+all blank (an S-330 system or utility disk) lists none.  The S-330's and W-30's parameters are read as the S-550's:
+the S-330 disks here list sensibly so **[seen]**; no W-30 disk is at hand.  An S-50 disk is another layout and is
+told apart only.
 
 ## AKAI
 
@@ -170,6 +224,55 @@ ends at (a long), a fraction (+4), its length (+6, a long) and a hold time (+10,
 samples hold loops that fall outside them, and the library takes it as no loop; on the others it gives the first
 loop where it lies within the sample **[seen]**.
 
+## Roland wave expansion boards and cards
+
+The ROMs as dumped: the socket rewires the address and data lines, so the library reads each byte through the
+wiring.  Within each block of 2^19 bytes (an SR-JV80's) or 2^18 (an SRX's), descrambled address bit *k* is the
+dump's bit *L*[*k*], and data bit *k* is the dump's bit *D*[*k*]:
+
+| | Lines |
+|---|---|
+| SR-JV80 address | 2, 0, 3, 4, 1, 9, 13, 10, 18, 17, 6, 15, 11, 16, 8, 5, 12, 7, 14 |
+| SRX address | 0, 4, 2, 3, 1, 13, 7, 12, 5, 10, 16, 9, 6, 8, 14, 17, 11, 15 |
+| data, both | 2, 0, 4, 5, 7, 6, 3, 1 |
+
+The first 32 bytes are plain in the dump: `Roland JV80 ` or `Roland SRX`, then from 0x10 the board's name ("SR-JV80-06
+Dance", "Card01   Ver0.10"), the label.  Numbers are big-endian.
+
+**SR-JV80 boards and SO-PCM1 cards** share the format.  An image of 1 MB, or of 2 MB named `SO-PCM1` or `Card`, is
+a card; the rest are boards (8 MB, or 2 MB for the Experience boards).  Each 1 MB block starts with a header (the
+board's ID and date at 0x20 and 0x30), whose slots *n* give a type byte at 0x50 + *n*, a count at 0x60 + 2*n* and
+the address of their records at 0x80 + 4*n*:
+
+| Slot | Type | What | Record |
+|---|---|---|---|
+| 0 | 2 | samples | 18 bytes (not listed) |
+| 1 | 1 | waves | 60 bytes, the name first (12 characters) |
+| 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first |
+| 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up |
+| 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed |
+| 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's |
+
+A board carrying both shapes keeps one in block 0 and the other in a later block; a block repeating a slot of
+another lists it once.  Each slot of patches or rhythm sets is a bank, tagged with its type **[seen]**.
+
+**SRX boards**: the name at descrambled 0x20 (16 characters), the short name at 0x3A, the board's number at 0x40 and
+the directory's count at 0x42; the directory's 16-byte entries from 0x80, each a class and a type (halfwords), the
+address of its table and its length.  A table starts with a count (a halfword), the offset of its records from the
+table (a long, +4) and their stride (+8).
+
+| Class | Type | What |
+|---|---|---|
+| 1 | 4 | samples, 24 bytes (not listed) |
+| 2 | 3 | waves: 8-byte records, the offset of the wave's definition from the table and its length; the definition starts with the name (12 characters) |
+| 4 | 6, 7, 8, 9 | patch banks for four host families (574 bytes a patch; 646 on type 9) |
+| 5 | 5, 6, 7 | rhythm set banks likewise |
+
+A patch's or rhythm set's name is twelve 7-bit characters packed from the first byte's top bit down.  A board holds
+the same sounds in each of its banks, one per host family; each bank is listed and tagged `class:type`, and the
+host picks the one its machine reads **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only
+**[seen]**.
+
 ## ISO 9660
 
 The primary volume descriptor at sector 16: the volume's ID at +40, the root directory's record at +156.  The tree
@@ -178,6 +281,11 @@ only where it holds some, at any depth.  Rock Ridge and Joliet names are not rea
 
 ## Not read yet
 
-- S-550: the patches' and tones' other parameters; a W-30 hard disk's layout.
+- S-550: the patches' and tones' other parameters; a W-30 hard disk's layout; a W-30 floppy (none at hand).
+- S-50 floppies: told apart only.
+- S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves across its disks.
+- Boards and cards: the samples' and waves' parameters and the patches' other fields; the SO-JD80 cards (JD-800,
+  JD-990), another format.
+- AKAI floppies: none at hand.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.

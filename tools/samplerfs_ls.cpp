@@ -12,9 +12,9 @@
 #include <vector>
 
 static const char *kinds[] = { "partition", "volume", "performance", "patch", "partial", "sample", "program", "other",
-	"directory", "file", "area", "tone", "multi" };
+	"directory", "file", "area", "tone", "multi", "bank", "rhythm set", "wave" };
 static const char *plurals[] = { "partitions", "volumes", "performances", "patches", "partials", "samples", "programs", "others",
-	"directories", "files", "areas", "tones", "multis" };
+	"directories", "files", "areas", "tones", "multis", "banks", "rhythm sets", "waves" };
 
 static const char *base(const char *path)
 {
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 		std::map<int, size_t> counts;
 		for (size_t i = 0; i < n; i++)
 			counts[samplerfs_entry_at(fs, i)->kind]++;
-		printf("%-11s", samplerfs_format_name(samplerfs_format_of(fs)));
+		printf("%-11s %-6s", samplerfs_format_name(samplerfs_format_of(fs)), samplerfs_medium_name(samplerfs_medium_of(fs)));
 		for (auto [k, c] : counts)
 			printf(" %zu %s", c, c > 1 ? plurals[k] : kinds[k]);
 		printf("  %s%s%s\n", base(argv[a]), *samplerfs_label(fs) ? "  " : "", samplerfs_label(fs));

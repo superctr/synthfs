@@ -1,5 +1,6 @@
 /* Copyright 2026 Ian Karlsson
- * samplerfs: sampler disk images (CD-ROMs, hard disks) read: the format told, the sounds listed, what each uses. */
+ * samplerfs: sampler disk images (CD-ROMs, hard disks, floppies) and wave expansion boards and cards read: the format
+ * told, the sounds listed, what each uses. */
 #ifndef SAMPLERFS_H
 #define SAMPLERFS_H
 
@@ -28,7 +29,23 @@ typedef enum samplerfs_format {
 	SAMPLERFS_ISO9660,     /* a plain CD-ROM; its WAV and AIFF files listed */
 	SAMPLERFS_EMU3,        /* E-mu EIII / E-IV */
 	SAMPLERFS_EMAX2,       /* E-mu Emax II */
+	SAMPLERFS_S330,        /* Roland S-330 / S-300 floppy: one area, the S-550's layout */
+	SAMPLERFS_W30,         /* Roland W-30 floppy: one area, the S-550's layout */
+	SAMPLERFS_S50,         /* Roland S-50 floppy: told apart, not listed */
+	SAMPLERFS_DJ70,        /* Roland S-700 series volume on a floppy made on a DJ-70 or DJ-70mkII */
+	SAMPLERFS_SRJV80,      /* Roland SR-JV80 wave expansion board or SO-PCM1 card, as dumped */
+	SAMPLERFS_SRX,         /* Roland SRX wave expansion board, as dumped */
 } samplerfs_format;
+
+/* What the image is of.  A hard disk, an MO and a CD-ROM share their layout and are all DISK; the host knows which
+ * from where the image came. */
+typedef enum samplerfs_medium {
+	SAMPLERFS_MEDIUM_UNKNOWN = 0,
+	SAMPLERFS_MEDIUM_DISK,     /* a hard disk's, MO's or CD-ROM's image */
+	SAMPLERFS_MEDIUM_FLOPPY,   /* a floppy's sectors, end to end */
+	SAMPLERFS_MEDIUM_CARD,     /* a PCM card's ROM */
+	SAMPLERFS_MEDIUM_BOARD,    /* a wave expansion board's ROM */
+} samplerfs_medium;
 
 typedef enum samplerfs_kind {
 	SAMPLERFS_PARTITION,    /* AKAI: a partition, named A to Z */
@@ -44,6 +61,9 @@ typedef enum samplerfs_kind {
 	SAMPLERFS_AREA,         /* S-550: an area, a disk's worth of patches and tones */
 	SAMPLERFS_TONE,         /* S-550: a tone, a wave and its settings */
 	SAMPLERFS_MULTI,        /* AKAI S3000: a multi, its parts' programs */
+	SAMPLERFS_BANK,         /* a board or card: its patches or rhythm sets in one record shape, the shape in tag */
+	SAMPLERFS_RHYTHM_SET,   /* a board or card: a rhythm set (named only in the later shapes) */
+	SAMPLERFS_WAVE,         /* a board or card: a wave, the sound a patch's tone names */
 } samplerfs_kind;
 
 #define SAMPLERFS_NONE ((size_t)-1)
@@ -52,10 +72,12 @@ typedef struct samplerfs_entry {
 	samplerfs_kind kind;
 	samplerfs_format format;  /* the format of the volume or area it is in (an AKAI disk mixes S1000 and S3000) */
 	uint32_t number;         /* its place in its list on the disk, from 0 (the slot the machine numbers from 1) */
-	size_t parent;           /* the entry that holds it (a partition's volume, a volume's file, an area's tone), or SAMPLERFS_NONE */
+	size_t parent;           /* the entry that holds it (a partition's volume, a volume's file, an area's tone, a bank's
+	                            patch), or SAMPLERFS_NONE */
 	char name[64];           /* UTF-8, trailing blanks dropped; an ISO 9660 file's without its version */
-	char tag[8];             /* the disk's own code: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type
-	                            letter (p, s, x, d, q, t, m, c), an S-550 area's category number; else empty */
+	char tag[8];             /* the image's own code: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type
+	                            letter (p, s, x, d, q, t, m, c), an S-550 area's category number, a bank's record shape
+	                            (an SR-JV80's type, 2 to 5; an SRX's class and type, "4:6"); else empty */
 	uint64_t bytes;          /* its size on the disk: a sample's or tone's wave room, a file's length; 0 where unknown */
 } samplerfs_entry;
 
@@ -80,8 +102,9 @@ typedef struct samplerfs_sample {
 
 typedef struct samplerfs samplerfs;
 
-/* The format alone, from the first sectors (cheap: for a scan of many images) */
-samplerfs_format samplerfs_probe(const samplerfs_io *io);
+/* The format alone, from the first sectors (cheap: for a scan of many images), and what the image is of in *medium
+ * where medium is not NULL */
+samplerfs_format samplerfs_probe(const samplerfs_io *io, samplerfs_medium *medium);
 
 /* The image opened and its lists read; NULL with why in err where it cannot be read.  A format with no lists
  * (E-mu) opens with none. */
@@ -90,9 +113,11 @@ samplerfs *samplerfs_open_file(const char *path, char *err, size_t err_size);
 void samplerfs_close(samplerfs *fs);
 
 samplerfs_format samplerfs_format_of(const samplerfs *fs);
+samplerfs_medium samplerfs_medium_of(const samplerfs *fs);
 const char *samplerfs_format_name(samplerfs_format format);
-/* the disk's own label where it has one (an S-760/S-770 disk's system line, an S-550 disk's title, an ISO 9660
- * volume's ID), else "" */
+const char *samplerfs_medium_name(samplerfs_medium medium);
+/* the image's own label where it has one (an S-760/S-770 disk's system line, a floppy's kind line, an S-550 disk's
+ * title, an ISO 9660 volume's ID, a board's name), else "" */
 const char *samplerfs_label(const samplerfs *fs);
 
 size_t samplerfs_count(const samplerfs *fs);

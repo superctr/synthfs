@@ -1,5 +1,6 @@
 // Copyright 2026 Ian Karlsson
-// The Roland S-550 / W-30 SCSI format: a directory of areas, each a disk's patches, tones and waves (docs/formats.md, "S-550")
+// The Roland S-550 / W-30 SCSI format: a directory of areas, each a floppy's patches, tones and waves; and the floppy
+// itself, the S-550's, S-330's and W-30's (docs/formats.md, "S-550")
 #include "internal.hpp"
 
 namespace sfs::s550 {
@@ -10,10 +11,31 @@ constexpr uint32_t PARAMETER_BLOCKS = 18;
 constexpr uint32_t PATCHES = 16, PATCH = 256, TONES = 32, TONES_AT = 0x1200, TONE = 128;
 constexpr uint32_t SEGMENT_WORDS = 12288, KEYS = 109, LAST_TONE = 31;
 
+constexpr uint64_t FLOPPY_AREA = 126 * BLOCK, FLOPPY_MAX = 2 * 1024 * 1024;
+constexpr uint32_t FUNCTION_BLOCK = 8, DISK_NAME = 0x33;
+
 samplerfs_format probe(const Image &im)
 {
 	uint8_t s0[16];
 	return im.read(0, s0, sizeof s0) && !memcmp(s0, "* ROLAND S-550 *", 16) ? SAMPLERFS_S550 : SAMPLERFS_UNKNOWN;
+}
+
+// four zero bytes and the system's ID
+samplerfs_format probe_floppy(const Image &im)
+{
+	uint8_t s0[14];
+	if (im.size() > FLOPPY_MAX || !im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0", 4))
+		return SAMPLERFS_UNKNOWN;
+	auto id = [&](const char *s) { return !memcmp(s0 + 4, s, strlen(s)); };
+	if (id("S550 MT25B") || id("S500 MT25B"))
+		return SAMPLERFS_S550;
+	if (id("S330 MT25C") || id("S300 MT25C"))
+		return SAMPLERFS_S330;
+	if (id("W-30"))
+		return SAMPLERFS_W30;
+	if (id("S-50 MT25A") || id("S-51 MT25A"))
+		return SAMPLERFS_S50;
+	return SAMPLERFS_UNKNOWN;
 }
 
 static std::string text(const uint8_t *p, size_t n)
@@ -35,14 +57,22 @@ static bool blank(const uint8_t *p, size_t n)
 // an S-550 / W-30 SCSI disk
 class S550Medium final : public Medium {
 public:
-	using Medium::Medium;
+	S550Medium(const samplerfs_io &io, samplerfs_format format, bool floppy) : Medium(io, format), floppy_(floppy) {}
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+
+private:
+	bool floppy_;
+	void list_floppy();
+	// an area's patches and tones, from its parameters at start
+	void list_area(size_t ai, uint64_t start);
 };
 
 void S550Medium::list()
 {
+	if (floppy_)
+		return list_floppy();
 	auto s0 = image.read(0, BLOCK);
 	if (s0.empty())
 		return;
@@ -63,18 +93,46 @@ void S550Medium::list()
 			continue;
 		size_t ai = add(SAMPLERFS_AREA, SAMPLERFS_S550, n, SAMPLERFS_NONE, text(e, 32), length * BLOCK, start * BLOCK);
 		tag(ai, std::to_string(e[0x39]));
-		auto par = image.read(start * BLOCK, PARAMETER_BLOCKS * BLOCK);
-		if (par.empty())
-			continue;
-		for (uint32_t k = 0; k < PATCHES; k++)
-			if (!blank(&par[k * PATCH], 12))
-				add(SAMPLERFS_PATCH, SAMPLERFS_S550, k, ai, text(&par[k * PATCH], 12), 0, start * BLOCK + k * PATCH);
-		for (uint32_t k = 0; k < TONES; k++) {
-			const uint8_t *t = &par[TONES_AT + k * TONE];
-			if (!blank(t, 8))
-				add(SAMPLERFS_TONE, SAMPLERFS_S550, k, ai, text(t, 8), uint64_t(t[0x0F]) * SEGMENT_WORDS * 2,
-					start * BLOCK + TONES_AT + k * TONE);
-		}
+		list_area(ai, start * BLOCK);
+	}
+}
+
+// a floppy: the system line at +0x20, the area from block 126, its name at +0x33 of its function block; an S-50's
+// is told apart only
+void S550Medium::list_floppy()
+{
+	auto s0 = image.read(0, BLOCK);
+	if (s0.empty())
+		return;
+	label = trimmed(text(&s0[0x20], 31));
+	label.erase(0, label.find_first_not_of(' '));
+	if (format == SAMPLERFS_S50 || image.size() <= FLOPPY_AREA + PARAMETER_BLOCKS * BLOCK)
+		return;
+	uint8_t name[12];
+	if (!image.read(FLOPPY_AREA + FUNCTION_BLOCK * BLOCK + DISK_NAME, name, sizeof name))
+		return;
+	size_t ai = add(SAMPLERFS_AREA, format, 0, SAMPLERFS_NONE, text(name, sizeof name), image.size() - FLOPPY_AREA, FLOPPY_AREA);
+	list_area(ai, FLOPPY_AREA);
+	// a system or utility disk without sounds lists none
+	if (entries.size() == ai + 1) {
+		entries.pop_back();
+		where.pop_back();
+	}
+}
+
+void S550Medium::list_area(size_t ai, uint64_t start)
+{
+	auto par = image.read(start, PARAMETER_BLOCKS * BLOCK);
+	if (par.empty())
+		return;
+	samplerfs_format f = entries[ai].format;
+	for (uint32_t k = 0; k < PATCHES; k++)
+		if (!blank(&par[k * PATCH], 12))
+			add(SAMPLERFS_PATCH, f, k, ai, text(&par[k * PATCH], 12), 0, start + k * PATCH);
+	for (uint32_t k = 0; k < TONES; k++) {
+		const uint8_t *t = &par[TONES_AT + k * TONE];
+		if (!blank(t, 8))
+			add(SAMPLERFS_TONE, f, k, ai, text(t, 8), uint64_t(t[0x0F]) * SEGMENT_WORDS * 2, start + TONES_AT + k * TONE);
 	}
 }
 
@@ -128,7 +186,12 @@ bool S550Medium::sample(size_t i, samplerfs_sample &out) const
 
 std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S550Medium>(io, format);
+	return std::make_unique<S550Medium>(io, format, false);
+}
+
+std::unique_ptr<Medium> open_floppy(const samplerfs_io &io, samplerfs_format format)
+{
+	return std::make_unique<S550Medium>(io, format, true);
 }
 
 }

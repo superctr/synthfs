@@ -81,7 +81,7 @@ static std::vector<std::string> used(samplerfs *fs, size_t i)
 }
 
 // ---- S-7xx: one of each list, a gap, a slot past the count, and the references between them
-static Bytes s7_image(const char *system)
+static Bytes s700_image(const char *system)
 {
 	Bytes b((0x15AC + 18 * 4) * 512, 0);
 	memcpy(&b[4], "S770 MR25A", 10);
@@ -130,10 +130,10 @@ static Bytes s7_image(const char *system)
 	return b;
 }
 
-static void test_s7(Bytes b, samplerfs_format format, const char *label)
+static void test_s700(Bytes b, samplerfs_format format, const char *label)
 {
 	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io) == format);
+	CHECK(samplerfs_probe(&io, nullptr) == format);
 	char err[64];
 	samplerfs *fs = samplerfs_open(&io, err, sizeof err);
 	CHECK(fs);
@@ -278,7 +278,7 @@ static void test_akai()
 {
 	Bytes b = akai_image(true);
 	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_AKAI_S3000);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S3000);
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -308,13 +308,13 @@ static void test_akai()
 
 	b = akai_image(false);
 	io = io_of(b);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_AKAI_S1000);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S1000);
 
 	// a size out of range is no partition
 	b = akai_image(true);
 	put16(b, 0, 0x1E01);
 	io = io_of(b);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_UNKNOWN);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
 }
 
 // ---- S-550: a directory of one area, its patch using tones by two key maps
@@ -365,7 +365,7 @@ static void test_s550()
 	b[t2 + 0x19] = 3;
 
 	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_S550);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_S550);
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -424,7 +424,7 @@ static void test_iso()
 	iso_dir(b, 21, 20, { { "KICK.WAV;1", 23 }, { "SNARE.AIF;1", 23 } });
 	iso_dir(b, 22, 20, { { "INFO.TXT;1", 23 } });
 	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_ISO9660);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_ISO9660);
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -447,7 +447,7 @@ static void test_others()
 	samplerfs_close(fs);
 
 	memcpy(&b[0], "EMU3", 4);
-	CHECK(samplerfs_probe(&io) == SAMPLERFS_EMU3);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_EMU3);
 
 	Bytes tiny(100, 0);
 	io = io_of(tiny);
@@ -456,14 +456,223 @@ static void test_others()
 	CHECK(!samplerfs_open_file("/nonexistent/disc.iso", err, sizeof err));
 }
 
+// an S-760 sound floppy: a volume, a performance, a patch, a partial, a sample of three segments
+static void test_s700_floppy()
+{
+	Bytes b(2880 * 512, 0x0F);
+	memset(&b[0], 0xFF, 512);
+	memcpy(&b[0], "\0\0\0\0S770 MR25A\0" "3", 16);
+	put_name(b, 0x10, "", 16);
+	put_name(b, 0x20, " S-760 Sound Disk     Ver. 2.24", 32);
+	b[0x100] = 0;
+	b[0x101] = 0;
+	for (int k = 0; k < 5; k++)
+		put16(b, 0x106 + 2 * k, 1);
+	put16(b, 0x110, 3);
+	put_name(b, 0x180, "PAD:Floppy Vol", 16);
+	b[0x1A0] = 0;
+	put_name(b, 9 * 512, "PAD:Floppy Pfm", 16);
+	put_name(b, 11 * 512, "PAD:Floppy Pch", 16);
+	put_name(b, 15 * 512, "PAD:Floppy Prt", 16);
+	put_name(b, 23 * 512, "PAD:Floppy Smp", 16);
+	memset(&b[39 * 512 + 0x10], 0xFF, 32);
+	b[39 * 512 + 0x10 + 5] = 0;
+	memset(&b[71 * 512 + 0x20], 0xFF, 88);
+	b[71 * 512 + 0x20 + 39] = 0;
+	size_t prt = 135 * 512, smp = 199 * 512;
+	for (int k = 0; k < 4; k++)
+		put16(b, prt + 16 + 16 * k, k ? 0xFFFF : 0);
+	put32(b, smp + 16, 0);
+	put32(b, smp + 20, 100 << 8);
+	put32(b, smp + 24, 999 << 8);
+	b[smp + 36] = 4;
+	put16(b, smp + 0x2A, 3);
+	b[smp + 44] = 1;
+	b[smp + 45] = 60;
+
+	samplerfs_io io = io_of(b);
+	samplerfs_medium medium = SAMPLERFS_MEDIUM_UNKNOWN;
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S760 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK(samplerfs_medium_of(fs) == SAMPLERFS_MEDIUM_FLOPPY);
+	CHECK(!strcmp(samplerfs_label(fs), "S-760 Sound Disk     Ver. 2.24"));
+	CHECK((names(fs, SAMPLERFS_VOLUME) == std::vector<std::string> { "PAD:Floppy Vol" }));
+	CHECK((used(fs, find(fs, "PAD:Floppy Vol")) == std::vector<std::string> { "PAD:Floppy Pfm" }));
+	CHECK((used(fs, find(fs, "PAD:Floppy Pfm")) == std::vector<std::string> { "PAD:Floppy Pch" }));
+	CHECK((used(fs, find(fs, "PAD:Floppy Pch")) == std::vector<std::string> { "PAD:Floppy Prt" }));
+	CHECK((used(fs, find(fs, "PAD:Floppy Prt")) == std::vector<std::string> { "PAD:Floppy Smp" }));
+	size_t s = find(fs, "PAD:Floppy Smp");
+	CHECK(!strcmp(samplerfs_entry_at(fs, s)->tag, "PAD") && samplerfs_entry_at(fs, s)->bytes == 3 * 9216);
+	samplerfs_sample info;
+	CHECK(samplerfs_sample_info(fs, s, &info) && info.rate == 44100 && info.key == 60 && info.frames == 3 * 4608);
+	CHECK(info.loop == SAMPLERFS_LOOP_ALTERNATE && info.loop_start == 100 && info.loop_end == 1000);
+	samplerfs_close(fs);
+
+	// a save under way lists nothing; the disk probe leaves a floppy alone
+	b[0x101] = 0xFF;
+	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_S760 && samplerfs_count(fs) == 0);
+	samplerfs_close(fs);
+	CHECK(sfs::s700::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN);
+}
+
+// an S-550 floppy: a patch on one tone, the area named from the function block
+static void test_s550_floppy()
+{
+	Bytes b(1440 * 512, 0);
+	memcpy(&b[0], "\0\0\0\0S550 MT25B\0\x04", 16);
+	put_name(b, 0x20, "S-550 System   Ver. 1.12", 31);
+	size_t area = 126 * 512;
+	for (int k = 0; k < 16; k++)
+		put_name(b, area + k * 256, "", 12);
+	put_name(b, area, "Strings", 12);
+	for (int k = 0; k < 109; k++)
+		b[area + 0x1A + k] = 0;
+	for (int k = 0; k < 32; k++)
+		put_name(b, area + 0x1200 + k * 128, "", 8);
+	put_name(b, area + 0x1200, "Str C3", 8);
+	b[area + 0x1200 + 0x0F] = 2;
+	put_name(b, area + 8 * 512 + 0x33, "Strings Vol1", 12);
+
+	samplerfs_io io = io_of(b);
+	samplerfs_medium medium;
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S550 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK(!strcmp(samplerfs_label(fs), "S-550 System   Ver. 1.12"));
+	CHECK((names(fs, SAMPLERFS_AREA) == std::vector<std::string> { "Strings Vol1" }));
+	CHECK((used(fs, find(fs, "Strings")) == std::vector<std::string> { "Str C3" }));
+	CHECK(samplerfs_entry_at(fs, find(fs, "Str C3"))->bytes == 2 * 24576);
+	samplerfs_close(fs);
+
+	memcpy(&b[4], "S330 MT25C", 10);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_S330);
+	memcpy(&b[4], "S-50 MT25A", 10);
+	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_S50 && samplerfs_count(fs) == 0);
+	samplerfs_close(fs);
+}
+
+// A ROM as dumped: each byte put where the socket's wiring reads it from
+struct Rom {
+	Bytes b;
+	const uint8_t *lines;
+	int bits;
+	void put(uint64_t at, uint8_t v)
+	{
+		static const uint8_t data_lines[8] = { 2, 0, 4, 5, 7, 6, 3, 1 };
+		uint64_t a = at & ~((uint64_t(1) << bits) - 1);
+		for (int k = 0; k < bits; k++)
+			if (at >> k & 1)
+				a |= uint64_t(1) << lines[k];
+		uint8_t raw = 0;
+		for (int k = 0; k < 8; k++)
+			if (v >> k & 1)
+				raw |= uint8_t(1 << data_lines[k]);
+		b[a] = raw;
+	}
+	void be(uint64_t at, uint32_t v, int n)
+	{
+		for (int k = 0; k < n; k++)
+			put(at + k, uint8_t(v >> 8 * (n - 1 - k)));
+	}
+	void text(uint64_t at, const char *s)
+	{
+		for (size_t k = 0; s[k]; k++)
+			put(at + k, uint8_t(s[k]));
+	}
+	// twelve seven-bit characters, from the top bit down or from bit 0 up
+	void packed(uint64_t at, const char *s, bool from_top)
+	{
+		uint8_t out[11] = {};
+		for (int i = 0; i < 12; i++) {
+			uint8_t c = i < int(strlen(s)) ? uint8_t(s[i]) : ' ';
+			for (int k = 0; k < 7; k++) {
+				int n = 7 * i + k;
+				bool bit = from_top ? c >> (6 - k) & 1 : c >> k & 1;
+				if (bit)
+					out[n / 8] |= from_top ? uint8_t(0x80 >> n % 8) : uint8_t(1 << n % 8);
+			}
+		}
+		for (int k = 0; k < 11; k++)
+			put(at + k, out[k]);
+	}
+};
+
+static void test_boards()
+{
+	static const uint8_t srx_lines[18] = { 0, 4, 2, 3, 1, 13, 7, 12, 5, 10, 16, 9, 6, 8, 14, 17, 11, 15 };
+	static const uint8_t srjv_lines[19] = { 2, 0, 3, 4, 1, 9, 13, 10, 18, 17, 6, 15, 11, 16, 8, 5, 12, 7, 14 };
+
+	// an SRX board: a wave table and an XV-5080 patch bank
+	Rom srx { Bytes(32 << 20, 0), srx_lines, 18 };
+	memcpy(&srx.b[0], "Roland SRX", 10);
+	memcpy(&srx.b[0x10], "SRX-99 Test     ", 16);
+	srx.text(0x20, "SRX-99 Test");
+	srx.be(0x42, 2, 2);
+	const uint32_t waves = 0x1F00000, patches = 0x1F80000;
+	srx.be(0x80, 2, 2), srx.be(0x82, 3, 2), srx.be(0x84, waves, 4), srx.be(0x88, 0x100, 4);
+	srx.be(0x90, 4, 2), srx.be(0x92, 7, 2), srx.be(0x94, patches, 4), srx.be(0x98, 0x1000, 4);
+	srx.be(waves, 2, 2), srx.be(waves + 4, 0x0C, 4), srx.be(waves + 8, 8, 4);
+	srx.be(waves + 0x0C, 0x40, 4), srx.be(waves + 0x14, 0x60, 4);
+	srx.text(waves + 0x40, "Kick 1");
+	srx.text(waves + 0x60, "Snare 1");
+	srx.be(patches, 1, 2), srx.be(patches + 4, 0x0E, 4), srx.be(patches + 8, 574, 4);
+	srx.packed(patches + 0x0E, "Test Patch", true);
+	samplerfs_io io = io_of(srx.b);
+	samplerfs_medium medium;
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_SRX && medium == SAMPLERFS_MEDIUM_BOARD);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (fs) {
+		CHECK(!strcmp(samplerfs_label(fs), "SRX-99 Test"));
+		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Kick 1", "Snare 1" }));
+		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Test Patch" }));
+		size_t bank = samplerfs_entry_at(fs, find(fs, "Test Patch"))->parent;
+		CHECK(bank != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, bank)->tag, "4:7"));
+		samplerfs_close(fs);
+	}
+
+	// an SO-PCM1 card: waves, a patch bank in the JV-880's shape and one in the JV-1080's rhythm set shape
+	Rom card { Bytes(1 << 20, 0), srjv_lines, 19 };
+	memcpy(&card.b[0], "Roland JV80 O\xb0S\xac", 16);
+	memcpy(&card.b[0x10], "Card09   Ver1.00", 16);
+	card.put(0x51, 1), card.be(0x62, 2, 2), card.be(0x84, 0xF0000, 4);
+	card.put(0x53, 2), card.be(0x66, 1, 2), card.be(0x8C, 0xF1000, 4);
+	card.put(0x54, 4), card.be(0x68, 1, 2), card.be(0x90, 0xF2000, 4);
+	card.text(0xF0000, "Piano A");
+	card.text(0xF0000 + 60, "Piano B");
+	card.text(0xF1000, "Card Piano");
+	card.packed(0xF2000, "Card Drums", false);
+	io = io_of(card.b);
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_SRJV80 && medium == SAMPLERFS_MEDIUM_CARD);
+	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (fs) {
+		CHECK(!strcmp(samplerfs_label(fs), "Card09   Ver1.00"));
+		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
+		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Card Piano" }));
+		CHECK((names(fs, SAMPLERFS_RHYTHM_SET) == std::vector<std::string> { "Card Drums" }));
+		samplerfs_close(fs);
+	}
+}
+
 int main()
 {
-	Bytes s760 = s7_image(" S-760 System Disk    Ver. 2.24");
-	test_s7(s760, SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
-	test_s7(raw_of(s760), SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
-	test_s7(s7_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLERFS_S770, "SYS-772 HardDisk Sys Ver. 2.25");
+	Bytes s760 = s700_image(" S-760 System Disk    Ver. 2.24");
+	test_s700(s760, SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
+	test_s700(raw_of(s760), SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
+	test_s700(s700_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLERFS_S770, "SYS-772 HardDisk Sys Ver. 2.25");
 	test_akai();
 	test_s550();
+	test_s700_floppy();
+	test_s550_floppy();
+	test_boards();
 	test_iso();
 	test_others();
 	if (failures)

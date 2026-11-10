@@ -24,15 +24,22 @@ namespace {
 struct Reader {
 	samplerfs_format (*probe)(const Image &im);
 	std::unique_ptr<Medium> (*open)(const samplerfs_io &io, samplerfs_format format);
+	samplerfs_medium (*medium)(const Image &im);
 };
+
+samplerfs_medium disk(const Image &) { return SAMPLERFS_MEDIUM_DISK; }
+samplerfs_medium floppy(const Image &) { return SAMPLERFS_MEDIUM_FLOPPY; }
 
 // tried in this order (docs/formats.md, "Telling them apart")
 constexpr Reader readers[] = {
-	{ s7::probe, s7::open },
-	{ s550::probe, s550::open },
-	{ akai::probe, akai::open },
-	{ emu::probe, emu::open },
-	{ iso9660::probe, iso9660::open },
+	{ s700::probe, s700::open, disk },
+	{ s700::probe_floppy, s700::open_floppy, floppy },
+	{ s550::probe, s550::open, disk },
+	{ s550::probe_floppy, s550::open_floppy, floppy },
+	{ roland_wave::probe, roland_wave::open, roland_wave::medium },
+	{ akai::probe, akai::open, disk },
+	{ emu::probe, emu::open, disk },
+	{ iso9660::probe, iso9660::open, disk },
 };
 
 const Reader *reader_of(const Image &im, samplerfs_format &format)
@@ -53,11 +60,19 @@ static void say(char *err, size_t size, const char *what)
 
 extern "C" {
 
-samplerfs_format samplerfs_probe(const samplerfs_io *io)
+samplerfs_format samplerfs_probe(const samplerfs_io *io, samplerfs_medium *medium)
 {
+	if (medium)
+		*medium = SAMPLERFS_MEDIUM_UNKNOWN;
 	try {
+		if (!io)
+			return SAMPLERFS_UNKNOWN;
+		Image im(*io);
 		samplerfs_format format = SAMPLERFS_UNKNOWN;
-		return io && reader_of(Image(*io), format) ? format : SAMPLERFS_UNKNOWN;
+		const Reader *r = reader_of(im, format);
+		if (r && medium)
+			*medium = r->medium(im);
+		return r ? format : SAMPLERFS_UNKNOWN;
 	} catch (...) {
 		return SAMPLERFS_UNKNOWN;
 	}
@@ -76,6 +91,8 @@ samplerfs *samplerfs_open(const samplerfs_io *io, char *err, size_t err_size)
 		const Reader *r = reader_of(im, format);
 		auto fs = std::make_unique<::samplerfs>();
 		fs->medium = r ? r->open(*io, format) : std::make_unique<Medium>(*io, SAMPLERFS_UNKNOWN);
+		if (r)
+			fs->medium->medium = r->medium(im);
 		fs->medium->list();
 		return fs.release();
 	} catch (const std::bad_alloc &) {
@@ -129,6 +146,22 @@ samplerfs_format samplerfs_format_of(const samplerfs *fs)
 	return fs->medium->format;
 }
 
+samplerfs_medium samplerfs_medium_of(const samplerfs *fs)
+{
+	return fs->medium->medium;
+}
+
+const char *samplerfs_medium_name(samplerfs_medium medium)
+{
+	switch (medium) {
+	case SAMPLERFS_MEDIUM_DISK: return "disk";
+	case SAMPLERFS_MEDIUM_FLOPPY: return "floppy";
+	case SAMPLERFS_MEDIUM_CARD: return "card";
+	case SAMPLERFS_MEDIUM_BOARD: return "board";
+	default: return "unknown";
+	}
+}
+
 const char *samplerfs_format_name(samplerfs_format format)
 {
 	switch (format) {
@@ -140,6 +173,12 @@ const char *samplerfs_format_name(samplerfs_format format)
 	case SAMPLERFS_ISO9660: return "ISO 9660";
 	case SAMPLERFS_EMU3: return "E-mu EIII/E-IV";
 	case SAMPLERFS_EMAX2: return "E-mu Emax II";
+	case SAMPLERFS_S330: return "S-330";
+	case SAMPLERFS_W30: return "W-30";
+	case SAMPLERFS_S50: return "S-50";
+	case SAMPLERFS_DJ70: return "DJ-70";
+	case SAMPLERFS_SRJV80: return "SR-JV80";
+	case SAMPLERFS_SRX: return "SRX";
 	default: return "unknown";
 	}
 }

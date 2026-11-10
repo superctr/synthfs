@@ -1,12 +1,11 @@
 // Copyright 2026 Ian Karlsson
-// The Roland S-700 series volume, the S-760's and the S-770's (docs/formats.md, "S-760 and S-770")
+// The Roland S-700 series volume, the S-760's and the S-770's, on a disk and on a floppy (docs/formats.md, "S-760 and
+// S-770")
 #include "internal.hpp"
 
 #include <algorithm>
 
-namespace sfs::s7 {
-
-constexpr uint32_t SECTOR = 512;
+namespace sfs::s700 {
 
 struct List {
 	samplerfs_kind kind;
@@ -22,7 +21,6 @@ constexpr List lists[5] = {
 	{ SAMPLERFS_PARTIAL, 0x56C, 4096, 0xEAC, 128 },
 	{ SAMPLERFS_SAMPLE, 0x66C, 8192, 0x12AC, 48 },
 };
-constexpr uint32_t SEGMENT_BYTES = 18 * SECTOR;
 
 constexpr const char *categories[] = { "---", "BEL", "BRS", "BS ", "BTS", "CMB", "CYM", "DRM", "FLT", "GTR", "HAT", "HIT",
 	"KEY", "KIK", "KIT", "MLT", "ORC", "ORG", "PAD", "PNO", "PRC", "SAX", "SFX", "SNR", "STR", "TOM", "VOX", "WND" };
@@ -37,7 +35,7 @@ static bool counts(const uint8_t *s0, uint16_t *out)
 }
 
 // the system line at +0x20, the machine that made the disc
-static std::string system_line(const uint8_t *s0)
+std::string system_line(const uint8_t *s0)
 {
 	std::string line;
 	for (int i = 0x20; i < 0x40 && s0[i]; i++)
@@ -46,16 +44,22 @@ static std::string system_line(const uint8_t *s0)
 	return a == std::string::npos ? "" : trimmed(line.substr(a));
 }
 
+// byte 0x0F: 0 on a disk, '@' on one the S-760's system was saved to; a floppy's kind otherwise
+static bool disk_type(uint8_t type)
+{
+	return type == 0 || type == '@' || type == 'A';
+}
+
 samplerfs_format probe(const Image &im)
 {
 	uint8_t s0[0x11E];
 	uint16_t n[5];
-	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 14) || !counts(s0, n))
+	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 15) || !disk_type(s0[0x0F]) || !counts(s0, n))
 		return SAMPLERFS_UNKNOWN;
 	return system_line(s0).starts_with("S-760") ? SAMPLERFS_S760 : SAMPLERFS_S770;
 }
 
-static std::string name_of(const uint8_t *p)
+std::string name_of(const uint8_t *p)
 {
 	std::string s;
 	for (int i = 0; i < 16; i++)
@@ -63,8 +67,41 @@ static std::string name_of(const uint8_t *p)
 	return s;
 }
 
+std::string_view category(const uint8_t *name)
+{
+	for (const char *c : categories)
+		if (!memcmp(name, c, 3))
+			return c;
+	return {};
+}
+
+// the start, the sustain loop's start and end, the release loop's (24.8 words from the sample's first) at +16; the
+// loop mode at +36, the rate code at +44, the original key at +45
+void sample_of(const uint8_t *rec, uint64_t frames, samplerfs_sample &out)
+{
+	out.rate = rates[rec[44] & 7];
+	out.key = rec[45] <= 127 ? rec[45] : -1;
+	out.frames = frames;
+	uint64_t p[5];
+	for (int k = 0; k < 5; k++)
+		p[k] = le32(&rec[16 + 4 * k]) >> 8;
+	out.mode = rec[36];
+	out.start = p[0];
+	out.end = p[2] + 1;
+	out.loop_start = p[1];
+	out.loop_end = p[2] + 1;
+	switch (out.mode) {
+	case 0: out.loop = SAMPLERFS_LOOP_FORWARD; break;
+	case 1: case 3: out.loop = SAMPLERFS_LOOP_FORWARD; out.end = p[4] + 1; break;
+	case 4: out.loop = SAMPLERFS_LOOP_ALTERNATE; break;
+	case 5: out.reverse = 1; break;
+	case 6: out.reverse = 1; out.loop = SAMPLERFS_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
+	default: break;
+	}
+}
+
 // an S-760 or S-770 disk
-class S7Medium final : public Medium {
+class S700Medium final : public Medium {
 public:
 	using Medium::Medium;
 	void list() override;
@@ -76,7 +113,7 @@ private:
 	std::vector<size_t> numbered_[5];
 };
 
-void S7Medium::list()
+void S700Medium::list()
 {
 	auto s0 = image.read(0, SECTOR);
 	uint16_t count[5];
@@ -94,15 +131,13 @@ void S7Medium::list()
 				continue;
 			uint64_t bytes = L.kind == SAMPLERFS_SAMPLE ? uint64_t(le16(e + 30)) * SEGMENT_BYTES : 0;
 			size_t i = add(L.kind, format, n, SAMPLERFS_NONE, name_of(e), bytes, uint64_t(L.record) * SECTOR + uint64_t(n) * L.size);
-			for (const char *c : categories)
-				if (!memcmp(e, c, 3))
-					tag(i, c);
+			tag(i, category(e));
 			numbered_[l][n] = i;
 		}
 	}
 }
 
-std::vector<size_t> S7Medium::refs(size_t i) const
+std::vector<size_t> S700Medium::refs(size_t i) const
 {
 	const samplerfs_entry &e = entries[i];
 	int l = 0;
@@ -141,39 +176,20 @@ std::vector<size_t> S7Medium::refs(size_t i) const
 	return out;
 }
 
-bool S7Medium::sample(size_t i, samplerfs_sample &out) const
+bool S700Medium::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
 		return false;
 	auto rec = image.read(where[i], 48);
 	if (rec.empty())
 		return false;
-	out.rate = rates[rec[44] & 7];
-	out.key = rec[45] <= 127 ? rec[45] : -1;
-	out.frames = entries[i].bytes / 2;
-	// the start, the sustain loop's start and end, the release loop's (24.8 words, from the sample's first)
-	uint64_t p[5];
-	for (int k = 0; k < 5; k++)
-		p[k] = le32(&rec[16 + 4 * k]) >> 8;
-	out.mode = rec[36];
-	out.start = p[0];
-	out.end = p[2] + 1;
-	out.loop_start = p[1];
-	out.loop_end = p[2] + 1;
-	switch (out.mode) {
-	case 0: out.loop = SAMPLERFS_LOOP_FORWARD; break;
-	case 1: case 3: out.loop = SAMPLERFS_LOOP_FORWARD; out.end = p[4] + 1; break;
-	case 4: out.loop = SAMPLERFS_LOOP_ALTERNATE; break;
-	case 5: out.reverse = 1; break;
-	case 6: out.reverse = 1; out.loop = SAMPLERFS_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
-	default: break;
-	}
+	sample_of(rec.data(), entries[i].bytes / 2, out);
 	return true;
 }
 
 std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format)
 {
-	return std::make_unique<S7Medium>(io, format);
+	return std::make_unique<S700Medium>(io, format);
 }
 
 }
