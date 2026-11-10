@@ -2,8 +2,9 @@
 // A plain CD-ROM: its WAV and AIFF files (docs/formats.md, "ISO 9660")
 #include "iso9660.hpp"
 
+#include "audio.hpp"
+
 #include <algorithm>
-#include <cctype>
 
 namespace sfs {
 
@@ -20,17 +21,6 @@ samplerfs_format Iso9660::probe(const Image &im)
 {
 	uint8_t pvd[6];
 	return im.read(16 * BLOCK, pvd, sizeof pvd) && !memcmp(pvd, "\1CD001", 6) ? SAMPLERFS_ISO9660 : SAMPLERFS_UNKNOWN;
-}
-
-static bool audio(std::string_view name)
-{
-	size_t dot = name.rfind('.');
-	if (dot == std::string_view::npos)
-		return false;
-	std::string ext;
-	for (char c : name.substr(dot + 1))
-		ext += char(tolower(uint8_t(c)));
-	return ext == "wav" || ext == "aif" || ext == "aiff" || ext == "aifc";
 }
 
 // a directory's audio files and the directories that hold some; whether it held any
@@ -70,7 +60,7 @@ bool Iso9660::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
 				where.resize(mark);
 				number--;
 			}
-		} else if (audio(name)) {
+		} else if (audio_name(name)) {
 			add(SAMPLERFS_FILE, SAMPLERFS_ISO9660, number++, parent, name, size, ext * BLOCK);
 			any = true;
 		}
@@ -86,6 +76,15 @@ void Iso9660::list()
 	label = trimmed(std::string_view(reinterpret_cast<const char *>(&pvd[40]), 32));
 	const uint8_t *root = &pvd[156];
 	walk(le32(root + 2), le32(root + 10), SAMPLERFS_NONE, 0);
+}
+
+bool Iso9660::sample(size_t i, samplerfs_sample &out) const
+{
+	if (entries[i].kind != SAMPLERFS_FILE)
+		return false;
+	uint64_t at = where[i];
+	return audio_sample([&](uint64_t offset, void *buf, size_t n) { return image.read(at + offset, buf, n); },
+		entries[i].bytes, out);
 }
 
 std::unique_ptr<Medium> Iso9660::open(const samplerfs_io &io, samplerfs_format format)

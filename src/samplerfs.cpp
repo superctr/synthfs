@@ -2,6 +2,7 @@
 // The C interface: the format told, the lists read, the readers' details asked for on demand
 #include "akai/akai.hpp"
 #include "emu/emu.hpp"
+#include "fat.hpp"
 #include "iso9660.hpp"
 #include "roland/roland.hpp"
 
@@ -51,6 +52,7 @@ constexpr Reader readers[] = {
 	reader<akai::S900>(floppy),
 	reader<emu::Disk>(disk),
 	reader<Iso9660>(disk),
+	reader<Fat>(Fat::medium_of),
 };
 
 const Reader *reader_of(const Image &im, samplerfs_format &format)
@@ -191,6 +193,7 @@ const char *samplerfs_format_name(samplerfs_format format)
 	case SAMPLERFS_SRJV80: return "SR-JV80";
 	case SAMPLERFS_SRX: return "SRX";
 	case SAMPLERFS_AKAI_S900: return "AKAI S900";
+	case SAMPLERFS_FAT: return "FAT";
 	default: return "unknown";
 	}
 }

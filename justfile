@@ -11,4 +11,4 @@ test: build
 
 # every image in a folder, one line each
 scan dir: build
-	find {{dir}} -type f \( -iname '*.iso' -o -iname '*.bin' -o -iname '*.cdr' \) -print0 | sort -z | xargs -0 {{build_dir}}/samplerfs-ls
+	find {{dir}} -type f \( -iname '*.iso' -o -iname '*.bin' -o -iname '*.cdr' -o -iname '*.img' \) -print0 | sort -z | xargs -0 {{build_dir}}/samplerfs-ls

@@ -12,6 +12,7 @@ public:
 	static samplerfs_format probe(const Image &im);
 	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 	void list() override;
+	bool sample(size_t i, samplerfs_sample &out) const override;
 
 private:
 	bool walk(uint32_t extent, uint32_t bytes, size_t parent, int depth);

@@ -36,6 +36,7 @@ typedef enum samplerfs_format {
 	SAMPLERFS_SRJV80,      /* Roland SR-JV80 wave expansion board or SO-PCM1 card, as dumped */
 	SAMPLERFS_SRX,         /* Roland SRX wave expansion board, as dumped */
 	SAMPLERFS_AKAI_S900,   /* AKAI S900 / S950 floppy */
+	SAMPLERFS_FAT,         /* a FAT12, FAT16 or FAT32 volume, bare or the first of an MBR's; every file listed */
 } samplerfs_format;
 
 /* What the image is of.  A hard disk, an MO and a CD-ROM share their layout and are all DISK; the host knows which
@@ -58,8 +59,8 @@ typedef enum samplerfs_kind {
 	SAMPLERFS_PROGRAM,      /* AKAI */
 	SAMPLERFS_OTHER,        /* AKAI: a file of another type (drum inputs, effects, cue or take list, an operating
 	                           system); its letter, or its type in hex, in tag */
-	SAMPLERFS_DIRECTORY,    /* ISO 9660: a directory holding audio files */
-	SAMPLERFS_FILE,         /* ISO 9660: a WAV or AIFF file */
+	SAMPLERFS_DIRECTORY,    /* ISO 9660: a directory holding audio files; FAT: any directory */
+	SAMPLERFS_FILE,         /* ISO 9660: a WAV or AIFF file; FAT: any file */
 	SAMPLERFS_AREA,         /* S-550: an area, a disk's worth of patches and tones */
 	SAMPLERFS_TONE,         /* S-550: a tone, a wave and its settings */
 	SAMPLERFS_MULTI,        /* AKAI S3000: a multi, its parts' programs */
@@ -76,7 +77,8 @@ typedef struct samplerfs_entry {
 	uint32_t number;         /* its place in its list on the disk, from 0 (the slot the machine numbers from 1) */
 	size_t parent;           /* the entry that holds it (a partition's volume, a volume's file, an area's tone, a bank's
 	                            patch), or SAMPLERFS_NONE */
-	char name[64];           /* UTF-8, trailing blanks dropped; an ISO 9660 file's without its version */
+	char name[64];           /* UTF-8, trailing blanks dropped; an ISO 9660 file's without its version; a FAT file's
+	                            long name where it has one */
 	char tag[8];             /* the image's own code: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type
 	                            letter (p, s, x, d, q, t, m, c), an S-550 area's category number, a bank's record shape
 	                            (an SR-JV80's type, 2 to 5; an SRX's class and type, "4:6"); else empty */
@@ -119,7 +121,7 @@ samplerfs_medium samplerfs_medium_of(const samplerfs *fs);
 const char *samplerfs_format_name(samplerfs_format format);
 const char *samplerfs_medium_name(samplerfs_medium medium);
 /* the image's own label where it has one (an S-760/S-770 disk's system line, a floppy's kind line, an S-550 disk's
- * title, an ISO 9660 volume's ID, a board's name), else "" */
+ * title, an ISO 9660 volume's ID, a FAT volume's label, a board's name), else "" */
 const char *samplerfs_label(const samplerfs *fs);
 
 size_t samplerfs_count(const samplerfs *fs);
@@ -131,8 +133,8 @@ const samplerfs_entry *samplerfs_entry_at(const samplerfs *fs, size_t i);
  * at most max are written to out.  0 for kinds that use nothing. */
 size_t samplerfs_refs(samplerfs *fs, size_t i, size_t *out, size_t max);
 
-/* A sample's or tone's rate, key, length and loop, read from its header; 0 where entry i has none or it cannot be
- * read */
+/* A sample's or tone's (or a WAV or AIFF file's) rate, key, length and loop, read from its header; 0 where entry i
+ * has none or it cannot be read */
 int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out);
 
 #ifdef __cplusplus

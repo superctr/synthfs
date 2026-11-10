@@ -23,6 +23,7 @@ Tried in this order:
 | AKAI S900 | floppy | whole 1024-byte blocks, 700 to 1600 KB, the FAT's first four halfwords zero, and a directory of at least one file, each with a printable name, an upper-case type and a start past block 3 |
 | E-mu | disk | `EMU3` (EIII, E-IV) or `EMX2` (Emax II) at byte 0 |
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
+| FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
 
 An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -305,7 +306,58 @@ unused default such as "SAMPLE 2") **[seen]**: the first name is a sample of the
 
 The primary volume descriptor at sector 16: the volume's ID at +40, the root directory's record at +156.  The tree
 is walked eight deep; files ending `.wav`, `.aif`, `.aiff` or `.aifc` are listed with their sizes, and a directory
-only where it holds some, at any depth.  Rock Ridge and Joliet names are not read.
+only where it holds some, at any depth.  Rock Ridge and Joliet names are not read.  A file's header is read as
+below ("WAV and AIFF files").
+
+## FAT
+
+FAT12, FAT16 and FAT32 volumes as Microsoft's FAT specification (fatgen103) lays them out: a floppy's, or a hard
+disk's or memory card's behind an MBR.  Tried last, so that no sampler's floppy of a DOS floppy's size is taken
+for one.
+
+**Telling it**: a boot sector whose first byte is a jump (`EB xx 90` or `E9`) and whose BPB is a FAT's: 512 to 4096
+bytes a sector (a power of two), a power of two sectors a cluster, at least one reserved sector, one to four FATs,
+the media byte 0xF0 or 0xF8 and above, a sector count and a FAT size, the data area starting inside the volume
+and the FATs room for every cluster.  The type is the cluster count's, as the specification has it: below 4085
+FAT12, below 65525 FAT16, else FAT32 (whose BPB must have a zero 16-bit FAT size and no root entries; the
+others a non-zero one).  The 0x55 0xAA signature is not asked of a bare volume.  Where sector 0 is no such boot
+sector but carries 0x55 0xAA, it is read as an MBR: of the four entries at 0x1BE, the first in table order with
+a FAT partition type (0x01, 0x04, 0x06, 0x0B, 0x0C, 0x0E, or one of them with 0x10 set, hidden), a start and a
+length, whose first sector is such a boot sector, is the volume.  Further partitions, and extended ones (0x05,
+0x0F), are not read.  A bare volume of a floppy's size (160, 180, 320, 360, 720, 1200, 1440, 1680, 1722 or 2880
+KB, by its BPB) is a floppy; every other volume is a disk.
+
+**What is read**: the label, from the root directory's volume label entry, else the BPB's (+0x2B, or +0x47 on
+FAT32) unless it is `NO NAME`; then every directory and file at any depth (32 deep at most), each a directory or a
+file entry under the directory holding it, its size the directory entry's.  The root directory is the fixed area
+after the FATs on FAT12 and FAT16, the cluster chain from the BPB's root cluster (+0x2C) on FAT32.  A name is the
+entry's long name (VFAT) where the long-name entries before it run in order and their checksum is its short
+name's, from UTF-16 into UTF-8 and cut at a character to 63 bytes; else its 8.3 name, its base and extension
+lower-cased where byte +0x0C says so (0x08, 0x10), a first byte 0x05 read as 0xE5, and bytes outside ASCII shown
+as `?` (the code page is not known).  Deleted entries (0xE5), the volume label, `.` and `..` are skipped; a zero
+first byte ends a directory.  A file's or directory's first cluster is +0x1A, with the high half at +0x14 on
+FAT32.
+
+**Damage**: a cluster chain is followed only through clusters of the volume, ends at the first cluster already in
+it (a loop), and is no longer than the volume's clusters or than the file needs; a directory is read 65 536 entries
+at most.  A directory whose first cluster is outside the volume, or is one already walked (a directory pointing at
+itself or an ancestor), is listed but not walked again.  A file whose chain is shorter than its size gives no
+sample header.
+
+Not read: the second FAT (the first is trusted), timestamps and attributes, FAT32's FSInfo, exFAT, short names in
+code pages other than ASCII.
+
+## WAV and AIFF files
+
+A file of a CD-ROM or a FAT volume is read as a WAV or an AIFF where its header says so, whatever its name.  **WAV**:
+`RIFF` … `WAVE`, then chunks (padded to even sizes): `fmt ` gives the rate (+4) and the bytes a frame (+12), `data`
+the frames (its size over the bytes a frame, no more than the file holds), and `smpl` the original key (MIDI unity
+note, +12, where at most 127) and, where its loop count (+28) is not zero, the first loop from +36: its type (+4; 0
+forward, 1 alternating, 2 backward, given as forward; the type is the mode), its start (+8) and its last frame
+(+12).  **AIFF** (and AIFC): `FORM` … `AIFF`, chunks big-endian: `COMM` the frames (+2) and the rate as an 80-bit
+extended number (+8), `INST` the original key (+0) and the sustain loop (+8: its play mode, 1 forward, 2
+forward-backward, the mode; its start and end markers' IDs), and `MARK` the markers' positions.  A sample plays
+the whole file, start to end.  Neither the channels nor the sample width are given: a frame is all channels'.
 
 ## Not read yet
 

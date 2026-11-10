@@ -1,11 +1,13 @@
 // Copyright 2026 Ian Karlsson
 // Each format's reader on a small image made here: what is listed, what is left out, what entries use
 #include "../src/akai/akai.hpp"
+#include "../src/fat.hpp"
 #include "../src/roland/roland.hpp"
 
 #include <cstdio>
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -33,6 +35,13 @@ static size_t mem_read(void *user, uint64_t offset, void *buf, size_t n)
 static samplerfs_io io_of(Bytes &b)
 {
 	return { &b, mem_read, b.size() };
+}
+
+// the FAT probe on its own leaves every other format's image alone, floppies of DOS sizes among them
+static bool not_fat(Bytes &b)
+{
+	samplerfs_io io = io_of(b);
+	return sfs::Fat::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN;
 }
 
 static void put16(Bytes &b, size_t at, uint16_t v)
@@ -387,6 +396,61 @@ static void test_s550()
 	samplerfs_close(fs);
 }
 
+// ---- WAV and AIFF files, as a file system holds them
+static void put_be32(Bytes &b, size_t at, uint32_t v)
+{
+	put_be(b, at, v, 4);
+}
+
+// a mono 16-bit WAV: fmt, data, then smpl (after the data, so a reader must find it past the wave)
+static Bytes wav_file(uint32_t frames, uint32_t rate, uint8_t key, uint32_t loop_start, uint32_t loop_end)
+{
+	Bytes b(12 + 24 + 8 + 2 * frames + 8 + 60, 0);
+	memcpy(&b[0], "RIFF", 4);
+	put32(b, 4, uint32_t(b.size() - 8));
+	memcpy(&b[8], "WAVE", 4);
+	memcpy(&b[12], "fmt ", 4);
+	put32(b, 16, 16);
+	put16(b, 20, 1), put16(b, 22, 1), put32(b, 24, rate), put32(b, 28, rate * 2), put16(b, 32, 2), put16(b, 34, 16);
+	memcpy(&b[36], "data", 4);
+	put32(b, 40, 2 * frames);
+	for (uint32_t k = 0; k < frames; k++)
+		put16(b, 44 + 2 * k, uint16_t(k * 37));
+	size_t s = 44 + 2 * frames;
+	memcpy(&b[s], "smpl", 4);
+	put32(b, s + 4, 60);
+	put32(b, s + 8 + 12, key);
+	put32(b, s + 8 + 28, 1);
+	put32(b, s + 8 + 36 + 4, 0);
+	put32(b, s + 8 + 36 + 8, loop_start);
+	put32(b, s + 8 + 36 + 12, loop_end - 1);
+	return b;
+}
+
+// an AIFF of frames at 22050 Hz, its sustain loop between two markers, alternating
+static Bytes aiff_file(uint32_t frames, uint8_t key, uint32_t loop_start, uint32_t loop_end)
+{
+	Bytes b(12 + 26 + 28 + 28, 0);
+	memcpy(&b[0], "FORM", 4);
+	put_be32(b, 4, uint32_t(b.size() - 8));
+	memcpy(&b[8], "AIFF", 4);
+	memcpy(&b[12], "COMM", 4);
+	put_be32(b, 16, 18);
+	put_be(b, 20, 1, 2), put_be32(b, 22, frames), put_be(b, 26, 16, 2);
+	const uint8_t rate[10] = { 0x40, 0x0D, 0xAC, 0x44, 0, 0, 0, 0, 0, 0 };  // 22050
+	memcpy(&b[28], rate, 10);
+	memcpy(&b[38], "MARK", 4);
+	put_be32(b, 42, 20);
+	put_be(b, 46, 2, 2);
+	put_be(b, 48, 1, 2), put_be32(b, 50, loop_start), b[54] = 1, b[55] = 'a';
+	put_be(b, 56, 2, 2), put_be32(b, 58, loop_end), b[62] = 1, b[63] = 'b';
+	memcpy(&b[66], "INST", 4);
+	put_be32(b, 70, 20);
+	b[74] = key;
+	put_be(b, 82, 2, 2), put_be(b, 84, 1, 2), put_be(b, 86, 2, 2);
+	return b;
+}
+
 // ---- ISO 9660: the audio files and the directories holding them
 static void iso_record(Bytes &b, size_t &at, const char *name, size_t n, uint32_t extent, uint32_t size, bool dir)
 {
@@ -415,17 +479,20 @@ static void iso_dir(Bytes &b, uint32_t extent, uint32_t parent, const std::vecto
 
 static void test_iso()
 {
-	Bytes b(24 * 2048, 0);
+	Bytes b(25 * 2048, 0);
 	memcpy(&b[16 * 2048], "\1CD001", 6);
 	put_name(b, 16 * 2048 + 40, "LOOPS", 32);
 	size_t root = 16 * 2048 + 156;
 	b[root + 2] = 20;
 	b[root + 11] = 0x08;
 	iso_dir(b, 20, 20, { { "README.TXT;1", 23 }, { "DRUMS", 21 }, { "DOCS", 22 } });
-	iso_dir(b, 21, 20, { { "KICK.WAV;1", 23 }, { "SNARE.AIF;1", 23 } });
+	iso_dir(b, 21, 20, { { "KICK.WAV;1", 23 }, { "SNARE.AIF;1", 24 } });
+	Bytes wav = wav_file(500, 32000, 36, 10, 400), aiff = aiff_file(300, 64, 20, 250);
+	std::copy(wav.begin(), wav.end(), b.begin() + 23 * 2048);
+	std::copy(aiff.begin(), aiff.end(), b.begin() + 24 * 2048);
 	iso_dir(b, 22, 20, { { "INFO.TXT;1", 23 } });
 	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_ISO9660);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_ISO9660 && not_fat(b));
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -436,7 +503,304 @@ static void test_iso()
 	size_t kick = find(fs, "KICK.WAV");
 	CHECK(samplerfs_entry_at(fs, kick)->bytes == 1234 && samplerfs_entry_at(fs, kick)->parent == find(fs, "DRUMS"));
 	CHECK(samplerfs_entry_at(fs, kick)->format == SAMPLERFS_ISO9660);
+	samplerfs_sample s;
+	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 32000 && s.key == 36 && s.frames == 500 && s.end == 500);
+	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 10 && s.loop_end == 400 && s.mode == 0);
+	CHECK(samplerfs_sample_info(fs, find(fs, "SNARE.AIF"), &s) && s.rate == 22050 && s.key == 64 && s.frames == 300);
+	CHECK(s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 20 && s.loop_end == 250 && s.mode == 2);
+	CHECK(!samplerfs_sample_info(fs, find(fs, "DRUMS"), &s));
 	samplerfs_close(fs);
+}
+
+// ---- FAT: images sparse in memory, a volume laid out by hand
+struct Sparse {
+	static constexpr uint64_t PAGE = 4096;
+	uint64_t size;
+	std::map<uint64_t, std::vector<uint8_t>> pages;
+	explicit Sparse(uint64_t size) : size(size) {}
+	void put(uint64_t at, const void *p, size_t n)
+	{
+		auto *s = static_cast<const uint8_t *>(p);
+		for (size_t k = 0; k < n; k++, at++) {
+			auto &page = pages[at / PAGE];
+			if (page.empty())
+				page.assign(PAGE, 0);
+			page[at % PAGE] = s[k];
+		}
+	}
+	void get(uint64_t at, void *p, size_t n) const
+	{
+		auto *d = static_cast<uint8_t *>(p);
+		for (size_t k = 0; k < n; k++, at++) {
+			auto it = pages.find(at / PAGE);
+			d[k] = it == pages.end() ? 0 : it->second[at % PAGE];
+		}
+	}
+	void put16(uint64_t at, uint16_t v) { uint8_t b[2] = { uint8_t(v), uint8_t(v >> 8) }; put(at, b, 2); }
+	void put32(uint64_t at, uint32_t v) { put16(at, uint16_t(v)), put16(at + 2, uint16_t(v >> 16)); }
+	uint16_t get16(uint64_t at) const { uint8_t b[2]; get(at, b, 2); return uint16_t(b[0] | b[1] << 8); }
+	uint32_t get32(uint64_t at) const { return get16(at) | uint32_t(get16(at + 2)) << 16; }
+};
+
+static size_t sparse_read(void *user, uint64_t offset, void *buf, size_t n)
+{
+	auto *s = static_cast<Sparse *>(user);
+	if (offset >= s->size)
+		return 0;
+	n = size_t(std::min<uint64_t>(n, s->size - offset));
+	s->get(offset, buf, n);
+	return n;
+}
+
+static samplerfs_io io_of(Sparse &s)
+{
+	return { &s, sparse_read, s.size };
+}
+
+struct FatVolume {
+	Sparse &img;
+	uint64_t base;
+	int bits;
+	uint32_t spc, reserved, root_entries, fat_sectors;
+	uint64_t total;
+	uint8_t media;
+	uint32_t fats = 2, free_cluster = 3;
+
+	uint64_t fat_at() const { return base + uint64_t(reserved) * 512; }
+	uint64_t root_at() const { return fat_at() + uint64_t(fats) * fat_sectors * 512; }
+	uint64_t data_at() const { return root_at() + (uint64_t(root_entries) * 32 + 511) / 512 * 512; }
+	uint64_t cluster_at(uint32_t c) const { return data_at() + uint64_t(c - 2) * spc * 512; }
+	uint32_t bytes() const { return spc * 512; }
+
+	void boot(const char *label)
+	{
+		uint8_t s[512] = { 0xEB, 0x3C, 0x90 };
+		memcpy(s + 3, "TESTFAT ", 8);
+		s[11] = 0, s[12] = 2, s[13] = uint8_t(spc), s[14] = uint8_t(reserved), s[16] = uint8_t(fats);
+		s[17] = uint8_t(root_entries), s[18] = uint8_t(root_entries >> 8);
+		if (total < 65536)
+			s[19] = uint8_t(total), s[20] = uint8_t(total >> 8);
+		else
+			for (int k = 0; k < 4; k++)
+				s[32 + k] = uint8_t(total >> 8 * k);
+		s[21] = media;
+		uint8_t *ext = s + 36;
+		if (bits == 32) {
+			for (int k = 0; k < 4; k++)
+				s[36 + k] = uint8_t(fat_sectors >> 8 * k);
+			s[44] = 2;
+			ext = s + 64;
+		} else
+			s[22] = uint8_t(fat_sectors), s[23] = uint8_t(fat_sectors >> 8);
+		ext[2] = 0x29;
+		memset(ext + 7, ' ', 11);
+		memcpy(ext + 7, label, strlen(label));
+		s[510] = 0x55, s[511] = 0xAA;
+		img.put(base, s, 512);
+		set(0, 0x0FFFFF00 | media);
+		set(1, 0x0FFFFFFF);
+		if (bits == 32)
+			set(2, 0x0FFFFFFF);
+	}
+	void set(uint32_t c, uint32_t v)
+	{
+		for (uint32_t f = 0; f < fats; f++) {
+			uint64_t at = fat_at() + uint64_t(f) * fat_sectors * 512;
+			if (bits == 12) {
+				uint16_t w = img.get16(at + c + c / 2);
+				w = c & 1 ? uint16_t((w & 0x000F) | (v & 0xFFF) << 4) : uint16_t((w & 0xF000) | (v & 0xFFF));
+				img.put16(at + c + c / 2, w);
+			} else if (bits == 16)
+				img.put16(at + 2 * c, uint16_t(v));
+			else
+				img.put32(at + 4 * c, v & 0x0FFFFFFF);
+		}
+	}
+	uint32_t eoc() const { return bits == 12 ? 0xFFF : bits == 16 ? 0xFFFF : 0x0FFFFFFF; }
+	// data written over clusters in the order given, chained so
+	void write(const std::vector<uint32_t> &chain, const Bytes &data)
+	{
+		for (size_t k = 0; k < chain.size(); k++) {
+			set(chain[k], k + 1 < chain.size() ? chain[k + 1] : eoc());
+			size_t from = k * bytes();
+			if (from < data.size())
+				img.put(cluster_at(chain[k]), &data[from], std::min<size_t>(bytes(), data.size() - from));
+		}
+	}
+	std::vector<uint32_t> take(size_t n)
+	{
+		std::vector<uint32_t> c;
+		for (size_t k = 0; k < n; k++)
+			c.push_back(free_cluster++);
+		return c;
+	}
+};
+
+// a directory's entries, 32 bytes each, long names before their short ones
+struct FatDir {
+	Bytes b;
+	void entry(const char *short11, uint8_t attr, uint32_t cluster, uint32_t size)
+	{
+		Bytes e(32, 0);
+		memcpy(&e[0], short11, 11);
+		e[11] = attr;
+		put16(e, 20, uint16_t(cluster >> 16));
+		put16(e, 26, uint16_t(cluster));
+		put32(e, 28, size);
+		b.insert(b.end(), e.begin(), e.end());
+	}
+	void named(const std::u16string &name, const char *short11, uint8_t attr, uint32_t cluster, uint32_t size)
+	{
+		uint8_t sum = 0;
+		for (int k = 0; k < 11; k++)
+			sum = uint8_t(((sum & 1) << 7) + (sum >> 1) + uint8_t(short11[k]));
+		size_t parts = (name.size() + 12) / 13;
+		static const int at13[13] = { 1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30 };
+		for (size_t p = parts; p >= 1; p--) {
+			Bytes e(32, 0);
+			e[0] = uint8_t(p | (p == parts ? 0x40 : 0));
+			e[11] = 0x0F;
+			e[13] = sum;
+			for (int k = 0; k < 13; k++) {
+				size_t c = (p - 1) * 13 + k;
+				put16(e, at13[k], c < name.size() ? name[c] : c == name.size() ? 0 : 0xFFFF);
+			}
+			b.insert(b.end(), e.begin(), e.end());
+		}
+		entry(short11, attr, cluster, size);
+	}
+};
+
+// a volume with a label, README.TXT, a deleted file, Samples/Drums/ and a WAV of several clusters in reverse order;
+// where damaged, Drums also holds a directory pointing at Drums, one pointing past the volume, a file whose chain
+// runs back on itself, and Samples' chain loops onto itself
+static void fat_fill(FatVolume &v, bool damaged, bool label_in_root)
+{
+	v.boot(label_in_root ? "NO NAME" : "BPB LABEL");
+	auto readme = v.take(1), samples = v.take(1), drums = v.take(1);
+	Bytes wav = wav_file(2 * v.bytes(), 44100, 60, 100, 900);
+	size_t wav_clusters = (wav.size() + v.bytes() - 1) / v.bytes();
+	auto kick = v.take(wav_clusters);
+	std::reverse(kick.begin(), kick.end());
+	Bytes text(100, 'x');
+	v.write(readme, text);
+
+	FatDir root;
+	if (label_in_root)
+		root.entry("TEST VOLUME", 0x08, 0, 0);
+	root.entry("README  TXT", 0x20, readme[0], 100);
+	root.named(u"Gone.wav", "\xE5ONE    WAV", 0x20, 0, 0);
+	root.b[root.b.size() - 64] = 0xE5;  // the long name's entry deleted too
+	root.named(u"Samples", "SAMPLES    ", 0x10, samples[0], 0);
+	FatDir sd;
+	sd.entry(".          ", 0x10, samples[0], 0);
+	sd.entry("..         ", 0x10, 0, 0);
+	sd.entry("DRUMS      ", 0x10, drums[0], 0);
+	FatDir dd;
+	dd.entry(".          ", 0x10, drums[0], 0);
+	dd.entry("..         ", 0x10, samples[0], 0);
+	dd.named(u"Kick drum – long name.wav", "KICKDR~1WAV", 0x20, kick[0], uint32_t(wav.size()));
+	// a long name whose checksum does not match its short entry: the short name is used
+	dd.named(u"Wrong checksum.wav", "WRONG~1 WAV", 0x20, 0, 0);
+	dd.b[dd.b.size() - 64 + 13] ^= 1;
+	dd.b[dd.b.size() - 96 + 13] ^= 1;
+	if (damaged) {
+		auto loop = v.take(1);
+		dd.entry("SELF       ", 0x10, drums[0], 0);
+		dd.entry("FAR        ", 0x10, 0x0FFFFF0, 0);
+		dd.entry("LOOP    WAV", 0x20, loop[0], 1 << 20);
+		v.write(loop, wav);
+		v.set(loop[0], loop[0]);
+	}
+	if (v.bits == 32) {
+		v.write({ 2 }, root.b);
+	} else
+		v.img.put(v.root_at(), root.b.data(), root.b.size());
+	v.write(samples, sd.b);
+	if (damaged)
+		v.set(samples[0], samples[0]);
+	v.write(drums, dd.b);
+	v.write(kick, wav);
+}
+
+static void test_fat_volume(Sparse &img, samplerfs_medium medium, bool damaged, const char *label)
+{
+	samplerfs_io io = io_of(img);
+	samplerfs_medium m;
+	CHECK(samplerfs_probe(&io, &m) == SAMPLERFS_FAT && m == medium);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK(samplerfs_format_of(fs) == SAMPLERFS_FAT && samplerfs_medium_of(fs) == medium);
+	CHECK(!strcmp(samplerfs_label(fs), label));
+	const char *kick_name = "Kick drum \xE2\x80\x93 long name.wav";
+	std::vector<std::string> dirs { "Samples", "DRUMS" }, files { "README.TXT", kick_name, "WRONG~1.WAV" };
+	if (damaged) {
+		dirs.push_back("SELF");
+		dirs.push_back("FAR");
+		files.push_back("LOOP.WAV");
+	}
+	CHECK(names(fs, SAMPLERFS_DIRECTORY) == dirs);
+	CHECK(names(fs, SAMPLERFS_FILE) == files);
+	size_t samples = find(fs, "Samples"), drums = find(fs, "DRUMS"), kick = find(fs, kick_name);
+	CHECK(samplerfs_entry_at(fs, samples)->parent == SAMPLERFS_NONE && samplerfs_entry_at(fs, samples)->number == 1);
+	CHECK(samplerfs_entry_at(fs, drums)->parent == samples);
+	CHECK(kick != SAMPLERFS_NONE && samplerfs_entry_at(fs, kick)->parent == drums);
+	CHECK(samplerfs_entry_at(fs, find(fs, "README.TXT"))->bytes == 100);
+	samplerfs_sample s;
+	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 44100 && s.key == 60);
+	CHECK(s.frames == samplerfs_entry_at(fs, kick)->bytes / 2 - 56 && s.end == s.frames);
+	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 100 && s.loop_end == 900);
+	CHECK(!samplerfs_sample_info(fs, find(fs, "README.TXT"), &s) && !samplerfs_sample_info(fs, drums, &s));
+	if (damaged)
+		CHECK(!samplerfs_sample_info(fs, find(fs, "LOOP.WAV"), &s));
+	samplerfs_close(fs);
+}
+
+static void test_fat()
+{
+	// FAT12: a 1.44 MB floppy, the label in the root directory
+	for (bool damaged : { false, true }) {
+		Sparse img(2880 * 512);
+		FatVolume v { img, 0, 12, 1, 1, 224, 9, 2880, 0xF0 };
+		fat_fill(v, damaged, true);
+		test_fat_volume(img, SAMPLERFS_MEDIUM_FLOPPY, damaged, "TEST VOLUME");
+	}
+	// FAT16: a 10 MB disk behind an MBR, its partition at sector 63 the second of the table; the label the BPB's
+	for (bool damaged : { false, true }) {
+		const uint64_t sectors = 20480, start = 63;
+		Sparse img((start + sectors) * 512);
+		uint8_t mbr[512] = {};
+		mbr[446 + 4] = 0x83;  // a partition of another kind first
+		mbr[446 + 8] = 1, mbr[446 + 12] = 1;
+		uint8_t *e = mbr + 446 + 16;
+		e[4] = 0x06;
+		e[8] = uint8_t(start);
+		e[12] = uint8_t(sectors), e[13] = uint8_t(sectors >> 8);
+		mbr[510] = 0x55, mbr[511] = 0xAA;
+		img.put(0, mbr, 512);
+		FatVolume v { img, start * 512, 16, 4, 1, 512, 20, sectors, 0xF8 };
+		fat_fill(v, damaged, false);
+		test_fat_volume(img, SAMPLERFS_MEDIUM_DISK, damaged, "BPB LABEL");
+	}
+	// FAT32: a bare volume of 66 000 clusters of 512 bytes, sparse in memory
+	for (bool damaged : { false, true }) {
+		const uint64_t clusters = 66000, fat_sectors = (clusters + 2) * 4 / 512 + 1, sectors = 32 + 2 * fat_sectors + clusters;
+		Sparse img(sectors * 512);
+		FatVolume v { img, 0, 32, 1, 32, 0, uint32_t(fat_sectors), sectors, 0xF8 };
+		fat_fill(v, damaged, true);
+		test_fat_volume(img, SAMPLERFS_MEDIUM_DISK, damaged, "TEST VOLUME");
+	}
+	// a bare volume's boot sector without its jump is no FAT
+	Sparse img(2880 * 512);
+	FatVolume v { img, 0, 12, 1, 1, 224, 9, 2880, 0xF0 };
+	v.boot("");
+	samplerfs_io io = io_of(img);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_FAT);
+	uint8_t no_jump = 0;
+	img.put(0, &no_jump, 1);
+	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
 }
 
 static void test_others()
@@ -493,7 +857,7 @@ static void test_s700_floppy()
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium = SAMPLERFS_MEDIUM_UNKNOWN;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S760 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S760 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -540,7 +904,7 @@ static void test_s550_floppy()
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S550 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S550 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -688,7 +1052,7 @@ static void test_akai_floppy()
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S1000 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S1000 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -736,7 +1100,7 @@ static void test_s900()
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S900 && medium == SAMPLERFS_MEDIUM_FLOPPY);
+	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S900 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
 	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
@@ -768,6 +1132,7 @@ int main()
 	test_akai_floppy();
 	test_s900();
 	test_iso();
+	test_fat();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);
