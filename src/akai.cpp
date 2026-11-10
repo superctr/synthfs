@@ -48,11 +48,6 @@ static std::vector<Partition> partitions(const Image &im)
 	return out;
 }
 
-bool probe(const Image &im)
-{
-	return !partitions(im).empty();
-}
-
 static std::string name_of(const uint8_t *p)
 {
 	std::string s;
@@ -70,6 +65,30 @@ static samplecd_kind kind_of(uint8_t type)
 	}
 }
 
+// a volume's type: 1 an S1000's; 3 and 7 an S3000's
+static samplecd_format format_of(uint8_t type)
+{
+	return type == 1 ? SAMPLECD_AKAI_S1000 : SAMPLECD_AKAI_S3000;
+}
+
+samplecd_format probe(const Image &im)
+{
+	auto parts = partitions(im);
+	if (parts.empty())
+		return SAMPLECD_UNKNOWN;
+	for (const Partition &P : parts) {
+		uint8_t h[VOLUMES_AT + 16 * VOLUMES];
+		if (!im.read(P.base, h, sizeof h))
+			continue;
+		for (uint32_t v = 0; v < VOLUMES; v++) {
+			uint8_t type = h[VOLUMES_AT + 16 * v + 12];
+			if (type && format_of(type) == SAMPLECD_AKAI_S3000)
+				return SAMPLECD_AKAI_S3000;
+		}
+	}
+	return SAMPLECD_AKAI_S1000;
+}
+
 void list(Disc &d)
 {
 	auto parts = partitions(d.image);
@@ -78,8 +97,8 @@ void list(Disc &d)
 		auto h = d.image.read(P.base, FAT_AT + 2 * P.blocks);
 		if (h.empty())
 			continue;
-		size_t pi = d.add(SAMPLECD_PARTITION, uint32_t(p), SAMPLECD_NONE, std::string(1, char('A' + p)), P.blocks * BLOCK, 0, P.base);
-		uint32_t any = 0;
+		size_t pi = d.add(SAMPLECD_PARTITION, SAMPLECD_AKAI_S1000, uint32_t(p), SAMPLECD_NONE, std::string(1, char('A' + p)),
+			P.blocks * BLOCK, P.base);
 		for (uint32_t v = 0; v < VOLUMES; v++) {
 			const uint8_t *e = &h[VOLUMES_AT + 16 * v];
 			uint8_t type = e[12];
@@ -87,35 +106,64 @@ void list(Disc &d)
 			if (!type || start >= P.blocks)
 				continue;
 			// an S1000 volume's directory is 126 entries in its block; the S3000's 510 run on into the block its FAT names
-			bool s1000 = type == 1;
-			uint32_t machines = s1000 ? SAMPLECD_S760 | SAMPLECD_XV5080 : SAMPLECD_XV5080;
+			samplecd_format fmt = format_of(type);
 			std::vector<uint8_t> dir = d.image.read(P.base + start * BLOCK, BLOCK);
 			if (dir.empty())
 				continue;
 			uint32_t count = 126;
-			if (!s1000) {
+			if (fmt == SAMPLECD_AKAI_S3000) {
 				uint16_t next = le16(&h[FAT_AT + 2 * start]);
 				std::vector<uint8_t> more;
 				if ((next & 0xC000) != 0xC000 && (next & 0x3FFF) < P.blocks)
 					more = d.image.read(P.base + (next & 0x3FFF) * BLOCK, BLOCK);
 				dir.insert(dir.end(), more.begin(), more.end());
 				count = std::min<uint32_t>(510, uint32_t(dir.size() / 24));
+				d.entries[pi].format = SAMPLECD_AKAI_S3000;
 			}
-			size_t vi = d.add(SAMPLECD_VOLUME, v, pi, name_of(e), 0, machines, P.base + start * BLOCK);
-			any |= machines;
+			size_t vi = d.add(SAMPLECD_VOLUME, fmt, v, pi, name_of(e), 0, P.base + start * BLOCK);
 			uint64_t bytes = 0;
 			for (uint32_t k = 0; k < count; k++) {
 				const uint8_t *f = &dir[24 * k];
 				if (!f[16])
 					continue;
-				uint64_t at = P.base + le16(f + 20) * BLOCK;
-				d.add(kind_of(f[16]), k, vi, name_of(f), le24(f + 17), machines, at);
+				size_t fi = d.add(kind_of(f[16]), fmt, k, vi, name_of(f), le24(f + 17), P.base + le16(f + 20) * BLOCK);
+				d.tag(fi, std::string(1, char(f[16] & 0x7F)));
 				bytes += le24(f + 17);
 			}
 			d.entries[vi].bytes = bytes;
 		}
-		d.entries[pi].machines = any;
 	}
+}
+
+// a program: a header, then its keygroups (150 bytes each on an S1000, 192 on an S3000), the count at +42; each
+// keygroup's four velocity zones name their samples at +34, +58, +82, +106, found by name in the volume
+std::vector<size_t> refs(const Disc &d, size_t i)
+{
+	const samplecd_entry &e = d.entries[i];
+	if (e.kind != SAMPLECD_PROGRAM || e.parent == SAMPLECD_NONE)
+		return {};
+	size_t block = e.format == SAMPLECD_AKAI_S1000 ? 150 : 192;
+	auto pr = d.image.read(d.where[i], std::min<uint64_t>(e.bytes, block * 100));
+	if (pr.size() < block || pr[0] != 1)
+		return {};
+	std::vector<size_t> out;
+	for (size_t k = 0; k < pr[42] && (k + 2) * block <= pr.size(); k++) {
+		const uint8_t *kg = &pr[(k + 1) * block];
+		if (kg[0] != 2)
+			break;
+		for (int z = 0; z < 4; z++) {
+			std::string name = trimmed(name_of(kg + 34 + 24 * z));
+			if (name.empty())
+				continue;
+			for (size_t j = e.parent + 1; j < d.entries.size() && d.entries[j].parent == e.parent; j++)
+				if (d.entries[j].kind == SAMPLECD_SAMPLE && name == d.entries[j].name) {
+					if (std::find(out.begin(), out.end(), j) == out.end())
+						out.push_back(j);
+					break;
+				}
+		}
+	}
+	return out;
 }
 
 bool sample(const Disc &d, size_t i, samplecd_sample &out)

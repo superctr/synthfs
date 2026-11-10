@@ -1,5 +1,5 @@
 // Copyright 2026 Ian Karlsson
-// The Roland S-700 series volume (docs/formats.md, "S-7xx")
+// The Roland S-700 series volume, the S-760's and the S-770's (docs/formats.md, "S-760 and S-770")
 #include "internal.hpp"
 
 #include <algorithm>
@@ -7,7 +7,6 @@
 namespace scd::s7 {
 
 constexpr uint32_t SECTOR = 512;
-constexpr uint32_t MACHINES = SAMPLECD_S760 | SAMPLECD_S770 | SAMPLECD_XV5080;
 
 struct List {
 	samplecd_kind kind;
@@ -37,11 +36,23 @@ static bool counts(const uint8_t *s0, uint16_t *out)
 	return true;
 }
 
-bool probe(const Image &im)
+// the system line at +0x20, the machine that made the disc
+static std::string system_line(const uint8_t *s0)
+{
+	std::string line;
+	for (int i = 0x20; i < 0x40 && s0[i]; i++)
+		line += s0[i] >= 32 && s0[i] < 127 ? char(s0[i]) : ' ';
+	size_t a = line.find_first_not_of(' ');
+	return a == std::string::npos ? "" : trimmed(line.substr(a));
+}
+
+samplecd_format probe(const Image &im)
 {
 	uint8_t s0[0x11E];
 	uint16_t n[5];
-	return im.read(0, s0, sizeof s0) && !memcmp(s0, "\0\0\0\0S770 MR25A", 14) && counts(s0, n);
+	if (!im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0S770 MR25A", 14) || !counts(s0, n))
+		return SAMPLECD_UNKNOWN;
+	return system_line(s0).starts_with("S-760") ? SAMPLECD_S760 : SAMPLECD_S770;
 }
 
 static std::string name_of(const uint8_t *p)
@@ -58,11 +69,7 @@ void list(Disc &d)
 	uint16_t count[5];
 	if (s0.empty() || !counts(s0.data(), count))
 		return;
-	std::string label;
-	for (int i = 0x20; i < 0x40 && s0[i]; i++)
-		label += s0[i] >= 32 && s0[i] < 127 ? char(s0[i]) : ' ';
-	size_t a = label.find_first_not_of(' ');
-	d.label = a == std::string::npos ? "" : trimmed(label.substr(a));
+	d.label = system_line(s0.data());
 	for (int l = 0; l < 5; l++) {
 		const List &L = lists[l];
 		d.numbered[l].assign(L.cap, SAMPLECD_NONE);
@@ -73,10 +80,10 @@ void list(Disc &d)
 			if (e[0] < 32 || e[0] > 126)
 				continue;
 			uint64_t bytes = L.kind == SAMPLECD_SAMPLE ? uint64_t(le16(e + 30)) * SEGMENT_BYTES : 0;
-			size_t i = d.add(L.kind, n, SAMPLECD_NONE, name_of(e), bytes, MACHINES, uint64_t(L.record) * SECTOR + uint64_t(n) * L.size);
+			size_t i = d.add(L.kind, d.format, n, SAMPLECD_NONE, name_of(e), bytes, uint64_t(L.record) * SECTOR + uint64_t(n) * L.size);
 			for (const char *c : categories)
 				if (!memcmp(e, c, 3))
-					memcpy(d.entries[i].category, c, 3);
+					d.tag(i, c);
 			d.numbered[l][n] = i;
 		}
 	}

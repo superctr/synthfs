@@ -17,7 +17,7 @@ else()
 	set(SAMPLECD_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 endif()
 
-add_library(samplecd STATIC src/samplecd.cpp src/image.cpp src/s7.cpp src/akai.cpp src/iso9660.cpp)
+add_library(samplecd STATIC src/samplecd.cpp src/image.cpp src/s7.cpp src/s550.cpp src/akai.cpp src/iso9660.cpp)
 target_include_directories(samplecd PUBLIC include)
 target_compile_options(samplecd PRIVATE ${SAMPLECD_WARNINGS})
 

@@ -58,7 +58,7 @@ static bool walk(Disc &d, uint32_t extent, uint32_t bytes, size_t parent, int de
 		uint32_t ext = le32(r + 2), size = le32(r + 10);
 		if (r[25] & 2) {
 			size_t mark = d.entries.size();
-			size_t di = d.add(SAMPLECD_DIRECTORY, number++, parent, name, 0, SAMPLECD_XV5080, ext * BLOCK);
+			size_t di = d.add(SAMPLECD_DIRECTORY, SAMPLECD_ISO9660, number++, parent, name, 0, ext * BLOCK);
 			if (walk(d, ext, size, di, depth + 1))
 				any = true;
 			else {
@@ -67,7 +67,7 @@ static bool walk(Disc &d, uint32_t extent, uint32_t bytes, size_t parent, int de
 				number--;
 			}
 		} else if (audio(name)) {
-			d.add(SAMPLECD_FILE, number++, parent, name, size, SAMPLECD_XV5080, ext * BLOCK);
+			d.add(SAMPLECD_FILE, SAMPLECD_ISO9660, number++, parent, name, size, ext * BLOCK);
 			any = true;
 		}
 	}

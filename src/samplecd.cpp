@@ -24,12 +24,12 @@ static samplecd_format format_of(const Image &im)
 	uint8_t s0[16];
 	if (!im.read(0, s0, sizeof s0))
 		return SAMPLECD_UNKNOWN;
-	if (s7::probe(im))
-		return SAMPLECD_S7XX;
-	if (!memcmp(s0, "* ROLAND S-550 *", 16))
+	if (samplecd_format f = s7::probe(im))
+		return f;
+	if (s550::probe(im))
 		return SAMPLECD_S550;
-	if (akai::probe(im))
-		return SAMPLECD_AKAI;
+	if (samplecd_format f = akai::probe(im))
+		return f;
 	if (!memcmp(s0, "EMU3", 4))
 		return SAMPLECD_EMU3;
 	if (!memcmp(s0, "EMX2", 4))
@@ -68,8 +68,11 @@ samplecd *samplecd_open(const samplecd_io *io, char *err, size_t err_size)
 			return say(err, err_size, "the image is shorter than a sector"), nullptr;
 		d.format = format_of(d.image);
 		switch (d.format) {
-		case SAMPLECD_S7XX: s7::list(d); break;
-		case SAMPLECD_AKAI: akai::list(d); break;
+		case SAMPLECD_S760:
+		case SAMPLECD_S770: s7::list(d); break;
+		case SAMPLECD_S550: s550::list(d); break;
+		case SAMPLECD_AKAI_S1000:
+		case SAMPLECD_AKAI_S3000: akai::list(d); break;
 		case SAMPLECD_ISO9660: iso9660::list(d); break;
 		default: break;
 		}
@@ -128,9 +131,11 @@ samplecd_format samplecd_format_of(const samplecd *cd)
 const char *samplecd_format_name(samplecd_format format)
 {
 	switch (format) {
-	case SAMPLECD_S7XX: return "S-7xx";
 	case SAMPLECD_S550: return "S-550";
-	case SAMPLECD_AKAI: return "AKAI";
+	case SAMPLECD_S760: return "S-760";
+	case SAMPLECD_S770: return "S-770";
+	case SAMPLECD_AKAI_S1000: return "AKAI S1000";
+	case SAMPLECD_AKAI_S3000: return "AKAI S3000";
 	case SAMPLECD_ISO9660: return "ISO 9660";
 	case SAMPLECD_EMU3: return "E-mu EIII/E-IV";
 	case SAMPLECD_EMAX2: return "E-mu Emax II";
@@ -143,16 +148,6 @@ const char *samplecd_label(const samplecd *cd)
 	return cd->disc.label.c_str();
 }
 
-uint32_t samplecd_machines(const samplecd *cd)
-{
-	if (cd->disc.format == SAMPLECD_S550)
-		return SAMPLECD_S760 | SAMPLECD_S770;
-	uint32_t m = 0;
-	for (const auto &e : cd->disc.entries)
-		m |= e.machines;
-	return m;
-}
-
 size_t samplecd_count(const samplecd *cd)
 {
 	return cd->disc.entries.size();
@@ -163,17 +158,41 @@ const samplecd_entry *samplecd_entry_at(const samplecd *cd, size_t i)
 	return i < cd->disc.entries.size() ? &cd->disc.entries[i] : nullptr;
 }
 
+static std::vector<size_t> refs_of(const Disc &d, size_t i)
+{
+	switch (d.entries[i].format) {
+	case SAMPLECD_S760:
+	case SAMPLECD_S770: return s7::refs(d, i);
+	case SAMPLECD_S550: return s550::refs(d, i);
+	case SAMPLECD_AKAI_S1000:
+	case SAMPLECD_AKAI_S3000: return akai::refs(d, i);
+	default: return {};
+	}
+}
+
 size_t samplecd_refs(samplecd *cd, size_t i, size_t *out, size_t max)
 {
-	if (i >= cd->disc.entries.size() || cd->disc.format != SAMPLECD_S7XX)
+	if (i >= cd->disc.entries.size())
 		return 0;
 	try {
-		auto r = s7::refs(cd->disc, i);
+		auto r = refs_of(cd->disc, i);
 		for (size_t k = 0; k < r.size() && k < max; k++)
 			out[k] = r[k];
 		return r.size();
 	} catch (...) {
 		return 0;
+	}
+}
+
+static bool sample_of(const Disc &d, size_t i, samplecd_sample &s)
+{
+	switch (d.entries[i].format) {
+	case SAMPLECD_S760:
+	case SAMPLECD_S770: return s7::sample(d, i, s);
+	case SAMPLECD_S550: return s550::sample(d, i, s);
+	case SAMPLECD_AKAI_S1000:
+	case SAMPLECD_AKAI_S3000: return akai::sample(d, i, s);
+	default: return false;
 	}
 }
 
@@ -183,8 +202,7 @@ int samplecd_sample_info(samplecd *cd, size_t i, samplecd_sample *out)
 		return 0;
 	try {
 		samplecd_sample s { 0, -1, 0 };
-		bool ok = cd->disc.format == SAMPLECD_S7XX ? s7::sample(cd->disc, i, s)
-			: cd->disc.format == SAMPLECD_AKAI ? akai::sample(cd->disc, i, s) : false;
+		bool ok = sample_of(cd->disc, i, s);
 		if (ok)
 			*out = s;
 		return ok;

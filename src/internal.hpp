@@ -16,6 +16,8 @@ namespace scd {
 inline uint16_t le16(const uint8_t *p) { return uint16_t(p[0] | p[1] << 8); }
 inline uint32_t le24(const uint8_t *p) { return uint32_t(p[0] | p[1] << 8 | p[2] << 16); }
 inline uint32_t le32(const uint8_t *p) { return uint32_t(p[0] | p[1] << 8 | p[2] << 16 | uint32_t(p[3]) << 24); }
+inline uint32_t be24(const uint8_t *p) { return uint32_t(p[0] << 16 | p[1] << 8 | p[2]); }
+inline uint32_t be32(const uint8_t *p) { return uint32_t(p[0]) << 24 | uint32_t(p[1] << 16 | p[2] << 8 | p[3]); }
 
 // The disc's 2048-byte user data, from a plain image or one of raw 2352-byte sectors (a .bin: mode 1 or mode 2 form 1)
 class Image {
@@ -41,25 +43,37 @@ struct Disc {
 	std::vector<samplecd_entry> entries;
 	// where each entry's record or data starts in the image, beside entries
 	std::vector<uint64_t> where;
-	// an entry's index by its kind's list and number (the S-7xx lists)
+	// an entry's index by its kind's list and number (the S-760/S-770 lists)
 	std::vector<size_t> numbered[5];
 
 	explicit Disc(const samplecd_io &io) : image(io) {}
-	size_t add(samplecd_kind kind, uint32_t number, size_t parent, std::string_view name, uint64_t bytes, uint32_t machines,
-		uint64_t at);
+	size_t add(samplecd_kind kind, samplecd_format format, uint32_t number, size_t parent, std::string_view name,
+		uint64_t bytes, uint64_t at);
+	void tag(size_t i, std::string_view t);
+	// the entry of a kind with the number under parent, or SAMPLECD_NONE
+	size_t child(size_t parent, samplecd_kind kind, uint32_t number) const;
 };
 
 // one per format: whether the image is one, its lists, what an entry uses, a sample's header
 namespace s7 {
-bool probe(const Image &im);
+// S-760 or S-770, else unknown
+samplecd_format probe(const Image &im);
 void list(Disc &d);
 std::vector<size_t> refs(const Disc &d, size_t i);
 bool sample(const Disc &d, size_t i, samplecd_sample &out);
 }
 namespace akai {
 extern const uint8_t partition_header[196];
+// S1000 or S3000, else unknown
+samplecd_format probe(const Image &im);
+void list(Disc &d);
+std::vector<size_t> refs(const Disc &d, size_t i);
+bool sample(const Disc &d, size_t i, samplecd_sample &out);
+}
+namespace s550 {
 bool probe(const Image &im);
 void list(Disc &d);
+std::vector<size_t> refs(const Disc &d, size_t i);
 bool sample(const Disc &d, size_t i, samplecd_sample &out);
 }
 namespace iso9660 {

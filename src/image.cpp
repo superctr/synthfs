@@ -46,20 +46,33 @@ std::vector<uint8_t> Image::read(uint64_t offset, size_t n) const
 	return v;
 }
 
-size_t Disc::add(samplecd_kind kind, uint32_t number, size_t parent, std::string_view name, uint64_t bytes, uint32_t machines,
-	uint64_t at)
+size_t Disc::add(samplecd_kind kind, samplecd_format fmt, uint32_t number, size_t parent, std::string_view name,
+	uint64_t bytes, uint64_t at)
 {
 	samplecd_entry e {};
 	e.kind = kind;
+	e.format = fmt;
 	e.number = number;
 	e.parent = parent;
 	std::string n = trimmed(name);
 	snprintf(e.name, sizeof e.name, "%s", n.c_str());
 	e.bytes = bytes;
-	e.machines = machines;
 	entries.push_back(e);
 	where.push_back(at);
 	return entries.size() - 1;
+}
+
+void Disc::tag(size_t i, std::string_view t)
+{
+	snprintf(entries[i].tag, sizeof entries[i].tag, "%.*s", int(t.size()), t.data());
+}
+
+size_t Disc::child(size_t parent, samplecd_kind kind, uint32_t number) const
+{
+	for (size_t i = parent + 1; i < entries.size(); i++)
+		if (entries[i].parent == parent && entries[i].kind == kind && entries[i].number == number)
+			return i;
+	return SAMPLECD_NONE;
 }
 
 std::string trimmed(std::string_view s)

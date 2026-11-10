@@ -54,10 +54,11 @@ static std::vector<std::string> names(samplecd *cd, samplecd_kind kind)
 	return out;
 }
 
-static size_t find(samplecd *cd, const char *name)
+// the first entry of the name, of the kind where one is given
+static size_t find(samplecd *cd, const char *name, int kind = -1)
 {
 	for (size_t i = 0; i < samplecd_count(cd); i++)
-		if (!strcmp(samplecd_entry_at(cd, i)->name, name))
+		if (!strcmp(samplecd_entry_at(cd, i)->name, name) && (kind < 0 || samplecd_entry_at(cd, i)->kind == kind))
 			return i;
 	return SAMPLECD_NONE;
 }
@@ -73,11 +74,11 @@ static std::vector<std::string> used(samplecd *cd, size_t i)
 }
 
 // ---- S-7xx: one of each list, a gap, a slot past the count, and the references between them
-static Bytes s7_image()
+static Bytes s7_image(const char *system)
 {
 	Bytes b((0x15AC + 18 * 4) * 512, 0);
 	memcpy(&b[4], "S770 MR25A", 10);
-	put_name(b, 0x20, " S-760 System Disk", 32);
+	put_name(b, 0x20, system, 32);
 	const uint16_t count[5] = { 1, 1, 1, 2, 3 };
 	for (int l = 0; l < 5; l++)
 		put16(b, 0x114 + 2 * l, count[l]);
@@ -118,22 +119,22 @@ static Bytes s7_image()
 	return b;
 }
 
-static void test_s7(Bytes b)
+static void test_s7(Bytes b, samplecd_format format, const char *label)
 {
 	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_S7XX);
+	CHECK(samplecd_probe(&io) == format);
 	char err[64];
 	samplecd *cd = samplecd_open(&io, err, sizeof err);
 	CHECK(cd);
 	if (!cd)
 		return;
-	CHECK(!strcmp(samplecd_label(cd), "S-760 System Disk"));
-	CHECK(samplecd_machines(cd) == (SAMPLECD_S760 | SAMPLECD_S770 | SAMPLECD_XV5080));
+	CHECK(!strcmp(samplecd_label(cd), label));
+	CHECK(samplecd_format_of(cd) == format && samplecd_entry_at(cd, 0)->format == format);
 	CHECK((names(cd, SAMPLECD_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
 	CHECK((names(cd, SAMPLECD_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
 	size_t strings = find(cd, "STR:Strings");
-	CHECK(strings != SAMPLECD_NONE && !strcmp(samplecd_entry_at(cd, strings)->category, "STR"));
-	CHECK(!samplecd_entry_at(cd, find(cd, "PRT:Low"))->category[0]);
+	CHECK(strings != SAMPLECD_NONE && !strcmp(samplecd_entry_at(cd, strings)->tag, "STR"));
+	CHECK(!samplecd_entry_at(cd, find(cd, "PRT:Low"))->tag[0]);
 	CHECK((used(cd, find(cd, "VOL:One")) == std::vector<std::string> { "PRF:One" }));
 	CHECK((used(cd, find(cd, "PRF:One")) == std::vector<std::string> { "STR:Strings" }));
 	CHECK((used(cd, strings) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
@@ -190,18 +191,31 @@ static void akai_file(Bytes &b, size_t at, const char *name, uint8_t type, uint3
 	put16(b, at + 20, start);
 }
 
-static Bytes akai_image(bool with_s1000)
+// a program: a header and keygroups of block bytes each, each zone naming a sample
+static void akai_program(Bytes &b, size_t at, size_t block, const std::vector<std::vector<const char *>> &keygroups)
+{
+	b[at] = 1;
+	b[at + 42] = uint8_t(keygroups.size());
+	for (size_t k = 0; k < keygroups.size(); k++) {
+		size_t kg = at + (k + 1) * block;
+		b[kg] = 2;
+		for (int z = 0; z < 4; z++)
+			akai_name(b, kg + 34 + 24 * z, z < int(keygroups[k].size()) ? keygroups[k][z] : "");
+	}
+}
+
+static Bytes akai_image(bool s3000_partition)
 {
 	Bytes b(16 * AKAI_BLOCK, 0);
 	akai_partition(b, 0, 8, [&](uint64_t base) {
 		akai_name(b, base + 0xCA, "PIANO");
-		b[base + 0xCA + 12] = with_s1000 ? 1 : 3;
+		b[base + 0xCA + 12] = 1;
 		put16(b, base + 0xCA + 14, 3);
 		size_t dir = base + 3 * AKAI_BLOCK;
 		akai_file(b, dir, "PIANO PROG", 'p', 450, 4);
 		akai_file(b, dir + 24, "PIANO C3", 's', 1000, 5);
-		if (with_s1000)
-			akai_file(b, dir + 126 * 24, "VOLUME DATA", 's', 1, 6);  // past an S1000 directory's 126
+		akai_file(b, dir + 126 * 24, "VOLUME DATA", 's', 1, 6);  // past an S1000 directory's 126
+		akai_program(b, base + 4 * AKAI_BLOCK, 150, { { "PIANO C3", "", "PIANO C3" }, { "MISSING" } });
 		size_t smp = base + 5 * AKAI_BLOCK;
 		b[smp] = 3;
 		b[smp + 2] = 60;
@@ -209,14 +223,17 @@ static Bytes akai_image(bool with_s1000)
 		b[smp + 0x1B] = 0x01;
 		put16(b, smp + 0x8A, 22050);
 	});
-	akai_partition(b, 8 * AKAI_BLOCK, 8, [&](uint64_t base) {
-		akai_name(b, base + 0xCA, "STRINGS");
-		b[base + 0xCA + 12] = 3;
-		put16(b, base + 0xCA + 14, 3);
-		put16(b, base + 0x70A + 2 * 3, 5);  // the directory's second block
-		akai_file(b, base + 3 * AKAI_BLOCK, "STRINGS", 0xF0, 600, 6);
-		akai_file(b, base + 5 * AKAI_BLOCK + (400 * 24 - AKAI_BLOCK), "STRINGS A4", 0xF3, 2000, 7);
-	});
+	if (s3000_partition)
+		akai_partition(b, 8 * AKAI_BLOCK, 8, [&](uint64_t base) {
+			akai_name(b, base + 0xCA, "STRINGS");
+			b[base + 0xCA + 12] = 3;
+			put16(b, base + 0xCA + 14, 3);
+			put16(b, base + 0x70A + 2 * 3, 5);  // the directory's second block
+			akai_file(b, base + 3 * AKAI_BLOCK, "STRINGS", 0xF0, 600, 6);
+			akai_file(b, base + 3 * AKAI_BLOCK + 24, "FX", 'x', 100, 7);
+			akai_file(b, base + 5 * AKAI_BLOCK + (400 * 24 - AKAI_BLOCK), "STRINGS A4", 0xF3, 2000, 7);
+			akai_program(b, base + 6 * AKAI_BLOCK, 192, { { "", "STRINGS A4" } });
+		});
 	return b;
 }
 
@@ -224,7 +241,7 @@ static void test_akai()
 {
 	Bytes b = akai_image(true);
 	samplecd_io io = io_of(b);
-	CHECK(samplecd_probe(&io) == SAMPLECD_AKAI);
+	CHECK(samplecd_probe(&io) == SAMPLECD_AKAI_S3000);
 	samplecd *cd = samplecd_open(&io, nullptr, 0);
 	CHECK(cd);
 	if (!cd)
@@ -232,26 +249,91 @@ static void test_akai()
 	CHECK((names(cd, SAMPLECD_PARTITION) == std::vector<std::string> { "A", "B" }));
 	CHECK((names(cd, SAMPLECD_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
 	CHECK((names(cd, SAMPLECD_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS" }));
+	CHECK((names(cd, SAMPLECD_OTHER) == std::vector<std::string> { "FX" }));
 	size_t piano = find(cd, "PIANO"), c3 = find(cd, "PIANO C3"), a4 = find(cd, "STRINGS A4");
 	CHECK(samplecd_entry_at(cd, c3)->parent == piano && samplecd_entry_at(cd, piano)->parent == find(cd, "A"));
-	CHECK(samplecd_entry_at(cd, piano)->machines == (SAMPLECD_S760 | SAMPLECD_XV5080));
-	CHECK(samplecd_entry_at(cd, a4)->machines == SAMPLECD_XV5080 && samplecd_entry_at(cd, a4)->number == 400);
-	CHECK(samplecd_machines(cd) == (SAMPLECD_S760 | SAMPLECD_XV5080));
+	CHECK(samplecd_entry_at(cd, piano)->format == SAMPLECD_AKAI_S1000 && samplecd_entry_at(cd, find(cd, "A"))->format == SAMPLECD_AKAI_S1000);
+	CHECK(samplecd_entry_at(cd, a4)->format == SAMPLECD_AKAI_S3000 && samplecd_entry_at(cd, a4)->number == 400);
+	CHECK(samplecd_entry_at(cd, find(cd, "B"))->format == SAMPLECD_AKAI_S3000);
+	CHECK(!strcmp(samplecd_entry_at(cd, c3)->tag, "s") && !strcmp(samplecd_entry_at(cd, a4)->tag, "s"));
+	CHECK(!strcmp(samplecd_entry_at(cd, find(cd, "FX"))->tag, "x"));
+	CHECK((used(cd, find(cd, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
+	CHECK((used(cd, find(cd, "STRINGS", SAMPLECD_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
 	samplecd_sample s;
 	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
 	samplecd_close(cd);
 
 	b = akai_image(false);
 	io = io_of(b);
-	cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd && samplecd_machines(cd) == SAMPLECD_XV5080);
-	samplecd_close(cd);
+	CHECK(samplecd_probe(&io) == SAMPLECD_AKAI_S1000);
 
 	// a size out of range is no partition
 	b = akai_image(true);
 	put16(b, 0, 0x1E01);
 	io = io_of(b);
-	CHECK(samplecd_probe(&io) != SAMPLECD_AKAI);
+	CHECK(samplecd_probe(&io) == SAMPLECD_UNKNOWN);
+}
+
+// ---- S-550: a directory of one area, its patch using tones by two key maps
+static void put_be(Bytes &b, size_t at, uint32_t v, int n)
+{
+	for (int i = 0; i < n; i++)
+		b[at + i] = uint8_t(v >> (8 * (n - 1 - i)));
+}
+
+static void test_s550()
+{
+	const uint32_t start = 4, length = 18 + 48;
+	Bytes b((start + length) * 512, 0);
+	memcpy(&b[0], "* ROLAND S-550 *", 16);
+	put_name(b, 0x20, "Roland Sound Library    L-CD9", 32);
+	memset(&b[512], 0xFF, 3 * 512);
+	put_name(b, 512, "Pianos #1", 32);
+	put_be(b, 512 + 0x30, start, 4);
+	put_be(b, 512 + 0x34, length, 4);
+	b[512 + 0x38] = 'A';
+	b[512 + 0x39] = 0;
+	size_t area = start * 512;
+	for (int k = 0; k < 16; k++)
+		put_name(b, area + k * 256, "", 12);
+	put_name(b, area, "Piano Split", 12);
+	b[area + 0x0F] = 1;
+	for (int k = 0; k < 109; k++) {
+		b[area + 0x1A + k] = k < 50 ? 0 : 0xDF;
+		b[area + 0x87 + k] = k < 50 ? 0xDF : 2;
+	}
+	for (int k = 0; k < 32; k++)
+		put_name(b, area + 0x1200 + k * 128, "", 8);
+	size_t t0 = area + 0x1200, t2 = t0 + 2 * 128;
+	put_name(b, t0, "P-C3", 8);
+	b[t0 + 0x0C] = 60;
+	b[t0 + 0x0F] = 1;
+	put_be(b, t0 + 0x13, 0x2FFF, 3);
+	put_name(b, t2, "P-C5", 8);
+	b[t2 + 0x0B] = 1;
+	b[t2 + 0x0C] = 84;
+	b[t2 + 0x0F] = 1;
+	put_be(b, t2 + 0x10, 0x100, 3);
+	put_be(b, t2 + 0x13, 0x1FF, 3);
+
+	samplecd_io io = io_of(b);
+	CHECK(samplecd_probe(&io) == SAMPLECD_S550);
+	samplecd *cd = samplecd_open(&io, nullptr, 0);
+	CHECK(cd);
+	if (!cd)
+		return;
+	CHECK(!strcmp(samplecd_label(cd), "Roland Sound Library    L-CD9"));
+	CHECK((names(cd, SAMPLECD_AREA) == std::vector<std::string> { "Pianos #1" }));
+	CHECK((names(cd, SAMPLECD_PATCH) == std::vector<std::string> { "Piano Split" }));
+	CHECK((names(cd, SAMPLECD_TONE) == std::vector<std::string> { "P-C3", "P-C5" }));
+	size_t pianos = find(cd, "Pianos #1"), c3 = find(cd, "P-C3"), c5 = find(cd, "P-C5");
+	CHECK(!strcmp(samplecd_entry_at(cd, pianos)->tag, "0") && samplecd_entry_at(cd, c5)->number == 2);
+	CHECK(samplecd_entry_at(cd, c3)->parent == pianos && samplecd_entry_at(cd, c3)->bytes == 24576);
+	CHECK((used(cd, find(cd, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
+	samplecd_sample s;
+	CHECK(samplecd_sample_info(cd, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
+	CHECK(samplecd_sample_info(cd, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x100);
+	samplecd_close(cd);
 }
 
 // ---- ISO 9660: the audio files and the directories holding them
@@ -302,7 +384,7 @@ static void test_iso()
 	CHECK((names(cd, SAMPLECD_FILE) == std::vector<std::string> { "KICK.WAV", "SNARE.AIF" }));
 	size_t kick = find(cd, "KICK.WAV");
 	CHECK(samplecd_entry_at(cd, kick)->bytes == 1234 && samplecd_entry_at(cd, kick)->parent == find(cd, "DRUMS"));
-	CHECK(samplecd_machines(cd) == SAMPLECD_XV5080);
+	CHECK(samplecd_entry_at(cd, kick)->format == SAMPLECD_ISO9660);
 	samplecd_close(cd);
 }
 
@@ -311,12 +393,7 @@ static void test_others()
 	Bytes b(4096, 0);
 	samplecd_io io = io_of(b);
 	samplecd *cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd && samplecd_format_of(cd) == SAMPLECD_UNKNOWN && samplecd_count(cd) == 0 && samplecd_machines(cd) == 0);
-	samplecd_close(cd);
-
-	memcpy(&b[0], "* ROLAND S-550 *", 16);
-	cd = samplecd_open(&io, nullptr, 0);
-	CHECK(cd && samplecd_format_of(cd) == SAMPLECD_S550 && samplecd_machines(cd) == (SAMPLECD_S760 | SAMPLECD_S770));
+	CHECK(cd && samplecd_format_of(cd) == SAMPLECD_UNKNOWN && samplecd_count(cd) == 0);
 	samplecd_close(cd);
 
 	memcpy(&b[0], "EMU3", 4);
@@ -331,10 +408,12 @@ static void test_others()
 
 int main()
 {
-	Bytes s7 = s7_image();
-	test_s7(s7);
-	test_s7(raw_of(s7));
+	Bytes s760 = s7_image(" S-760 System Disk    Ver. 2.24");
+	test_s7(s760, SAMPLECD_S760, "S-760 System Disk    Ver. 2.24");
+	test_s7(raw_of(s760), SAMPLECD_S760, "S-760 System Disk    Ver. 2.24");
+	test_s7(s7_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLECD_S770, "SYS-772 HardDisk Sys Ver. 2.25");
 	test_akai();
+	test_s550();
 	test_iso();
 	test_others();
 	if (failures)
