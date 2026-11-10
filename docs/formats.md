@@ -359,6 +359,51 @@ extended number (+8), `INST` the original key (+0) and the sustain loop (+8: its
 forward-backward, the mode; its start and end markers' IDs), and `MARK` the markers' positions.  A sample plays
 the whole file, start to end.  Neither the channels nor the sample width are given: a frame is all channels'.
 
+## Formatting
+
+A formatter writes an empty volume over a blank image of the size the host gives, writing the volume's structures
+only (its reserved area, FATs and root directory zeroed first) and leaving the data area as it was.  A size the
+layout cannot have, or a label it cannot hold, fails before anything is written.
+
+**A DOS floppy**: FAT12 with Microsoft's standard geometry, 512-byte sectors, one reserved sector, two FATs:
+
+| Size | Sectors | A cluster | Root entries | A FAT | Media | A track, heads |
+|---|---|---|---|---|---|---|
+| 720 KB | 1440 | 2 sectors | 112 | 3 sectors | 0xF9 | 9, 2 |
+| 1.44 MB | 2880 | 1 | 224 | 9 | 0xF0 | 18, 2 |
+
+**A FAT hard disk**: an MBR with one partition, from sector 63 (a track's alignment, the classic DOS convention) to
+the image's end, not active, CHS fields for 255 heads and 63 sectors a track (1023, 254, 63 past their reach).
+The type is chosen by the image's size, in one place: FAT16 below 512 MB, FAT32 from 512 MB.  This is the common
+convention, not something seen of a sampler: one sampler formats its hard disks as FAT and reads FAT32, but which
+type it writes at which size is not known here.  FAT16: one reserved sector, 512 root entries, partition type
+0x04 below 32 MB and 0x06 above, sectors a cluster from the specification's table (2 up to 16 MB, 4 to 128 MB, 8
+to 256 MB, 16 to 512 MB); a partition of 8400 sectors or fewer cannot be FAT16, so the smallest disk is 8464
+sectors.  FAT32: 32 reserved sectors, the FSInfo sector at 1 (the free count, the next free cluster 3), a backup
+of the boot and FSInfo sectors at 6 and 7, the root directory at cluster 2, 4 KB clusters up to 8 GB and
+the specification's larger ones above, partition type 0x0B where the partition ends within CHS reach and 0x0C
+past it; at most 2 TB, the MBR's limit.  The FATs' size is the specification's computation, and a cluster count
+outside the chosen type's range fails.
+
+Both write a boot sector with the OEM name `MSWIN4.1`, the extended BPB's signature 0x29, a serial number from the
+time, the label (or `NO NAME`) and the type's name, a stub that hands the BIOS back (INT 18h), and 0x55 0xAA; the
+FATs' first entries (the media byte, end marks; on FAT32 cluster 2's end mark too), each copy the same; and a
+volume label entry in the root directory where a label is given (up to 11 characters a short name may hold, letters
+upper-cased), dated now.
+
+**S-760 and S-770 media are not formatted.**  What this file knows of the S-700 series' layout is what a reader
+needs, and a blank volume needs more.  Undetermined for an empty disk: sector 0's bytes other than the ID, the
+zero at 0x0E and 0x0F, and the counts (0x10 to 0x1F, 0x40 to 0x113, 0x11E to the end); what its system line says
+when no system was installed; whether an empty disk's five counts are zero; where (if anywhere) the disk's size
+in segments is kept; sector 1; the segment table's mark for a free segment, its entries for segments 0 and 1 and
+past the disk's end, and whether an S-760's reserved segments (0xFFFE, 0xFFFD) are marked at formatting or at the
+first save; the bytes of an empty directory slot (only its first byte's not being printable is read) and of an
+unused record, the S-760's extended partial records among them.  Undetermined for an empty floppy: which of `:` and
+`;` is 2HD and which 2DD; the lines at 0x10, 0x20 and 0x30 of a formatted disk; the rest of sector 0 (the counts,
+the volume's name, the bytes between the documented fields); sectors 1 to 8 and 247 to 251; the bytes of the
+empty name and record areas; and whether a formatted disk (`:`, `;`) or an empty sound disk is what a machine
+saves to.
+
 ## Not read yet
 
 - S-550: the patches' and tones' other parameters; a W-30 hard disk's layout; a W-30 floppy (none at hand).

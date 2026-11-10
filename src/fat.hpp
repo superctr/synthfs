@@ -34,6 +34,11 @@ std::optional<Geometry> geometry(const uint8_t *bs, uint64_t base, uint64_t imag
 // the volume an image holds: bare, or the first FAT partition of its MBR
 std::optional<Geometry> find(const Image &im);
 
+// an empty volume written over a blank image: a DOS floppy, or a hard disk behind an MBR; false with why where the
+// image's size or the label cannot be had
+bool format_floppy(const samplerfs_write_io &io, const char *label, std::string &why);
+bool format_disk(const samplerfs_write_io &io, const char *label, std::string &why);
+
 }
 
 class Fat final : public Medium {

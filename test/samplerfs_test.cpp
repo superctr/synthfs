@@ -518,22 +518,34 @@ struct Sparse {
 	uint64_t size;
 	std::map<uint64_t, std::vector<uint8_t>> pages;
 	explicit Sparse(uint64_t size) : size(size) {}
+	// a page holding only zeros is not stored
 	void put(uint64_t at, const void *p, size_t n)
 	{
 		auto *s = static_cast<const uint8_t *>(p);
-		for (size_t k = 0; k < n; k++, at++) {
-			auto &page = pages[at / PAGE];
-			if (page.empty())
-				page.assign(PAGE, 0);
-			page[at % PAGE] = s[k];
+		while (n) {
+			size_t k = std::min<size_t>(n, PAGE - at % PAGE);
+			auto it = pages.find(at / PAGE);
+			if (it == pages.end() && std::all_of(s, s + k, [](uint8_t b) { return !b; })) {
+				at += k, s += k, n -= k;
+				continue;
+			}
+			if (it == pages.end())
+				it = pages.emplace(at / PAGE, std::vector<uint8_t>(PAGE, 0)).first;
+			memcpy(&it->second[at % PAGE], s, k);
+			at += k, s += k, n -= k;
 		}
 	}
 	void get(uint64_t at, void *p, size_t n) const
 	{
 		auto *d = static_cast<uint8_t *>(p);
-		for (size_t k = 0; k < n; k++, at++) {
+		while (n) {
+			size_t k = std::min<size_t>(n, PAGE - at % PAGE);
 			auto it = pages.find(at / PAGE);
-			d[k] = it == pages.end() ? 0 : it->second[at % PAGE];
+			if (it == pages.end())
+				memset(d, 0, k);
+			else
+				memcpy(d, &it->second[at % PAGE], k);
+			at += k, d += k, n -= k;
 		}
 	}
 	void put16(uint64_t at, uint16_t v) { uint8_t b[2] = { uint8_t(v), uint8_t(v >> 8) }; put(at, b, 2); }
@@ -801,6 +813,139 @@ static void test_fat()
 	uint8_t no_jump = 0;
 	img.put(0, &no_jump, 1);
 	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
+}
+
+// ---- formatting: a blank image made a volume, checked against the specification and read back
+static size_t sparse_write(void *user, uint64_t offset, const void *buf, size_t n)
+{
+	auto *s = static_cast<Sparse *>(user);
+	if (offset >= s->size)
+		return 0;
+	n = size_t(std::min<uint64_t>(n, s->size - offset));
+	s->put(offset, buf, n);
+	return n;
+}
+
+static samplerfs_write_io writer_of(Sparse &s)
+{
+	return { &s, sparse_write, s.size };
+}
+
+// the boot sector at base and what it lays out, as the specification requires: the signature, the FAT type the
+// cluster count's, the FATs identical and room for every cluster, the root directory empty but for the label
+static void check_fat_volume(const Sparse &img, uint64_t base, int bits, const char *label)
+{
+	uint8_t bs[512];
+	img.get(base, bs, 512);
+	CHECK(bs[0] == 0xEB && bs[2] == 0x90 && bs[510] == 0x55 && bs[511] == 0xAA);
+	uint32_t bps = bs[11] | bs[12] << 8, spc = bs[13], reserved = bs[14] | bs[15] << 8, fats = bs[16];
+	uint32_t root_entries = bs[17] | bs[18] << 8;
+	uint64_t total = (bs[19] | bs[20] << 8) ? uint32_t(bs[19] | bs[20] << 8) : img.get32(base + 32);
+	uint32_t fat16 = bs[22] | bs[23] << 8, fat_sectors = fat16 ? fat16 : img.get32(base + 36);
+	CHECK(bps == 512 && fats == 2 && reserved >= 1 && (bits == 32) == !fat16 && (bits == 32) == !root_entries);
+	uint64_t root_sectors = (root_entries * 32 + 511) / 512, data = reserved + 2 * fat_sectors + root_sectors;
+	uint64_t clusters = (total - data) / spc;
+	CHECK(bits == 12 ? clusters < 4085 : bits == 16 ? clusters >= 4085 && clusters < 65525 : clusters >= 65525);
+	CHECK(uint64_t(fat_sectors) * 512 * 8 / bits >= clusters + 2);
+	const uint8_t *ext = bs + (bits == 32 ? 64 : 36);
+	CHECK(ext[2] == 0x29 && !memcmp(ext + 18, bits == 12 ? "FAT12   " : bits == 16 ? "FAT16   " : "FAT32   ", 8));
+	char bpb_label[12] = {};
+	memcpy(bpb_label, ext + 7, 11);
+	std::string want = label ? label : "NO NAME";
+	want.resize(11, ' ');
+	CHECK(want == bpb_label);
+	Bytes fat0(fat_sectors * 512), fat1(fat_sectors * 512);
+	img.get(base + reserved * 512, fat0.data(), fat0.size());
+	img.get(base + (reserved + fat_sectors) * 512, fat1.data(), fat1.size());
+	CHECK(fat0 == fat1 && fat0[0] == bs[21]);
+	size_t used = bits == 12 ? 3 : bits == 16 ? 4 : 12;
+	CHECK(std::all_of(fat0.begin() + used, fat0.end(), [](uint8_t b) { return !b; }));
+	uint64_t root = bits == 32 ? data : reserved + 2 * fat_sectors;
+	Bytes dir(bits == 32 ? spc * 512 : root_entries * 32);
+	img.get(base + root * 512, dir.data(), dir.size());
+	size_t from = 0;
+	if (label) {
+		CHECK(dir[11] == 0x08 && !memcmp(&dir[0], want.data(), 11));
+		from = 32;
+	}
+	CHECK(std::all_of(dir.begin() + from, dir.end(), [](uint8_t b) { return !b; }));
+	if (bits == 32) {
+		CHECK(img.get32(base + 44) == 2 && img.get32(base + reserved * 512 + 8) == 0x0FFFFFFF);
+		CHECK(img.get32(base + 512) == 0x41615252 && img.get32(base + 512 + 484) == 0x61417272);
+		CHECK(img.get32(base + 512 + 488) == clusters - 1 && img.get32(base + 512 + 508) == 0xAA550000);
+		uint8_t backup[512];
+		img.get(base + 6 * 512, backup, 512);
+		CHECK(!memcmp(backup, bs, 512));
+	}
+}
+
+// read back through the library: a FAT volume of the medium, with the label and no entries
+static void check_fat_read(Sparse &img, samplerfs_medium medium, const char *label)
+{
+	samplerfs_io io = io_of(img);
+	samplerfs_medium m;
+	CHECK(samplerfs_probe(&io, &m) == SAMPLERFS_FAT && m == medium);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_FAT && samplerfs_medium_of(fs) == medium);
+	if (fs) {
+		CHECK(samplerfs_count(fs) == 0 && !strcmp(samplerfs_label(fs), label));
+		samplerfs_close(fs);
+	}
+}
+
+static void test_format_fat()
+{
+	char err[128];
+	for (uint64_t kb : { 720, 1440 }) {
+		Sparse img(kb * 1024);
+		samplerfs_write_io w = writer_of(img);
+		CHECK(samplerfs_format_dos_floppy(&w, "Samples 1", err, sizeof err));
+		check_fat_volume(img, 0, 12, "SAMPLES 1");
+		check_fat_read(img, SAMPLERFS_MEDIUM_FLOPPY, "SAMPLES 1");
+		uint8_t bs[32];
+		img.get(0, bs, 32);
+		CHECK(bs[21] == (kb == 720 ? 0xF9 : 0xF0) && bs[24] == (kb == 720 ? 9 : 18) && bs[26] == 2);
+		CHECK(uint64_t(bs[19] | bs[20] << 8) == kb * 2 && bs[13] == (kb == 720 ? 2 : 1));
+	}
+	{
+		Sparse img(1440 * 1024);
+		samplerfs_write_io w = writer_of(img);
+		CHECK(samplerfs_format_dos_floppy(&w, nullptr, err, sizeof err));
+		check_fat_volume(img, 0, 12, nullptr);
+		check_fat_read(img, SAMPLERFS_MEDIUM_FLOPPY, "");
+		err[0] = 0;
+		CHECK(!samplerfs_format_dos_floppy(&w, "TWELVE CHARS", err, sizeof err) && err[0]);
+		err[0] = 0;
+		CHECK(!samplerfs_format_dos_floppy(&w, "A/B", err, sizeof err) && err[0]);
+		Sparse odd(800 * 1024);
+		w = writer_of(odd);
+		err[0] = 0;
+		CHECK(!samplerfs_format_dos_floppy(&w, nullptr, err, sizeof err) && err[0]);
+	}
+	// disks: FAT16 below 512 MB, FAT32 from there; the MBR's one partition from sector 63 to the end
+	const uint64_t MB = 1 << 20;
+	for (auto [bytes, bits] : std::vector<std::pair<uint64_t, int>> { { 5 * MB, 16 }, { 32 * MB, 16 }, { 512 * MB - 512, 16 },
+		     { 512 * MB, 32 }, { 3072 * MB, 32 } }) {
+		Sparse img(bytes);
+		samplerfs_write_io w = writer_of(img);
+		CHECK(samplerfs_format_fat_disk(&w, "DISK", err, sizeof err));
+		uint8_t mbr[512];
+		img.get(0, mbr, 512);
+		const uint8_t *e = mbr + 446;
+		CHECK(mbr[510] == 0x55 && mbr[511] == 0xAA && img.get32(446 + 8) == 63 && img.get32(446 + 12) == bytes / 512 - 63);
+		CHECK(bits == 16 ? e[4] == 0x04 || e[4] == 0x06 : e[4] == 0x0B || e[4] == 0x0C);
+		CHECK(!e[16 + 4] && !e[32 + 4] && !e[48 + 4]);
+		check_fat_volume(img, 63 * 512, bits, "DISK");
+		check_fat_read(img, SAMPLERFS_MEDIUM_DISK, "DISK");
+	}
+	for (uint64_t bytes : { uint64_t(4 * MB), uint64_t(3) << 40, uint64_t(5 * MB + 1) }) {
+		Sparse img(bytes);
+		samplerfs_write_io w = writer_of(img);
+		err[0] = 0;
+		CHECK(!samplerfs_format_fat_disk(&w, nullptr, err, sizeof err) && err[0]);
+	}
+	samplerfs_write_io none { nullptr, nullptr, 0 };
+	CHECK(!samplerfs_format_fat_disk(&none, nullptr, err, sizeof err));
 }
 
 static void test_others()
@@ -1133,6 +1278,7 @@ int main()
 	test_s900();
 	test_iso();
 	test_fat();
+	test_format_fat();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);

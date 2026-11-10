@@ -21,6 +21,16 @@ for (size_t i = 0; i < samplerfs_count(fs); i++) {
 samplerfs_close(fs);
 ```
 
+A blank image is made an empty volume through the host's writer (`samplerfs_write_io`: n bytes written at an
+offset): `samplerfs_format_dos_floppy` (720 KB and 1.44 MB FAT12) and `samplerfs_format_fat_disk` (an MBR and one
+FAT16 or FAT32 partition), each with an optional label; what each writes is in [docs/formats.md](docs/formats.md).
+
+```c
+samplerfs_write_io w = { f, file_write, 1474560 };
+if (!samplerfs_format_dos_floppy(&w, "SAMPLES", err, sizeof err))
+	fprintf(stderr, "%s\n", err);
+```
+
 ## Building
 
 ```sh
@@ -43,4 +53,5 @@ a class with a static `probe` and `open`.
 
 ## Later
 
-Reading a sample's wave out (to WAV), and writing sounds into an image.
+Reading a sample's wave out (to WAV), writing sounds into an image, and formatting S-760 and S-770 disks and floppies
+(what their blank volumes hold is not known well enough yet).

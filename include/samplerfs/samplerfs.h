@@ -137,6 +137,25 @@ size_t samplerfs_refs(samplerfs *fs, size_t i, size_t *out, size_t max);
  * has none or it cannot be read */
 int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out);
 
+/* A blank image to format, written through the host: n bytes from buf at offset, the count written returned (short
+ * on an error); size is the whole image's.  A struct of its own beside samplerfs_io, which keeps its shape. */
+typedef struct samplerfs_write_io {
+	void *user;
+	size_t (*write)(void *user, uint64_t offset, const void *buf, size_t n);
+	uint64_t size;
+} samplerfs_write_io;
+
+/* An empty volume written over a blank image of io->size bytes; 1 done, or 0 with why in err (a size the layout
+ * cannot have, a label it cannot hold, a write that failed).  Only the volume's structures are written; the rest of
+ * the image is left as it was.  label is NULL or "" for none, else up to 11 characters of a DOS short name (letters
+ * upper-cased). */
+
+/* A DOS floppy: FAT12 on 720 KB (2DD) or 1.44 MB (2HD), their standard geometry and media bytes */
+int samplerfs_format_dos_floppy(const samplerfs_write_io *io, const char *label, char *err, size_t err_size);
+/* A FAT hard disk: an MBR with one partition from sector 63 to the end, FAT16 below 512 MB and FAT32 from there
+ * (docs/formats.md, "Formatting") */
+int samplerfs_format_fat_disk(const samplerfs_write_io *io, const char *label, char *err, size_t err_size);
+
 #ifdef __cplusplus
 }
 #endif

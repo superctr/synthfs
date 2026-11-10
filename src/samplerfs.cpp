@@ -198,6 +198,32 @@ const char *samplerfs_format_name(samplerfs_format format)
 	}
 }
 
+static int formatted(bool (*format)(const samplerfs_write_io &, const char *, std::string &), const samplerfs_write_io *io,
+	const char *label, char *err, size_t err_size)
+{
+	if (!io || !io->write)
+		return say(err, err_size, "no writer given"), 0;
+	try {
+		std::string why;
+		if (format(*io, label, why))
+			return 1;
+		say(err, err_size, why.c_str());
+	} catch (...) {
+		say(err, err_size, "the image could not be written");
+	}
+	return 0;
+}
+
+int samplerfs_format_dos_floppy(const samplerfs_write_io *io, const char *label, char *err, size_t err_size)
+{
+	return formatted(fat::format_floppy, io, label, err, err_size);
+}
+
+int samplerfs_format_fat_disk(const samplerfs_write_io *io, const char *label, char *err, size_t err_size)
+{
+	return formatted(fat::format_disk, io, label, err, err_size);
+}
+
 const char *samplerfs_label(const samplerfs *fs)
 {
 	return fs->medium->label.c_str();
