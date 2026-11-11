@@ -5,8 +5,8 @@ Sampler disk images (CD-ROMs, hard disks, floppies) and wave expansion ROMs read
 floppies; Roland SR-JV80 and SRX boards and SO-PCM1 cards), the sounds listed, what each uses (an S-760/S-770
 volume's performances down to a partial's samples, an AKAI program's samples and a multi's programs, an S-550
 patch's tones), a sample's (or a WAV or AIFF file's) rate, key, length and loop and its wave decoded to 16 bits, and a
-board's banks of patches and rhythm sets and its waves by name.  C++20 inside, a C interface
-(`include/samplerfs/samplerfs.h`), no dependencies.
+board's banks of patches and rhythm sets and its waves, each with its samples by key, decoded likewise.  C++20 inside,
+a C interface (`include/samplerfs/samplerfs.h`), no dependencies.
 
 The image is read through the host's callback (`samplerfs_io`: n bytes at an offset), so a file, a buffer or a
 stream all work; `samplerfs_open_file` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`)

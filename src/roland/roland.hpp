@@ -4,6 +4,8 @@
 
 #include "../internal.hpp"
 
+#include <map>
+
 namespace sfs::roland {
 
 // what the S-700 series' disk and floppy readers share
@@ -99,18 +101,33 @@ class Socket;
 // an SR-JV80 board or SO-PCM1 card, or an SRX board, as dumped
 class WaveRom final : public Medium {
 public:
-	using Medium::Medium;
+	WaveRom(const samplerfs_io &io, samplerfs_format format);
+	~WaveRom() override;
 	static samplerfs_format probe(const Image &im);
 	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 	// a card or a board, by its size and name
 	static samplerfs_medium medium_of(const Image &im);
 	void list() override;
+	std::vector<size_t> refs(size_t i) const override;
+	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
-	void list_srjv80(const Socket &s);
-	void list_srx(const Socket &s);
+	void list_srjv80();
+	void list_srx();
 	size_t bank(std::string_view shape);
+	// a wave's split as a sample entry, under the wave, its keys from the split before's top up to top; a split of
+	// no record sounds nothing and has no entry
+	void split(size_t wave, uint32_t number, uint8_t below, uint8_t top, uint64_t record);
+	// the sample entry of the split that sounds nearest key
+	size_t nearest(size_t wave, int key) const;
 	uint32_t banks_ = 0;
+	std::unique_ptr<Socket> socket_;
+	// each wave's splits: their top keys and sample entries (SAMPLERFS_NONE where silent)
+	std::map<size_t, std::vector<std::pair<uint8_t, size_t>>> splits_;
+	// the last sample decoded, whole
+	mutable size_t decoded_ = SAMPLERFS_NONE;
+	mutable std::vector<int16_t> frames_;
 };
 
 }

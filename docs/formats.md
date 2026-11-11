@@ -254,9 +254,6 @@ dump's bit *L*[*k*], and data bit *k* is the dump's bit *D*[*k*]:
 The first 32 bytes are plain in the dump: `Roland JV80 ` or `Roland SRX`, then from 0x10 the board's name ("SR-JV80-06
 Dance", "Card01   Ver0.10"), the label.  Numbers are big-endian.
 
-The waves' sample data is in the tone generators' own encoding and is not read: a wave is listed, with no header or
-frames.
-
 **SR-JV80 boards and SO-PCM1 cards** share the format.  An image of 1 MB, or of 2 MB named `SO-PCM1` or `Card`, is a
 card; the rest are boards (8 MB, or 2 MB for the Experience boards).  Each 1 MB block starts with a header (the
 board's ID and date at 0x20 and 0x30), whose slots *n* give a type byte at 0x50 + *n*, a count at 0x60 + 2*n* and the
@@ -264,15 +261,33 @@ address of their records at 0x80 + 4*n*:
 
 | Slot | Type | What | Record |
 |---|---|---|---|
-| 0 | 2 | samples | 18 bytes (not listed) |
-| 1 | 1 | waves | 60 bytes, the name first (12 characters) |
+| 0 | 2 | samples | 18 bytes (below) |
+| 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) |
 | 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first |
 | 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up |
 | 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed |
 | 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's |
 
 A board carrying both shapes keeps one in block 0 and the other in a later block; a block repeating a slot of
-another lists it once.  Each slot of patches or rhythm sets is a bank, tagged with its type **[seen]**.
+another lists it once.  Each slot of patches or rhythm sets is a bank, tagged with its type **[seen]**.  A wave's
+sample numbers count in the samples of its own block's header.
+
+An SR-JV80 sample:
+
+| Offset | Size | What |
+|---|---|---|
+| 0 | 1 | a level, 127 on most (not read) |
+| 1 | 3 | the start, a byte address on the board |
+| 4 | 3 | the loop's start |
+| 7 | 3 | the end, the last sample played |
+| 10 | 2 | zero but on SR-JV80-01's back and forth loops, where it is the loop's offset from the start less one (not read) |
+| 12 | 1 | the flags (below) |
+| 13 | 1 | the original key |
+| 14 | 2 | the fine tune, thousandths of a semitone from 1024 |
+| 16 | 2 | near 1024 (not read) |
+
+The rate is 32 kHz for every SR-JV80 sample: the single-cycle loops of SR-JV80-04, -06, -08, -11 and SO-PCM1-05
+are one period of the original key at 32 kHz, less the fine tune **[seen]**.
 
 **SRX boards**: the name at descrambled 0x20 (16 characters), the short name at 0x3A, the board's number at 0x40 and
 the directory's count at 0x42; the directory's 16-byte entries from 0x80, each a class and a type (halfwords), the
@@ -281,8 +296,8 @@ table (a long, +4) and their stride (+8).
 
 | Class | Type | What |
 |---|---|---|
-| 1 | 4 | samples, 24 bytes (not listed) |
-| 2 | 3 | waves: 8-byte records, the offset of the wave's definition from the table and its length; the definition starts with the name (12 characters) |
+| 1 | 4 | samples, 24 bytes (below) |
+| 2 | 3 | waves: 8-byte records, the offset of the wave's definition from the table and its length |
 | 4 | 6, 7, 8, 9 | patch banks for four host families (574 bytes a patch; 646 on type 9) |
 | 5 | 5, 6, 7 | rhythm set banks likewise |
 
@@ -290,6 +305,61 @@ A patch's or rhythm set's name is twelve 7-bit characters packed from the first 
 the same sounds in each of its banks, one per host family; each bank is listed and tagged `class:type`, and the
 host picks the one its machine reads **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only
 **[seen]**.
+
+A wave's definition: the name (12 characters), four bytes (the first 1 on a few drum waves, which play the split
+of key 60 when a tone asks for the wave's own pitch; not read), then four bytes a split to the definition's end: the
+top key, a zero byte and the sample's number (a halfword); up to 72 splits **[seen]**.  An SRX sample, big-endian:
+
+| Offset | Size | What |
+|---|---|---|
+| 0 | 1 | a level (not read) |
+| 1 | 1 | the flags (below) |
+| 2 | 1 | the original key |
+| 3 | 1 | zero on most boards, 52 to 190 on SRX-12's (not read) |
+| 4 | 2 | 0x0200 (not read) |
+| 6 | 2 | the fine tune, thousandths of a semitone from 1024 |
+| 8 | 2 | a gain, 1024 for none (not read) |
+| 10 | 2 | the rate in hundreds of Hz (320, 441, 480; 300 on a few) |
+| 12 | 4 | the start, a byte address on the board |
+| 16 | 4 | the loop's start |
+| 20 | 4 | the end, the last sample played |
+
+**A wave and its splits**, both families: the splits run in order of their top keys, each from the key after the
+one before's top (the first from 0); a key plays the first split whose top is at or above it, else the last.  On
+an SR-JV80 the list ends at the first top of 127, the numbers after it 0xFFFF.  A sample number of 0xFFFF is a split
+that sounds nothing (an SRX drum wave's keys between its drums) **[seen]**.  Each split that sounds is listed under
+its wave as a sample, numbered by its place among the splits, named as the wave and tagged with its keys
+(`60-64`); a sample several waves use is listed under each.  A wave reads as the split it plays at key 60, or where
+that sounds nothing the nearest that does, and uses its splits' samples.
+
+The original keys are the pitches the samples were recorded at, checked against their spectra across the boards
+(the median distance under a twentieth of a semitone on most melodic boards, under a fifth on all) **[seen]**.  A board places its
+samples above the keys they serve: a piano's split for keys 59 to 61 holds the sample of key 64, a drum menu's key
+60 a sample of key 66, so the machine plays them lowered.  The basses of SR-JV80-06, -10 and -19 carry an original
+key an octave above their pitch, and sound an octave below the key played, as on the machine **[seen]**.  The fine
+tune is what the machine adds to the original key's pitch; samplerfs gives it in the rate, rate × 2^((fine −
+1024) / 12000), so that the rate at the original key plays as the machine does.
+
+The flags: bit 0 a back and forth loop, bit 1 played once (its loop's start then equals its end on nearly every
+sample), bit 2 played from the end down (the `REV` waves).  A sample loops where neither bit 1 is set nor its loop's
+start is its end; its loop runs from the loop's start to the end inclusive, the mode the flags byte.  A few samples'
+loops start before their start (two on SR-JV80-17 and on SRX-09): such a sample is given as it plays, the frames from
+the start to the end, then the loop's from its start to the end again, the loop over those **[seen]**.
+
+**The sample encoding**: one byte a sample, a signed delta, scaled by a power of two and summed.  The first 32 KB of
+each 1 MB block (each region of an SRX board alike) are the shifts, a nibble for each 16 samples of the block: the
+byte at the sample's offset in the block divided by 32, its low nibble where bit 4 of the offset is clear, its high
+one where set; sample data starts at 0x8000 of a block, and a sample stays within one.  A sample's value is the sum
+of its deltas, each times 2^shift, from its start up to it inclusive, the sum starting from zero.  Shifts above 10
+are not used by any board (the table's header bytes aside) and count as zero.  The sums stay within 18 bits (the
+largest ±0x11E30, on SRX-05) and are read as their top 16 bits, the sum shifted right by two; an 18-bit sum is taken
+as the tone generators keep it, wrapping.  The deltas over a loop, from its start to the end inclusive, sum to zero
+on every sample but four (two on SR-JV80-12, two on SRX-08), so the sum comes back to where it was each time round
+and a loop neither steps nor drifts **[seen]**.
+
+A sample played backward, a back and forth loop's way back or a reversed sample, is given as its frames forward:
+the host plays it backward.  What is not read: the levels, gains and the fields marked so above, a sample's second
+fine tune where it has one, and the tones' own pitch and key settings in the patches.
 
 ### On a floppy
 

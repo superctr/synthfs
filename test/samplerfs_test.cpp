@@ -99,6 +99,22 @@ static std::vector<std::string> used(samplerfs *fs, size_t i)
 	return v;
 }
 
+static std::vector<size_t> refs_of(samplerfs *fs, size_t i)
+{
+	size_t out[64];
+	size_t n = samplerfs_refs(fs, i, out, 64);
+	return std::vector<size_t>(out, out + std::min<size_t>(n, 64));
+}
+
+// the keys of each split of a board's wave, as its sample entries' tags give them
+static std::vector<std::string> splits(samplerfs *fs, size_t wave)
+{
+	std::vector<std::string> v;
+	for (size_t c : refs_of(fs, wave))
+		v.push_back(samplerfs_entry_at(fs, c)->tag);
+	return v;
+}
+
 // ---- S-7xx: one of each list, a gap, a slot past the count, and the references between them
 static Bytes s700_image(const char *system)
 {
@@ -1447,14 +1463,27 @@ static void test_boards()
 	memcpy(&srx.b[0], "Roland SRX", 10);
 	memcpy(&srx.b[0x10], "SRX-99 Test     ", 16);
 	srx.text(0x20, "SRX-99 Test");
-	srx.be(0x42, 2, 2);
-	const uint32_t waves = 0x1F00000, patches = 0x1F80000;
+	srx.be(0x42, 3, 2);
+	const uint32_t waves = 0x1F00000, patches = 0x1F80000, samples = 0x1FC0000;
 	srx.be(0x80, 2, 2), srx.be(0x82, 3, 2), srx.be(0x84, waves, 4), srx.be(0x88, 0x100, 4);
 	srx.be(0x90, 4, 2), srx.be(0x92, 7, 2), srx.be(0x94, patches, 4), srx.be(0x98, 0x1000, 4);
+	srx.be(0xA0, 1, 2), srx.be(0xA2, 4, 2), srx.be(0xA4, samples, 4), srx.be(0xA8, 0x100, 4);
 	srx.be(waves, 2, 2), srx.be(waves + 4, 0x0C, 4), srx.be(waves + 8, 8, 4);
-	srx.be(waves + 0x0C, 0x40, 4), srx.be(waves + 0x14, 0x60, 4);
+	srx.be(waves + 0x0C, 0x40, 4), srx.be(waves + 0x10, 28, 4), srx.be(waves + 0x14, 0x60, 4), srx.be(waves + 0x18, 24, 4);
 	srx.text(waves + 0x40, "Kick 1");
+	srx.be(waves + 0x50, 0x3B00FFFF, 4), srx.be(waves + 0x54, 0x3D000000, 4), srx.be(waves + 0x58, 0x7F00FFFF, 4);
 	srx.text(waves + 0x60, "Snare 1");
+	srx.be(waves + 0x70, 0x4600FFFF, 4), srx.be(waves + 0x74, 0x7F000001, 4);
+	// samples: a back and forth loop at 32 kHz in the second megabyte, its deltas scaled by 2^3; a one-shot at 44.1 kHz
+	// a semitone sharp
+	srx.be(samples, 2, 2), srx.be(samples + 4, 0x0C, 4), srx.be(samples + 8, 24, 4);
+	srx.be(samples + 0x0C, 0x7F013C00, 4), srx.be(samples + 0x10, 0x02000400, 4), srx.be(samples + 0x14, 0x04000140, 4);
+	srx.be(samples + 0x18, 0x108000, 4), srx.be(samples + 0x1C, 0x108001, 4), srx.be(samples + 0x20, 0x108002, 4);
+	srx.be(samples + 0x24, 0x7F023000, 4), srx.be(samples + 0x28, 0x020007E8, 4), srx.be(samples + 0x2C, 0x040001B9, 4);
+	srx.be(samples + 0x30, 0x108010, 4), srx.be(samples + 0x34, 0x108011, 4), srx.be(samples + 0x38, 0x108011, 4);
+	srx.put(0x100400, 0x13);
+	srx.put(0x108000, 10), srx.put(0x108001, 5), srx.put(0x108002, uint8_t(-5));
+	srx.put(0x108010, 4), srx.put(0x108011, uint8_t(-4));
 	srx.be(patches, 1, 2), srx.be(patches + 4, 0x0E, 4), srx.be(patches + 8, 574, 4);
 	srx.packed(patches + 0x0E, "Test Patch", true);
 	samplerfs_io io = io_of(srx.b);
@@ -1468,6 +1497,20 @@ static void test_boards()
 		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Test Patch" }));
 		size_t bank = samplerfs_entry_at(fs, find(fs, "Test Patch"))->parent;
 		CHECK(bank != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, bank)->tag, "4:7"));
+		// the silent splits have no entry; Snare 1 sounds nothing at middle C and answers with its nearest split
+		size_t kick = find(fs, "Kick 1", SAMPLERFS_WAVE), snare = find(fs, "Snare 1", SAMPLERFS_WAVE);
+		CHECK((splits(fs, kick) == std::vector<std::string> { "60-61" }));
+		CHECK((splits(fs, snare) == std::vector<std::string> { "71-127" }));
+		size_t k0 = refs_of(fs, kick).at(0), s0 = refs_of(fs, snare).at(0);
+		CHECK(samplerfs_entry_at(fs, k0)->kind == SAMPLERFS_SAMPLE && samplerfs_entry_at(fs, k0)->parent == kick);
+		CHECK(samplerfs_entry_at(fs, k0)->number == 1 && samplerfs_entry_at(fs, k0)->bytes == 3);
+		samplerfs_sample sm;
+		CHECK(samplerfs_sample_info(fs, k0, &sm) && sm.rate == 32000 && sm.key == 60 && sm.frames == 3);
+		CHECK(sm.loop == SAMPLERFS_LOOP_ALTERNATE && sm.loop_start == 1 && sm.loop_end == 3 && !sm.reverse && sm.mode == 1);
+		CHECK((wave(fs, k0, 0, 3) == std::vector<int16_t> { 20, 30, 20 }));
+		CHECK(samplerfs_sample_info(fs, snare, &sm) && sm.rate == 46722 && sm.key == 48 && sm.frames == 2);
+		CHECK(sm.loop == SAMPLERFS_LOOP_NONE && sm.mode == 2);
+		CHECK((wave(fs, snare, 0, 2) == std::vector<int16_t> { 2, 0 }) && (wave(fs, s0, 1, 5) == std::vector<int16_t> { 0 }));
 		samplerfs_close(fs);
 	}
 
@@ -1475,11 +1518,30 @@ static void test_boards()
 	Rom card { Bytes(1 << 20, 0), srjv_lines, 19 };
 	memcpy(&card.b[0], "Roland JV80 O\xb0S\xac", 16);
 	memcpy(&card.b[0x10], "Card09   Ver1.00", 16);
+	card.put(0x50, 2), card.be(0x60, 3, 2), card.be(0x80, 0xF0800, 4);
 	card.put(0x51, 1), card.be(0x62, 2, 2), card.be(0x84, 0xF0000, 4);
 	card.put(0x53, 2), card.be(0x66, 1, 2), card.be(0x8C, 0xF1000, 4);
 	card.put(0x54, 4), card.be(0x68, 1, 2), card.be(0x90, 0xF2000, 4);
 	card.text(0xF0000, "Piano A");
 	card.text(0xF0000 + 60, "Piano B");
+	// Piano A: samples 0 up to key 59, 1 above; Piano B: sample 2 everywhere
+	card.put(0xF000C, 59), card.put(0xF000D, 127), card.be(0xF001C, 0x00000001, 4), card.be(0xF0020, 0xFFFFFFFF, 4);
+	card.put(0xF0000 + 60 + 12, 127), card.be(0xF0000 + 60 + 28, 0x0002FFFF, 4);
+	// sample 0 loops forward, a semitone sharp, its deltas scaled by 2^2; sample 1 is played once, and crosses into the
+	// high nibble's sixteen samples; sample 2 is played once from its end; sample 3 loops from before its start
+	const uint8_t recs[3][18] = {
+		{ 0x7F, 0x00, 0x80, 0x00, 0x00, 0x80, 0x02, 0x00, 0x80, 0x05, 0, 0, 0, 64, 0x07, 0xE8, 0x04, 0x00 },
+		{ 0x7F, 0x00, 0x80, 0x0F, 0x00, 0x80, 0x11, 0x00, 0x80, 0x11, 0, 0, 2, 72, 0x04, 0x00, 0x04, 0x00 },
+		{ 0x7F, 0x00, 0x80, 0x00, 0x00, 0x80, 0x01, 0x00, 0x80, 0x01, 0, 0, 6, 48, 0x04, 0x00, 0x04, 0x00 },
+	};
+	for (int r = 0; r < 3; r++)
+		for (int k = 0; k < 18; k++)
+			card.put(0xF0800 + 18 * r + k, recs[r][k]);
+	card.put(0x400, 0x52);
+	const int8_t deltas[] = { 1, 2, 3, -1, -2, 0 };
+	for (int k = 0; k < 6; k++)
+		card.put(0x8000 + k, uint8_t(deltas[k]));
+	card.put(0x800F, 1), card.put(0x8010, 1), card.put(0x8011, uint8_t(-1));
 	card.text(0xF1000, "Card Piano");
 	card.packed(0xF2000, "Card Drums", false);
 	io = io_of(card.b);
@@ -1491,6 +1553,37 @@ static void test_boards()
 		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
 		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Card Piano" }));
 		CHECK((names(fs, SAMPLERFS_RHYTHM_SET) == std::vector<std::string> { "Card Drums" }));
+		size_t a = find(fs, "Piano A", SAMPLERFS_WAVE), b = find(fs, "Piano B", SAMPLERFS_WAVE);
+		CHECK((splits(fs, a) == std::vector<std::string> { "0-59", "60-127" }));
+		CHECK((splits(fs, b) == std::vector<std::string> { "0-127" }));
+		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
+		size_t a0 = refs_of(fs, a).at(0), b0 = refs_of(fs, b).at(0);
+		samplerfs_sample sm;
+		CHECK(samplerfs_sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
+		CHECK(sm.loop == SAMPLERFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
+		CHECK((wave(fs, a0, 0, 6) == std::vector<int16_t> { 1, 3, 6, 5, 3, 3 }));
+		CHECK((wave(fs, a0, 4, 9) == std::vector<int16_t> { 3, 3 }));
+		CHECK(samplerfs_sample_info(fs, a, &sm) && sm.rate == 32000 && sm.key == 72 && sm.frames == 3);
+		CHECK(sm.loop == SAMPLERFS_LOOP_NONE && !sm.reverse && sm.mode == 2);
+		CHECK((wave(fs, a, 0, 3) == std::vector<int16_t> { 1, 9, 1 }));
+		CHECK(samplerfs_sample_info(fs, b0, &sm) && sm.key == 48 && sm.reverse && sm.loop == SAMPLERFS_LOOP_NONE);
+		CHECK(samplerfs_sample_info(fs, b, &sm) && sm.key == 48);
+		samplerfs_close(fs);
+	}
+
+	// a loop starting before its sample's start: played on after the frames from the start
+	const uint8_t early[18] = { 0x7F, 0x00, 0x80, 0x02, 0x00, 0x80, 0x00, 0x00, 0x80, 0x03, 0, 0, 0, 60, 0x04, 0x00, 0x04, 0x00 };
+	for (int k = 0; k < 18; k++)
+		card.put(0xF0800 + 18 * 2 + k, early[k]);
+	card.put(0x8000, 1), card.put(0x8001, 2), card.put(0x8002, uint8_t(-1)), card.put(0x8003, uint8_t(-2));
+	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (fs) {
+		size_t b0 = refs_of(fs, find(fs, "Piano B", SAMPLERFS_WAVE)).at(0);
+		samplerfs_sample sm;
+		CHECK(samplerfs_sample_info(fs, b0, &sm) && sm.frames == 6 && sm.start == 0 && sm.loop_start == 2 && sm.loop_end == 6);
+		CHECK(samplerfs_entry_at(fs, b0)->bytes == 4);
+		CHECK((wave(fs, b0, 0, 6) == std::vector<int16_t> { -1, -3, -2, 0, -1, -3 }));
 		samplerfs_close(fs);
 	}
 }
