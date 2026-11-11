@@ -65,6 +65,8 @@ public:
 	std::vector<uint8_t> read(uint64_t offset, size_t n) const;
 	uint64_t size() const { return stores_.top->size(); }
 	bool raw() const { return stores_.raw; }
+	//! The image out of its container: what a host that reads and writes the medium itself is given.
+	const Store &plain() const { return *stores_.plain; }
 	//! Whether the image is in a VHD, read through its sectors.
 	bool vhd() const { return stores_.vhd; }
 	//! Whether the image is a SmartMedia card's, read through its logical sectors.

@@ -87,6 +87,17 @@ void syfs_close(syfs_image *im);
  */
 const char *syfs_error(const syfs_image *im);
 
+//! The image out of its container, as an io of its own: for a host that reads and writes the medium itself.
+/*!
+ * A VHD's sectors (a card's own image, of one kept in a VHD), else the image's bytes as they lie.  A write to a
+ * dynamic VHD adds the blocks it needs to the file, through the io the image was opened with; out->write is NULL
+ * where that had none.  A write of whole bytes inside the image is done whole or fails: nothing is written short.
+ * The io stays good until syfs_close.  What was read of the image's lists is not read anew after a write.
+ *
+ * \return 0 where there is no image.
+ */
+int syfs_image_io(syfs_image *im, syfs_io *out);
+
 //! Writes an empty volume of a format over a blank image of io->size bytes.
 /*!
  * The volume is as the machine's own format leaves it; only its structures are written.  The formats made:

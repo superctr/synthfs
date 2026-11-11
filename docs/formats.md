@@ -502,6 +502,13 @@ since 2000 (UTC), the creator `syfs` 1.0 on `Wi2k`, the size twice, the geometry
 sectors (its appendix), type 3, a random ID.  The image must be whole 512-byte sectors.  A SmartMedia card's image is
 written complemented, in 64 KB blocks (below, "SmartMedia cards").
 
+**Written through** (`syfs_image_io`, a host writing the disk's sectors): a fixed disk's sectors are written where
+they lie.  A dynamic disk's block that is in the file likewise; one that is not is added when it is first given a
+byte that is not zero: at the file's end, over the footer, go its bitmap of ones and its data (zeros but for what
+is written), then the footer again, and last its entry in the table, so that a write cut short leaves the disk as
+it read before.  Zeros written to a block not in the file add nothing.  A block once added stays, whatever is
+written to it after; `syfs_convert` to a raw image and back makes the file small again.
+
 Not read: differencing disks, the 511-byte footer of the oldest files, VHDX.
 
 ## SmartMedia cards

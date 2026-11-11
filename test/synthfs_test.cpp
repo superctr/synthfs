@@ -2116,6 +2116,88 @@ static void test_vhd()
 	CHECK(syfs_convert(&from, &to, SYFS_CONTAINER_VHD, err, sizeof err) == 512 + 1024 + 512 + 512);
 }
 
+// ---- a VHD written through: an empty disk made, formatted and written by a host through the image's own io
+static size_t zeros_read(void *, uint64_t, void *buf, size_t n)
+{
+	memset(buf, 0, n);
+	return n;
+}
+
+static size_t growing_write(void *user, uint64_t offset, const void *buf, size_t n)
+{
+	auto *s = static_cast<Sparse *>(user);
+	s->size = std::max(s->size, offset + n);
+	s->put(offset, buf, n);
+	return n;
+}
+
+static void test_vhd_written()
+{
+	const uint64_t MB = 1 << 20, SIZE = 40 * MB;
+	char err[128] = "";
+	// an empty disk: a VHD of zeros, so of no blocks
+	Sparse file(0), plain(SIZE);
+	syfs_io zeros { nullptr, zeros_read, nullptr, SIZE }, grow { &file, sparse_read, growing_write, 0 };
+	const uint64_t empty = syfs_convert(&zeros, &grow, SYFS_CONTAINER_VHD, err, sizeof err);
+	CHECK(empty == 512 + 1024 + 512 + 512 && file.size == empty);
+	grow.size = file.size;
+	syfs_image *fs = syfs_open(&grow, nullptr, 0);
+	syfs_io disk {};
+	CHECK(fs && syfs_image_io(fs, &disk) && disk.size == SIZE && disk.write && disk.read);
+	// zeros written to a block not there add nothing
+	uint8_t buf[8192] = {};
+	CHECK(disk.write(disk.user, 5 * MB, buf, sizeof buf) == sizeof buf && file.size == empty);
+	// formatted through the io: one block for the volume's structures.  A raw image beside it is given the same
+	// bytes from here on
+	syfs_io raw = writer_of(plain);
+	CHECK(syfs_create(&disk, SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, "WRITTEN", err, sizeof err));
+	CHECK(file.size == empty + 512 + 2 * MB);
+	for (uint64_t at = 0; at < 2 * MB; at += sizeof buf) {
+		CHECK(disk.read(disk.user, at, buf, sizeof buf) == sizeof buf);
+		plain.put(at, buf, sizeof buf);
+	}
+	// writes across a block's end, into blocks there and not, and at the disk's end
+	for (size_t i = 0; i < sizeof buf; i++)
+		buf[i] = uint8_t(i * 7 + 1);
+	for (uint64_t at : { 2 * MB - 3000, 17 * MB + 5, 2 * MB - 3000 + 100, SIZE - sizeof buf }) {
+		CHECK(disk.write(disk.user, at, buf, sizeof buf) == sizeof buf);
+		plain.put(at, buf, sizeof buf);
+	}
+	// blocks 0 and 1, 8 and 19
+	CHECK(file.size == empty + 4 * (512 + 2 * MB));
+	// nothing past the disk's end, and nothing short
+	CHECK(disk.write(disk.user, SIZE - 100, buf, 200) == 0 && disk.read(disk.user, SIZE - 100, buf, 200) == 100);
+	Sparse got(SIZE);
+	for (uint64_t at = 0; at < SIZE; at += sizeof buf) {
+		CHECK(disk.read(disk.user, at, buf, sizeof buf) == sizeof buf);
+		got.put(at, buf, sizeof buf);
+	}
+	CHECK(got.pages == plain.pages);
+	syfs_close(fs);
+
+	// opened again it is the disk written, and comes out as the raw image beside it; only read, it has no writer
+	syfs_io again = io_of(file);
+	syfs_key medium;
+	CHECK(probe(&again, &medium) == SYFS_FORMAT_FAT && medium == SYFS_MEDIUM_DISK);
+	fs = syfs_open(&again, nullptr, 0);
+	CHECK(fs && !strcmp(label_of(fs), "WRITTEN") && syfs_image_io(fs, &disk) && !disk.write);
+	close_image(fs);
+	Sparse out(SIZE);
+	syfs_io to = writer_of(out);
+	CHECK(syfs_convert(&again, &to, SYFS_CONTAINER_RAW, err, sizeof err) == SIZE && out.pages == plain.pages);
+
+	// a raw image's io is its bytes as they lie
+	raw = { &plain, sparse_read, sparse_write, SIZE };
+	fs = syfs_open(&raw, nullptr, 0);
+	CHECK(fs && syfs_image_io(fs, &disk) && disk.size == SIZE);
+	const uint8_t mark[3] = { 9, 8, 7 };
+	uint8_t back[3];
+	CHECK(disk.write(disk.user, 30 * MB, mark, 3) == 3);
+	plain.get(30 * MB, back, 3);
+	CHECK(!memcmp(mark, back, 3));
+	syfs_close(fs);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2153,6 +2235,7 @@ int main()
 	test_format_s700();
 	test_smartmedia();
 	test_vhd();
+	test_vhd_written();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);

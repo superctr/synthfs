@@ -86,6 +86,8 @@ std::shared_ptr<const Store> Vhd::over(std::shared_ptr<const Store> under)
 		return nullptr;
 	std::shared_ptr<Vhd> v(new Vhd);
 	v->size_ = size;
+	v->end_ = whole - FOOTER;
+	memcpy(v->footer_, f, FOOTER);
 	if (type == FIXED) {
 		if (size > whole - FOOTER)
 			return nullptr;
@@ -103,6 +105,7 @@ std::shared_ptr<const Store> Vhd::over(std::shared_ptr<const Store> under)
 			|| table > whole || (whole - table) / 4 < entries)
 			return nullptr;
 		v->bitmap_ = (v->block_ / SECTOR / 8 + SECTOR - 1) / SECTOR * SECTOR;
+		v->table_ = table;
 		std::vector<uint8_t> raw(size_t(entries) * 4);
 		if (!under->read(table, raw.data(), raw.size()))
 			return nullptr;
@@ -138,7 +141,44 @@ bool Vhd::read(uint64_t offset, void *buf, size_t n) const
 	return true;
 }
 
-uint64_t Vhd::write(const Store &from, const syfs_io &to, std::string &why, uint32_t BLOCK)
+bool Vhd::write(uint64_t offset, const void *buf, size_t n) const
+{
+	if (offset > size_ || n > size_ - offset)
+		return false;
+	if (!block_)
+		return under_->write(offset, buf, n);
+	auto *in = static_cast<const uint8_t *>(buf);
+	while (n) {
+		const size_t block = size_t(offset / block_);
+		const uint32_t at = uint32_t(offset % block_);
+		const size_t k = size_t(std::min<uint64_t>(n, block_ - at));
+		if (bat_[block] != NO_BLOCK) {
+			if (!under_->write(uint64_t(bat_[block]) * SECTOR + bitmap_ + at, in, k))
+				return false;
+		} else if (!std::all_of(in, in + k, [](uint8_t v) { return !v; })) {
+			// a new block where the footer was: its bitmap of ones and its data, the footer after it, and only
+			// then the table's entry, so that a write cut short leaves the disk as it was
+			if (end_ / SECTOR >= NO_BLOCK)
+				return false;
+			std::vector<uint8_t> fresh(size_t(bitmap_) + block_, 0);
+			std::fill(fresh.begin(), fresh.begin() + (block_ / SECTOR + 7) / 8, uint8_t(0xFF));
+			memcpy(&fresh[bitmap_ + at], in, k);
+			uint8_t entry[4];
+			put32(entry, uint32_t(end_ / SECTOR));
+			if (!under_->write(end_, fresh.data(), fresh.size()) || !under_->write(end_ + fresh.size(), footer_, FOOTER)
+				|| !under_->write(table_ + uint64_t(block) * 4, entry, 4))
+				return false;
+			bat_[block] = uint32_t(end_ / SECTOR);
+			end_ += fresh.size();
+		}
+		in += k;
+		offset += k;
+		n -= k;
+	}
+	return true;
+}
+
+uint64_t Vhd::make(const Store &from, const syfs_io &to, std::string &why, uint32_t BLOCK)
 {
 	const uint64_t size = from.size();
 	if (!size || size % SECTOR || size > LARGEST) {

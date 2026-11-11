@@ -24,17 +24,26 @@ public:
 	 * \return false where any is missing.
 	 */
 	virtual bool read(uint64_t offset, void *buf, size_t n) const = 0;
+	//! Writes n bytes at offset: the image's bytes change, not the store, which is a view of them.
+	/*!
+	 * \return false where the store is not written (a view only read, a host with no writer), any byte is outside
+	 *         it, or the host's write failed.
+	 */
+	virtual bool write(uint64_t, const void *, size_t) const { return false; }
 };
 
 //! The image as the host gives it.
 class HostStore final : public Store {
 public:
-	explicit HostStore(const syfs_io &io) : io_(io) {}
-	uint64_t size() const override { return io_.size; }
+	explicit HostStore(const syfs_io &io) : io_(io), size_(io.size) {}
+	uint64_t size() const override { return size_; }
 	bool read(uint64_t offset, void *buf, size_t n) const override;
+	//! Writes anywhere: a write past the end makes the image longer.
+	bool write(uint64_t offset, const void *buf, size_t n) const override;
 
 private:
 	syfs_io io_;
+	mutable uint64_t size_;
 };
 
 //! A virtual hard disk's sectors, out of a VHD file: fixed, or dynamic with the blocks never written left out.
@@ -47,7 +56,10 @@ public:
 	static std::shared_ptr<const Store> over(std::shared_ptr<const Store> under);
 	uint64_t size() const override { return size_; }
 	bool read(uint64_t offset, void *buf, size_t n) const override;
-	//! Writes a dynamic VHD of a store's bytes through the host's io, blocks holding only zeros left out.
+	//! Writes sectors' bytes; a dynamic disk's block not yet in the file is added at its end when it gets a byte
+	//! that is not zero.
+	bool write(uint64_t offset, const void *buf, size_t n) const override;
+	//! Makes a dynamic VHD of a store's bytes through the host's io, blocks holding only zeros left out.
 	/*!
 	 * block is a block's bytes, a power of two of sectors.
 	 *
@@ -55,7 +67,7 @@ public:
 eturn The bytes the VHD takes, or 0 with why where the store is not whole sectors, is larger than a VHD
 	 *         holds or a read or write failed.
 	 */
-	static uint64_t write(const Store &from, const syfs_io &to, std::string &why, uint32_t block = 0x200000);
+	static uint64_t make(const Store &from, const syfs_io &to, std::string &why, uint32_t block = 0x200000);
 
 private:
 	Vhd() = default;
@@ -63,7 +75,10 @@ private:
 	uint64_t size_ = 0;
 	uint32_t block_ = 0;         //!< A dynamic disk's block in bytes; 0 for a fixed disk.
 	uint32_t bitmap_ = 0;        //!< The bytes of the sector bitmap before a block's data.
-	std::vector<uint32_t> bat_;  //!< Each block's first sector in the file, 0xFFFFFFFF none.
+	uint64_t table_ = 0;         //!< The block allocation table's byte in the file.
+	uint8_t footer_[512] {};     //!< The footer, to follow the blocks as they are added.
+	mutable uint64_t end_ = 0;   //!< Where the footer at the file's end starts: where the next block goes.
+	mutable std::vector<uint32_t> bat_;  //!< Each block's first sector in the file, 0xFFFFFFFF none.
 };
 
 //! A store's bytes, each complemented.
@@ -76,6 +91,7 @@ public:
 	explicit Complement(std::shared_ptr<const Store> under) : under_(std::move(under)) {}
 	uint64_t size() const override { return under_->size(); }
 	bool read(uint64_t offset, void *buf, size_t n) const override;
+	bool write(uint64_t offset, const void *buf, size_t n) const override;
 
 private:
 	std::shared_ptr<const Store> under_;

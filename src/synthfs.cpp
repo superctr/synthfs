@@ -99,6 +99,7 @@ constexpr syfs_key wave_props[] = { SYFS_PROP_RATE, SYFS_PROP_CHANNELS, SYFS_PRO
 
 struct syfs_image {
 	FILE *file = nullptr;
+	bool writable = false;
 	std::unique_ptr<Medium> medium;
 	bool identified = false, listed = false;
 	std::string error;
@@ -278,6 +279,7 @@ syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size)
 		syfs_key format = SYFS_NONE;
 		const Reader *r = reader_of(image, format);
 		auto im = std::make_unique<syfs_image>();
+		im->writable = io->write != nullptr;
 		im->medium = r ? r->open(*io, format) : std::make_unique<Medium>(*io, SYFS_NONE);
 		if (r)
 			im->medium->medium = r->medium(image);
@@ -333,6 +335,38 @@ void syfs_close(syfs_image *im)
 const char *syfs_error(const syfs_image *im)
 {
 	return im ? im->error.c_str() : "";
+}
+
+static size_t plain_read(void *user, uint64_t offset, void *buf, size_t n)
+{
+	auto *s = static_cast<const Store *>(user);
+	try {
+		if (offset >= s->size())
+			return 0;
+		n = size_t(std::min<uint64_t>(n, s->size() - offset));
+		return s->read(offset, buf, n) ? n : 0;
+	} catch (...) {
+		return 0;
+	}
+}
+
+static size_t plain_write(void *user, uint64_t offset, const void *buf, size_t n)
+{
+	auto *s = static_cast<const Store *>(user);
+	try {
+		return s->write(offset, buf, n) ? n : 0;
+	} catch (...) {
+		return 0;
+	}
+}
+
+int syfs_image_io(syfs_image *im, syfs_io *out)
+{
+	if (!im || !out)
+		return 0;
+	const Store &plain = im->medium->image.plain();
+	*out = { const_cast<Store *>(&plain), plain_read, im->writable ? plain_write : nullptr, plain.size() };
+	return 1;
 }
 
 int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char *label, char *err, size_t err_size)
@@ -391,8 +425,8 @@ uint64_t syfs_convert(const syfs_io *from, const syfs_io *to, syfs_key container
 		if (container == SYFS_CONTAINER_VHD) {
 			// a card's image complemented, in blocks small enough to leave out most of what a card in use still
 			// has erased
-			uint64_t n = SmartMedia::is_card(plain) ? Vhd::write(Complement(stores.plain), *to, why, 0x10000)
-			                                        : Vhd::write(plain, *to, why);
+			uint64_t n = SmartMedia::is_card(plain) ? Vhd::make(Complement(stores.plain), *to, why, 0x10000)
+			                                        : Vhd::make(plain, *to, why);
 			if (!n)
 				say(err, err_size, why.c_str());
 			return n;

@@ -8,9 +8,17 @@ namespace syfs {
 
 bool HostStore::read(uint64_t offset, void *buf, size_t n) const
 {
-	if (!io_.read || offset > io_.size || n > io_.size - offset)
+	if (!io_.read || offset > size_ || n > size_ - offset)
 		return false;
 	return io_.read(io_.user, offset, buf, n) == n;
+}
+
+bool HostStore::write(uint64_t offset, const void *buf, size_t n) const
+{
+	if (!io_.write || io_.write(io_.user, offset, buf, n) != n)
+		return false;
+	size_ = std::max(size_, offset + n);
+	return true;
 }
 
 static const uint8_t sync[12] = { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };
@@ -80,6 +88,23 @@ bool Complement::read(uint64_t offset, void *buf, size_t n) const
 	auto *p = static_cast<uint8_t *>(buf);
 	for (size_t i = 0; i < n; i++)
 		p[i] = uint8_t(~p[i]);
+	return true;
+}
+
+bool Complement::write(uint64_t offset, const void *buf, size_t n) const
+{
+	auto *p = static_cast<const uint8_t *>(buf);
+	uint8_t flipped[4096];
+	while (n) {
+		size_t k = std::min(n, sizeof flipped);
+		for (size_t i = 0; i < k; i++)
+			flipped[i] = uint8_t(~p[i]);
+		if (!under_->write(offset, flipped, k))
+			return false;
+		p += k;
+		offset += k;
+		n -= k;
+	}
 	return true;
 }
 
