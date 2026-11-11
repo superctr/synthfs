@@ -240,10 +240,11 @@ void WaveRom::list()
 void WaveRom::list_srjv80()
 {
 	const Socket &s = *socket_;
-	struct Shape { int slot; uint8_t type; samplerfs_kind kind; uint32_t size; int name; const char *bank; };  // name: 0 none, 1 plain, 2 packed
+	struct Shape { int slot; uint8_t type; samplerfs_kind kind; uint32_t size; int name; const char *bank; };  // name: 0 none, 1 plain, 2 packed, 3 plain after a byte, 16 characters
 	static constexpr Shape shapes[] = {
 		{ 1, 1, SAMPLERFS_WAVE, 60, 1, "" },
 		{ 3, 2, SAMPLERFS_PATCH, 362, 1, "JV-880 Patches" },
+		{ 3, 3, SAMPLERFS_PATCH, 379, 3, "JD-990 Patches" },
 		{ 3, 5, SAMPLERFS_PATCH, 401, 2, "JV-1080 Patches" },
 		{ 4, 2, SAMPLERFS_RHYTHM_SET, 2684, 0, "JV-880 Rhythm Sets" },
 		{ 4, 4, SAMPLERFS_RHYTHM_SET, 2699, 2, "JV-1080 Rhythm Sets" },
@@ -268,9 +269,9 @@ void WaveRom::list_srjv80()
 			for (uint32_t k = 0; k < count; k++) {
 				uint8_t rec[60] = {};
 				uint64_t r = at + uint64_t(k) * sh.size;
-				if (sh.name && !s.read(r, rec, sh.kind == SAMPLERFS_WAVE ? 60 : sh.name == 1 ? 12 : 11))
+				if (sh.name && !s.read(r, rec, sh.kind == SAMPLERFS_WAVE ? 60 : sh.name == 1 ? 12 : sh.name == 3 ? 17 : 11))
 					return;
-				std::string name = sh.name == 1 ? plain(rec, 12) : sh.name == 2 ? packed(rec, false) : "";
+				std::string name = sh.name == 1 ? plain(rec, 12) : sh.name == 2 ? packed(rec, false) : sh.name == 3 ? trimmed(plain(rec + 1, 16)) : "";
 				size_t e = add(sh.kind, format, sh.kind == SAMPLERFS_WAVE ? waves++ : k, parent, name, 0, r);
 				if (sh.kind != SAMPLERFS_WAVE)
 					continue;

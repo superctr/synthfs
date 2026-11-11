@@ -273,7 +273,7 @@ address of their records at 0x80 + 4*n*:
 | 0 | 2 | samples | 18 bytes (below) | |
 | 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) | |
 | 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first | JV-880 Patches |
-| 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters **[seen]** | not listed |
+| 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters **[seen]** | JD-990 Patches |
 | 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up | JV-1080 Patches |
 | 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed: keys 36 to 96, 44 bytes each | JV-880 Rhythm Sets |
 | 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's: 11 bytes, then keys 35 to 98, 42 bytes each | JV-1080 Rhythm Sets |
@@ -572,8 +572,8 @@ own) and the system disks; a DJ-70's floppy, whose format was not read.
 - S-550: the patches' and tones' other parameters; a W-30 hard disk's layout; a W-30 floppy (none at hand).
 - S-50 floppies: told apart only.
 - S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves as one (each disk gives its own part).
-- Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; SR-JV80-04's
-  JD-990 patches (type 3); the SO-JD80 cards (JD-800, JD-990), another format.
+- Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; the SO-JD80
+  cards (JD-800, JD-990), another format.
 - AKAI S900: the `O`, `D` and `F` files; the programs' other parameters.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.
