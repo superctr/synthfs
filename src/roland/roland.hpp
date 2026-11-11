@@ -119,7 +119,7 @@ public:
 private:
 	void list_srjv80();
 	void list_srx();
-	size_t bank(std::string_view shape);
+	size_t bank(std::string_view shape, std::string_view name);
 	// a wave's split as a sample entry, under the wave, its keys from the split before's top up to top; a split of
 	// no record sounds nothing and has no entry
 	void split(size_t wave, uint32_t number, uint8_t below, uint8_t top, uint64_t record);

@@ -1521,6 +1521,7 @@ static void test_boards()
 		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Test Patch" }));
 		size_t bank = samplerfs_entry_at(fs, find(fs, "Test Patch"))->parent;
 		CHECK(bank != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, bank)->tag, "4:7"));
+		CHECK(!strcmp(samplerfs_entry_at(fs, bank)->name, "XV-5080 Patches"));
 		// the silent splits have no entry; Snare 1 sounds nothing at middle C and answers with its nearest split
 		size_t kick = find(fs, "Kick 1", SAMPLERFS_WAVE), snare = find(fs, "Snare 1", SAMPLERFS_WAVE);
 		CHECK((splits(fs, kick) == std::vector<std::string> { "60-61" }));
@@ -1580,6 +1581,9 @@ static void test_boards()
 		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
 		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Card Piano" }));
 		CHECK((names(fs, SAMPLERFS_RHYTHM_SET) == std::vector<std::string> { "Card Drums" }));
+		CHECK((names(fs, SAMPLERFS_BANK) == std::vector<std::string> { "JV-880 Patches", "JV-1080 Rhythm Sets" }));
+		const samplerfs_entry *drums = samplerfs_entry_at(fs, samplerfs_entry_at(fs, find(fs, "Card Drums"))->parent);
+		CHECK(drums->kind == SAMPLERFS_BANK && !strcmp(drums->tag, "4"));
 		size_t a = find(fs, "Piano A", SAMPLERFS_WAVE), b = find(fs, "Piano B", SAMPLERFS_WAVE);
 		CHECK((splits(fs, a) == std::vector<std::string> { "0-59", "60-127" }));
 		CHECK((splits(fs, b) == std::vector<std::string> { "0-127" }));

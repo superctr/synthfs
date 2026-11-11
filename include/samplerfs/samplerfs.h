@@ -64,7 +64,8 @@ typedef enum samplerfs_kind {
 	SAMPLERFS_AREA,         /* S-550: an area, a disk's worth of patches and tones */
 	SAMPLERFS_TONE,         /* S-550: a tone, a wave and its settings */
 	SAMPLERFS_MULTI,        /* AKAI S3000: a multi, its parts' programs */
-	SAMPLERFS_BANK,         /* a board or card: its patches or rhythm sets in one record shape, the shape in tag */
+	SAMPLERFS_BANK,         /* a board or card: its patches or rhythm sets in one record shape, named for the
+	                           machines the shape is for ("JV-1080 Patches"), the shape in tag */
 	SAMPLERFS_RHYTHM_SET,   /* a board or card: a rhythm set (named only in the later shapes) */
 	SAMPLERFS_WAVE,         /* a board or card: a wave, the sound a patch's tone names; its samples, one a split of
 	                           its keys, under it, and its sample header and frames those of the split it plays at

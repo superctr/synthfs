@@ -268,18 +268,29 @@ card; the rest are boards (8 MB, or 2 MB for the Experience boards).  Each 1 MB 
 board's ID and date at 0x20 and 0x30), whose slots *n* give a type byte at 0x50 + *n*, a count at 0x60 + 2*n* and the
 address of their records at 0x80 + 4*n*:
 
-| Slot | Type | What | Record |
-|---|---|---|---|
-| 0 | 2 | samples | 18 bytes (below) |
-| 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) |
-| 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first |
-| 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up |
-| 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed |
-| 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's |
+| Slot | Type | What | Record | Bank |
+|---|---|---|---|---|
+| 0 | 2 | samples | 18 bytes (below) | |
+| 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) | |
+| 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first | JV-880 Patches |
+| 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters **[seen]** | not listed |
+| 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up | JV-1080 Patches |
+| 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed: keys 36 to 96, 44 bytes each | JV-880 Rhythm Sets |
+| 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's: 11 bytes, then keys 35 to 98, 42 bytes each | JV-1080 Rhythm Sets |
 
 A board carrying both shapes keeps one in block 0 and the other in a later block; a block repeating a slot of
-another lists it once.  Each slot of patches or rhythm sets is a bank, tagged with its type **[seen]**.  A wave's
-sample numbers count in the samples of its own block's header.
+another lists it once.  Each slot of patches or rhythm sets is a bank, named as the table says and tagged with its
+type.  A wave's sample numbers count in the samples of its own block's header.
+
+Which machine each shape is for: with SR-JV80-06 fitted, whose two patch banks differ in order (the first patch
+`Dance Again` in type 2, `All night!` in type 5), the JV-880 loads `Dance Again` from the board, and the JV-1080, the
+XV-3080 and the XV-5080 offer `All night!` as the board's first; the JV-1080 names the board's rhythm sets from type
+4.  The JV-1080 and the XVs take type 2 where a board has no type 5 (SR-JV80-01's `770 Grand 1`), converting it.  The
+JV-1080's own preset patches and rhythm sets are records of 401 and 2699 bytes in the same layouts.  Type 3 is on
+SR-JV80-04 alone, whose manual gives it 255 patches each for the JV series and for the JD-990; the JD-990 loads
+them one at a time into its temporary patch, and takes the JV series' with a conversion.  The cards (SO-PCM1)
+carry type 2 only, and SR-JV80-01 to -03, -05 and -99 likewise; SR-JV80-97 and -98 carry an empty type 2 slot,
+which is not listed **[seen]**.
 
 An SR-JV80 sample:
 
@@ -303,17 +314,29 @@ the directory's count at 0x42; the directory's 16-byte entries from 0x80, each a
 address of its table and its length.  A table starts with a count (a halfword), the offset of its records from the
 table (a long, +4) and their stride (+8).
 
-| Class | Type | What |
-|---|---|---|
-| 1 | 4 | samples, 24 bytes (below) |
-| 2 | 3 | waves: 8-byte records, the offset of the wave's definition from the table and its length |
-| 4 | 6, 7, 8, 9 | patch banks for four host families (574 bytes a patch; 646 on type 9) |
-| 5 | 5, 6, 7 | rhythm set banks likewise |
+| Class | Type | What | Bank |
+|---|---|---|---|
+| 1 | 4 | samples, 24 bytes (below) | |
+| 2 | 3 | waves: 8-byte records, the offset of the wave's definition from the table and its length | |
+| 4 | 6 | patches, 574 bytes each | XV-3080 Patches |
+| 4 | 7 | patches, 574 bytes | XV-5080 Patches |
+| 4 | 8 | patches, 574 bytes | Global Patches |
+| 4 | 9 | patches, 646 bytes | Fantom-S Patches |
+| 5 | 5 | rhythm sets, 512 bytes each | XV-3080 Rhythm Sets |
+| 5 | 6 | rhythm sets | XV-5080 Rhythm Sets |
+| 5 | 7 | rhythm sets | Global Rhythm Sets |
+| 5 | 8 | rhythm sets (on no board at hand) | Fantom-S Rhythm Sets |
 
 A patch's or rhythm set's name is twelve 7-bit characters packed from the first byte's top bit down.  A board holds
-the same sounds in each of its banks, one per host family; each bank is listed and tagged `class:type`, and the
-host picks the one its machine reads **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only
-**[seen]**.
+the same sounds in each of its banks of a class, one bank for each family of machines, mostly under the same names
+but with some parameters of their own; each bank is listed, named as the table says and tagged `class:type`, and a
+class and type of no family above is listed unnamed.  The names are the ones the Fantom-X's wave information page
+gives the banks: `XV-3080`, `XV-5080`, `Global` and `FantomS`.  With each bank's names marked apart, the XV-3080
+offers the board's patches and rhythm sets from 4:6 and 5:5, the XV-5080 from 4:7 and 5:6, or from 4:6 where a
+board has no 4:7 (SRX-02's `PremierGrand`); neither reads 4:8, 4:9 or 5:7.  The Global patches are read by the
+RD-700 and the Fantom-X, the Global rhythm sets and the Fantom-S banks by the Fantom-X.  SRX-01 and SRX-02 carry
+4:6 and 5:5 only (SRX-02 no rhythm sets), SRX-03 lacks 5:6, SRX-04 and SRX-10 to -12 carry no rhythm sets, and only
+SRX-10 to -12 carry 4:9 **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only **[seen]**.
 
 A wave's definition: the name (12 characters), four bytes (the first 1 on a few drum waves, which play the split
 of key 60 when a tone asks for the wave's own pitch; not read), then four bytes a split to the definition's end: the
@@ -549,8 +572,8 @@ own) and the system disks; a DJ-70's floppy, whose format was not read.
 - S-550: the patches' and tones' other parameters; a W-30 hard disk's layout; a W-30 floppy (none at hand).
 - S-50 floppies: told apart only.
 - S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves as one (each disk gives its own part).
-- Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; the SO-JD80
-  cards (JD-800, JD-990), another format.
+- Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; SR-JV80-04's
+  JD-990 patches (type 3); the SO-JD80 cards (JD-800, JD-990), another format.
 - AKAI S900: the `O`, `D` and `F` files; the programs' other parameters.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.

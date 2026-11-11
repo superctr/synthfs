@@ -164,9 +164,9 @@ WaveRom::WaveRom(const samplerfs_io &io, samplerfs_format format) : Medium(io, f
 
 WaveRom::~WaveRom() = default;
 
-size_t WaveRom::bank(std::string_view shape)
+size_t WaveRom::bank(std::string_view shape, std::string_view name)
 {
-	size_t b = add(SAMPLERFS_BANK, format, banks_++, SAMPLERFS_NONE, "", 0, 0);
+	size_t b = add(SAMPLERFS_BANK, format, banks_++, SAMPLERFS_NONE, std::string(name), 0, 0);
 	tag(b, shape);
 	return b;
 }
@@ -235,17 +235,18 @@ void WaveRom::list()
 
 // Each 1 MB block's header: per slot n a type byte at +0x50 + n, a count at +0x60 + 2n and an address at +0x80 + 4n
 // (big-endian); slot 0 the samples (18 bytes), slot 1 the waves (60 bytes: the name, sixteen top keys and sixteen
-// sample numbers), slot 3 the patches, slot 4 the rhythm sets, each in the shape the type gives
+// sample numbers), slot 3 the patches, slot 4 the rhythm sets, each in the shape the type gives, the JV-880's or the
+// JV-1080's
 void WaveRom::list_srjv80()
 {
 	const Socket &s = *socket_;
-	struct Shape { int slot; uint8_t type; samplerfs_kind kind; uint32_t size; int name; };  // name: 0 none, 1 plain, 2 packed
+	struct Shape { int slot; uint8_t type; samplerfs_kind kind; uint32_t size; int name; const char *bank; };  // name: 0 none, 1 plain, 2 packed
 	static constexpr Shape shapes[] = {
-		{ 1, 1, SAMPLERFS_WAVE, 60, 1 },
-		{ 3, 2, SAMPLERFS_PATCH, 362, 1 },
-		{ 3, 5, SAMPLERFS_PATCH, 401, 2 },
-		{ 4, 2, SAMPLERFS_RHYTHM_SET, 2684, 0 },
-		{ 4, 4, SAMPLERFS_RHYTHM_SET, 2699, 2 },
+		{ 1, 1, SAMPLERFS_WAVE, 60, 1, "" },
+		{ 3, 2, SAMPLERFS_PATCH, 362, 1, "JV-880 Patches" },
+		{ 3, 5, SAMPLERFS_PATCH, 401, 2, "JV-1080 Patches" },
+		{ 4, 2, SAMPLERFS_RHYTHM_SET, 2684, 0, "JV-880 Rhythm Sets" },
+		{ 4, 4, SAMPLERFS_RHYTHM_SET, 2699, 2, "JV-1080 Rhythm Sets" },
 	};
 	std::vector<std::pair<int, uint32_t>> seen;
 	uint32_t waves = 0;
@@ -263,7 +264,7 @@ void WaveRom::list_srjv80()
 			if (std::find(seen.begin(), seen.end(), std::pair(sh.slot, at)) != seen.end())
 				continue;
 			seen.emplace_back(sh.slot, at);
-			size_t parent = sh.kind == SAMPLERFS_WAVE ? SAMPLERFS_NONE : bank(std::to_string(sh.type));
+			size_t parent = sh.kind == SAMPLERFS_WAVE ? SAMPLERFS_NONE : bank(std::to_string(sh.type), sh.bank);
 			for (uint32_t k = 0; k < count; k++) {
 				uint8_t rec[60] = {};
 				uint64_t r = at + uint64_t(k) * sh.size;
@@ -293,7 +294,8 @@ void WaveRom::list_srjv80()
 // of its table and its length; a table's head a count, the offset of its records from the head and their stride.
 // Class 1 the samples (24 bytes); class 2 the waves, each record the offset of its definition from the head (a long)
 // and its length, the definition the name, four bytes, then a split in four bytes (its top key, a byte, the sample's
-// number) to its end; class 4 a bank of patches, class 5 of rhythm sets, each record starting with its name
+// number) to its end; class 4 a bank of patches, class 5 of rhythm sets, each record starting with its name, the
+// type the machines it is for
 void WaveRom::list_srx()
 {
 	const Socket &s = *socket_;
@@ -341,7 +343,10 @@ void WaveRom::list_srx()
 			}
 		} else if ((t.cls == 4 || t.cls == 5) && t.stride >= 11) {
 			samplerfs_kind kind = t.cls == 4 ? SAMPLERFS_PATCH : SAMPLERFS_RHYTHM_SET;
-			size_t parent = bank(std::to_string(t.cls) + ":" + std::to_string(t.type));
+			static const char *const families[] = { "XV-3080", "XV-5080", "Global", "Fantom-S" };
+			const uint32_t family = t.type - (t.cls == 4 ? 6 : 5);
+			std::string name = family < 4 ? std::string(families[family]) + (t.cls == 4 ? " Patches" : " Rhythm Sets") : "";
+			size_t parent = bank(std::to_string(t.cls) + ":" + std::to_string(t.type), name);
 			for (uint32_t k = 0; k < t.count; k++) {
 				uint64_t r = uint64_t(t.at) + t.records + uint64_t(k) * t.stride;
 				uint8_t rec[11];
