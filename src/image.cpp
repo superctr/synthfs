@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <cstdio>
 
-namespace sfs {
+namespace syfs {
 
 static const uint8_t sync[12] = { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };
 
-Image::Image(const samplerfs_io &io) : io_(io), size_(io.size)
+Image::Image(const syfs_io &io) : io_(io), size_(io.size)
 {
 	uint8_t head[16];
 	if (io_.read && io_.size >= 2352 && io_.read(io_.user, 0, head, 16) == 16 && !memcmp(head, sync, 12)
@@ -46,10 +46,10 @@ std::vector<uint8_t> Image::read(uint64_t offset, size_t n) const
 	return v;
 }
 
-size_t Medium::add(samplerfs_kind kind, samplerfs_format fmt, uint32_t number, size_t parent, std::string_view name,
+size_t Medium::add(syfs_key kind, syfs_key fmt, uint32_t number, size_t parent, std::string_view name,
 	uint64_t bytes, uint64_t at)
 {
-	samplerfs_entry e {};
+	syfs::Entry e {};
 	e.kind = kind;
 	e.format = fmt;
 	e.number = number;
@@ -67,12 +67,12 @@ void Medium::tag(size_t i, std::string_view t)
 	snprintf(entries[i].tag, sizeof entries[i].tag, "%.*s", int(t.size()), t.data());
 }
 
-size_t Medium::child(size_t parent, samplerfs_kind kind, uint32_t number) const
+size_t Medium::child(size_t parent, syfs_key kind, uint32_t number) const
 {
 	for (size_t i = parent + 1; i < entries.size(); i++)
 		if (entries[i].parent == parent && entries[i].kind == kind && entries[i].number == number)
 			return i;
-	return SAMPLERFS_NONE;
+	return syfs::NONE;
 }
 
 std::string trimmed(std::string_view s)
@@ -102,28 +102,28 @@ size_t read_words(const Image &im, uint64_t offset, int16_t *out, size_t n)
 
 size_t Medium::sample_at(size_t i, int) const
 {
-	samplerfs_kind k = entries[i].kind;
-	samplerfs_sample s = blank_sample();
-	return (k == SAMPLERFS_SAMPLE || k == SAMPLERFS_TONE || k == SAMPLERFS_FILE) && sample(i, s) ? i : SAMPLERFS_NONE;
+	syfs_key k = entries[i].kind;
+	syfs::Sample s = blank_sample();
+	return (k == SYFS_TYPE_SAMPLE || k == SYFS_TYPE_TONE || k == SYFS_TYPE_FILE) && sample(i, s) ? i : syfs::NONE;
 }
 
-samplerfs_sample blank_sample()
+syfs::Sample blank_sample()
 {
-	samplerfs_sample s {};
+	syfs::Sample s {};
 	s.key = -1;
 	s.channels = 1;
 	s.bits = 16;
 	return s;
 }
 
-void clamp_points(samplerfs_sample &s)
+void clamp_points(syfs::Sample &s)
 {
 	s.end = std::min(s.end, s.frames);
 	s.start = std::min(s.start, s.end);
 	s.loop_end = std::min(std::max(s.loop_end, s.start), s.end);
 	s.loop_start = std::min(std::max(s.loop_start, s.start), s.loop_end);
 	if (s.loop_start == s.loop_end)
-		s.loop = SAMPLERFS_LOOP_NONE;
+		s.loop = SYFS_NONE;
 }
 
 }

@@ -6,7 +6,7 @@
 
 #include <functional>
 
-namespace sfs {
+namespace syfs {
 
 // a name ending .wav, .aif, .aiff or .aifc
 bool audio_name(std::string_view name);
@@ -26,7 +26,7 @@ struct AudioLayout {
 
 // a WAV's or AIFF's rate, channels, bits, frames, original key and first loop, from a file of the bytes given, and
 // its layout where layout is not null; false where it is neither or its header cannot be read
-bool audio_sample(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayout *layout = nullptr);
+bool audio_sample(const FileRead &read, uint64_t bytes, syfs::Sample &out, AudioLayout *layout = nullptr);
 
 // up to frames frames from frame first, decoded to 16 bits, the channels side by side; the count read
 size_t audio_wave(const FileRead &read, uint64_t bytes, uint64_t first, int16_t *out, size_t frames);

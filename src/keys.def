@@ -1,0 +1,76 @@
+# Every name the interface knows: its class, the constant's name after SYFS_<CLASS>_, the string that is hashed,
+# and a title where it reads differently.  tools/keys.py makes include/synthfs/syfs_keys.h of it (just keys).
+
+format S550        s550        "S-550"
+format S760        s760        "S-760"
+format S770        s770        "S-770"
+format AKAI_S1000  akai-s1000  "AKAI S1000"
+format AKAI_S3000  akai-s3000  "AKAI S3000"
+format ISO9660     iso9660     "ISO 9660"
+format EMU3        emu3        "E-mu EIII/E-IV"
+format EMAX2       emax2       "E-mu Emax II"
+format S330        s330        "S-330"
+format W30         w30         "W-30"
+format S50         s50         "S-50"
+format DJ70        dj70        "DJ-70"
+format SRJV80      srjv80      "SR-JV80"
+format SRX         srx         "SRX"
+format AKAI_S900   akai-s900   "AKAI S900"
+format FAT         fat         "FAT"
+
+medium DISK        disk
+medium FLOPPY      floppy
+medium CARD        card
+medium BOARD       board
+
+type IMAGE         image
+type PARTITION     partition
+type VOLUME        volume
+type PERFORMANCE   performance
+type PATCH         patch
+type PARTIAL       partial
+type SAMPLE        sample
+type PROGRAM       program
+type OTHER         other
+type DIRECTORY     directory
+type FILE          file
+type AREA          area
+type TONE          tone
+type MULTI         multi
+type BANK          bank
+type RHYTHM_SET    rhythm-set  "rhythm set"
+type WAVE          wave
+
+loop FORWARD       forward
+loop ALTERNATE     alternate
+
+kind INT           int
+kind STRING        string
+kind KEY           key
+
+prop FORMAT        format
+prop MEDIUM        medium
+prop LABEL         label
+prop NAME          name
+prop TYPE          type
+prop NUMBER        number
+prop SIZE          size
+prop TAG           tag
+prop RATE          rate
+prop CHANNELS      channels
+prop BITS          bits
+prop KEY           key
+prop FRAMES        frames
+prop START         start
+prop END           end
+prop LOOP          loop
+prop LOOP_START    loop-start
+prop LOOP_END      loop-end
+prop REVERSE       reverse
+prop MODE          mode
+
+rel CHILDREN       children
+rel USES           uses
+rel ALL            all
+
+as S16             s16

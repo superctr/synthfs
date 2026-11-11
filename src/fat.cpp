@@ -7,7 +7,7 @@
 #include <cctype>
 #include <unordered_set>
 
-namespace sfs {
+namespace syfs {
 
 namespace fat {
 
@@ -18,7 +18,7 @@ constexpr uint64_t FAT_CHUNK = 4096;
 constexpr int DEPTH = 32;
 constexpr size_t ENTRIES = 1 << 18;
 constexpr uint64_t DIR_BYTES = 65536 * 32;
-constexpr size_t NAME = sizeof(samplerfs_entry::name) - 1;
+constexpr size_t NAME = sizeof(syfs::Entry::name) - 1;
 
 // the partition types of FAT volumes (the hidden ones too)
 bool fat_type(uint8_t t)
@@ -173,21 +173,21 @@ std::string label_of(const uint8_t *p)
 
 }
 
-samplerfs_format Fat::probe(const Image &im)
+syfs_key Fat::probe(const Image &im)
 {
-	return find(im) ? SAMPLERFS_FAT : SAMPLERFS_UNKNOWN;
+	return find(im) ? SYFS_FORMAT_FAT : SYFS_NONE;
 }
 
-samplerfs_medium Fat::medium_of(const Image &im)
+syfs_key Fat::medium_of(const Image &im)
 {
 	auto g = find(im);
 	if (!g || g->base)
-		return SAMPLERFS_MEDIUM_DISK;
+		return SYFS_MEDIUM_DISK;
 	uint64_t bytes = g->total * g->sector;
 	for (uint64_t k : floppies)
 		if (bytes == k * 1024)
-			return SAMPLERFS_MEDIUM_FLOPPY;
-	return SAMPLERFS_MEDIUM_DISK;
+			return SYFS_MEDIUM_FLOPPY;
+	return SYFS_MEDIUM_DISK;
 }
 
 uint32_t Fat::next(uint32_t c) const
@@ -301,7 +301,7 @@ void Fat::walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool r
 		std::string name = named ? long_name(lfn) : short_name(e);
 		uint32_t first = le16(e + 26) | (g_.bits == 32 ? uint32_t(le16(e + 20)) << 16 : 0);
 		bool is_dir = attr & 0x10;
-		size_t i = add(is_dir ? SAMPLERFS_DIRECTORY : SAMPLERFS_FILE, SAMPLERFS_FAT, number++, parent, name,
+		size_t i = add(is_dir ? SYFS_TYPE_DIRECTORY : SYFS_TYPE_FILE, SYFS_FORMAT_FAT, number++, parent, name,
 			is_dir ? 0 : le32(e + 28), valid(first) ? g_.base + g_.data_at + uint64_t(first - 2) * g_.cluster : 0);
 		first_.push_back(first);
 		if (!is_dir || depth >= DEPTH || !valid(first)
@@ -331,14 +331,14 @@ void Fat::list()
 			root.clear();
 	} else
 		root = image.read(g_.base + g_.root_at, size_t(g_.root_entries) * 32);
-	walk(root, SAMPLERFS_NONE, 0, true);
+	walk(root, syfs::NONE, 0, true);
 	if (label.empty() && memcmp(g_.label, "NO NAME    ", 11))
 		label = label_of(g_.label);
 }
 
-bool Fat::sample(size_t i, samplerfs_sample &out) const
+bool Fat::sample(size_t i, syfs::Sample &out) const
 {
-	if (entries[i].kind != SAMPLERFS_FILE)
+	if (entries[i].kind != SYFS_TYPE_FILE)
 		return false;
 	uint64_t bytes = entries[i].bytes;
 	auto clusters = chain(first_[i], (bytes + g_.cluster - 1) / g_.cluster);
@@ -348,7 +348,7 @@ bool Fat::sample(size_t i, samplerfs_sample &out) const
 		bytes, out);
 }
 
-size_t Fat::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+size_t Fat::wave(size_t i, const syfs::Sample &, uint64_t first, int16_t *out, size_t frames) const
 {
 	uint64_t bytes = entries[i].bytes;
 	auto clusters = chain(first_[i], (bytes + g_.cluster - 1) / g_.cluster);
@@ -356,7 +356,7 @@ size_t Fat::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *ou
 		first, out, frames);
 }
 
-std::unique_ptr<Medium> Fat::open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> Fat::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<Fat>(io, format);
 }

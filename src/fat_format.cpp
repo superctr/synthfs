@@ -4,7 +4,7 @@
 
 #include <ctime>
 
-namespace sfs::fat {
+namespace syfs::fat {
 
 namespace {
 
@@ -30,7 +30,7 @@ struct Layout {
 
 class Writer {
 public:
-	Writer(const samplerfs_write_io &io, std::string &why) : io_(io), why_(why) {}
+	Writer(const syfs_io &io, std::string &why) : io_(io), why_(why) {}
 	bool put(uint64_t at, const void *p, size_t n)
 	{
 		if (at > io_.size || n > io_.size - at || io_.write(io_.user, at, p, n) != n)
@@ -56,7 +56,7 @@ public:
 	}
 
 private:
-	const samplerfs_write_io &io_;
+	const syfs_io &io_;
 	std::string &why_;
 };
 
@@ -210,7 +210,7 @@ void chs(uint8_t *p, uint64_t lba)
 
 }
 
-bool format_floppy(const samplerfs_write_io &io, const char *label, std::string &why)
+bool format_floppy(const syfs_io &io, const char *label, std::string &why)
 {
 	Writer w(io, why);
 	Layout L {};
@@ -228,7 +228,7 @@ bool format_floppy(const samplerfs_write_io &io, const char *label, std::string 
 	return write_volume(w, 0, L, label);
 }
 
-bool format_disk(const samplerfs_write_io &io, const char *label, std::string &why)
+bool format_disk(const syfs_io &io, const char *label, std::string &why)
 {
 	Writer w(io, why);
 	if (io.size % SECTOR)

@@ -33,16 +33,166 @@ static size_t mem_read(void *user, uint64_t offset, void *buf, size_t n)
 	return n;
 }
 
-static samplerfs_io io_of(Bytes &b)
+static syfs_io io_of(Bytes &b)
 {
-	return { &b, mem_read, b.size() };
+	return { &b, mem_read, nullptr, b.size() };
 }
 
 // the FAT probe on its own leaves every other format's image alone, floppies of DOS sizes among them
 static bool not_fat(Bytes &b)
 {
-	samplerfs_io io = io_of(b);
-	return sfs::Fat::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN;
+	syfs_io io = io_of(b);
+	return syfs::Fat::probe(syfs::Image(io)) == SYFS_NONE;
+}
+
+// ---- the interface as the cases below ask of it: nodes by their index from 0, an entry and a sample's header whole
+static const size_t NONE = size_t(-1);
+
+static int64_t num(syfs_image *fs, syfs_node n, syfs_key key, int64_t none = 0)
+{
+	int64_t v = none;
+	syfs_get_int(fs, n, key, &v);
+	return v;
+}
+
+static syfs_key probe(const syfs_io *io, syfs_key *medium)
+{
+	if (medium)
+		*medium = SYFS_NONE;
+	syfs_image *fs = io ? syfs_open(io, nullptr, 0) : nullptr;
+	if (!fs)
+		return SYFS_NONE;
+	syfs_key format = syfs_key(num(fs, SYFS_ROOT, SYFS_PROP_FORMAT));
+	if (medium)
+		*medium = syfs_key(num(fs, SYFS_ROOT, SYFS_PROP_MEDIUM));
+	syfs_close(fs);
+	return format;
+}
+
+static std::map<syfs_image *, std::vector<syfs::Entry>> listed;
+static std::map<syfs_image *, std::string> labels;
+
+static const std::vector<syfs::Entry> &entries_of(syfs_image *fs)
+{
+	auto it = listed.find(fs);
+	if (it != listed.end())
+		return it->second;
+	std::vector<syfs::Entry> &v = listed[fs];
+	std::vector<syfs_node> nodes(syfs_list(fs, SYFS_ROOT, SYFS_REL_ALL, nullptr, 0));
+	CHECK(syfs_list(fs, SYFS_ROOT, SYFS_REL_ALL, nodes.data(), nodes.size()) == nodes.size());
+	for (size_t i = 0; i < nodes.size(); i++) {
+		syfs_info info;
+		syfs::Entry e {};
+		CHECK(nodes[i] == i + 1 && syfs_node_info(fs, nodes[i], &info));
+		e.kind = info.type;
+		e.format = syfs_key(num(fs, nodes[i], SYFS_PROP_FORMAT));
+		e.number = info.number;
+		e.parent = info.parent == SYFS_ROOT ? NONE : info.parent - 1;
+		snprintf(e.name, sizeof e.name, "%s", info.name);
+		syfs_get_str(fs, nodes[i], SYFS_PROP_TAG, e.tag, sizeof e.tag);
+		e.bytes = info.size;
+		char name[64];
+		CHECK(syfs_get_str(fs, nodes[i], SYFS_PROP_NAME, name, sizeof name) && !strcmp(name, e.name));
+		CHECK(num(fs, nodes[i], SYFS_PROP_TYPE) == e.kind && num(fs, nodes[i], SYFS_PROP_NUMBER) == e.number
+			&& uint64_t(num(fs, nodes[i], SYFS_PROP_SIZE)) == e.bytes);
+		v.push_back(e);
+	}
+	// every property listed reads as its kind says, each key once
+	for (size_t n = 0; n <= v.size(); n++) {
+		syfs_prop prop;
+		std::vector<syfs_key> keys;
+		for (size_t k = 0; syfs_prop_at(fs, syfs_node(n), k, &prop); k++) {
+			int64_t value;
+			char text[256];
+			CHECK(std::find(keys.begin(), keys.end(), prop.key) == keys.end() && syfs_name(prop.key));
+			keys.push_back(prop.key);
+			CHECK(syfs_get_int(fs, syfs_node(n), prop.key, &value) == (prop.kind != SYFS_KIND_STRING));
+			CHECK(syfs_get_str(fs, syfs_node(n), prop.key, text, sizeof text) == (prop.kind != SYFS_KIND_INT));
+			CHECK(!prop.writable && !syfs_set_int(fs, syfs_node(n), prop.key, 0) && *syfs_error(fs));
+		}
+		CHECK(keys.size() >= (n ? 5u : 3u));
+		CHECK(!syfs_get_int(fs, syfs_node(n), syfs_key_of("no such property"), nullptr));
+	}
+	// each node is among its parent's children, in order, and nowhere else
+	std::vector<std::vector<syfs_node>> kids(v.size() + 1);
+	for (size_t i = 0; i < v.size(); i++)
+		kids[v[i].parent == NONE ? 0 : v[i].parent + 1].push_back(syfs_node(i + 1));
+	for (size_t n = 0; n <= v.size(); n++) {
+		std::vector<syfs_node> got(syfs_list(fs, syfs_node(n), SYFS_REL_CHILDREN, nullptr, 0));
+		syfs_list(fs, syfs_node(n), SYFS_REL_CHILDREN, got.data(), got.size());
+		CHECK(got == kids[n]);
+	}
+	return v;
+}
+
+static size_t count_of(syfs_image *fs) { return entries_of(fs).size(); }
+
+static const syfs::Entry *entry_at(syfs_image *fs, size_t i)
+{
+	const auto &v = entries_of(fs);
+	return i < v.size() ? &v[i] : nullptr;
+}
+
+static const char *label_of(syfs_image *fs)
+{
+	char label[256] = "";
+	CHECK(syfs_get_str(fs, SYFS_ROOT, SYFS_PROP_LABEL, label, sizeof label));
+	return (labels[fs] = label).c_str();
+}
+
+static syfs_key format_of(syfs_image *fs) { return syfs_key(num(fs, SYFS_ROOT, SYFS_PROP_FORMAT)); }
+static syfs_key medium_of(syfs_image *fs) { return syfs_key(num(fs, SYFS_ROOT, SYFS_PROP_MEDIUM)); }
+
+static void close_image(syfs_image *fs)
+{
+	listed.erase(fs);
+	labels.erase(fs);
+	syfs_close(fs);
+}
+
+static size_t refs(syfs_image *fs, size_t i, size_t *out, size_t max)
+{
+	std::vector<syfs_node> v(max);
+	size_t n = syfs_list(fs, syfs_node(i + 1), SYFS_REL_USES, v.data(), max);
+	for (size_t k = 0; k < n && k < max; k++)
+		out[k] = v[k] - 1;
+	return n;
+}
+
+static int sample_info(syfs_image *fs, size_t i, syfs::Sample *out)
+{
+	syfs_node n = syfs_node(i + 1);
+	int64_t rate;
+	if (!syfs_get_int(fs, n, SYFS_PROP_RATE, &rate))
+		return 0;
+	*out = { uint32_t(rate), uint32_t(num(fs, n, SYFS_PROP_CHANNELS)), uint32_t(num(fs, n, SYFS_PROP_BITS)),
+		int32_t(num(fs, n, SYFS_PROP_KEY)), uint64_t(num(fs, n, SYFS_PROP_FRAMES)), uint64_t(num(fs, n, SYFS_PROP_START)),
+		uint64_t(num(fs, n, SYFS_PROP_END)), uint64_t(num(fs, n, SYFS_PROP_LOOP_START)),
+		uint64_t(num(fs, n, SYFS_PROP_LOOP_END)), syfs_key(num(fs, n, SYFS_PROP_LOOP)), int(num(fs, n, SYFS_PROP_REVERSE)),
+		int(num(fs, n, SYFS_PROP_MODE)) };
+	return 1;
+}
+
+static size_t sample_at(syfs_image *fs, size_t i, int key)
+{
+	syfs_node n = syfs_at_key(fs, syfs_node(i + 1), key);
+	return n == SYFS_NO_NODE ? NONE : n - 1;
+}
+
+static size_t sample_read(syfs_image *fs, size_t i, uint64_t first, int16_t *out, size_t frames)
+{
+	size_t frame = 2 * size_t(num(fs, syfs_node(i + 1), SYFS_PROP_CHANNELS, 1));
+	return syfs_read(fs, syfs_node(i + 1), SYFS_AS_S16, first * frame, out, frames * frame) / frame;
+}
+
+static int make(syfs_key format, syfs_key medium, const syfs_io *io, const char *label, char *err, size_t err_size)
+{
+	return syfs_create(io, format, medium, label, err, err_size);
+}
+
+static int make(syfs_key format, syfs_key medium, const syfs_io *io, char *err, size_t err_size)
+{
+	return syfs_create(io, format, medium, nullptr, err, err_size);
 }
 
 static void put16(Bytes &b, size_t at, uint16_t v)
@@ -63,55 +213,55 @@ static void put_name(Bytes &b, size_t at, const char *name, size_t len)
 	memcpy(&b[at], name, strlen(name));
 }
 
-static std::vector<std::string> names(samplerfs *fs, samplerfs_kind kind)
+static std::vector<std::string> names(syfs_image *fs, syfs_key kind)
 {
 	std::vector<std::string> out;
-	for (size_t i = 0; i < samplerfs_count(fs); i++)
-		if (samplerfs_entry_at(fs, i)->kind == kind)
-			out.push_back(samplerfs_entry_at(fs, i)->name);
+	for (size_t i = 0; i < count_of(fs); i++)
+		if (entry_at(fs, i)->kind == kind)
+			out.push_back(entry_at(fs, i)->name);
 	return out;
 }
 
 // the first entry of the name, of the kind where one is given
-static size_t find(samplerfs *fs, const char *name, int kind = -1)
+static size_t find(syfs_image *fs, const char *name, syfs_key kind = SYFS_NONE)
 {
-	for (size_t i = 0; i < samplerfs_count(fs); i++)
-		if (!strcmp(samplerfs_entry_at(fs, i)->name, name) && (kind < 0 || samplerfs_entry_at(fs, i)->kind == kind))
+	for (size_t i = 0; i < count_of(fs); i++)
+		if (!strcmp(entry_at(fs, i)->name, name) && (!kind || entry_at(fs, i)->kind == kind))
 			return i;
-	return SAMPLERFS_NONE;
+	return NONE;
 }
 
 // up to frames frames of entry i's wave from first, as read
-static std::vector<int16_t> wave(samplerfs *fs, size_t i, uint64_t first, size_t frames, size_t channels = 1)
+static std::vector<int16_t> wave(syfs_image *fs, size_t i, uint64_t first, size_t frames, size_t channels = 1)
 {
 	std::vector<int16_t> v(frames * channels);
-	v.resize(samplerfs_sample_read(fs, i, first, v.data(), frames) * channels);
+	v.resize(sample_read(fs, i, first, v.data(), frames) * channels);
 	return v;
 }
 
-static std::vector<std::string> used(samplerfs *fs, size_t i)
+static std::vector<std::string> used(syfs_image *fs, size_t i)
 {
 	size_t out[64];
-	size_t n = samplerfs_refs(fs, i, out, 64);
+	size_t n = refs(fs, i, out, 64);
 	std::vector<std::string> v;
 	for (size_t k = 0; k < n && k < 64; k++)
-		v.push_back(samplerfs_entry_at(fs, out[k])->name);
+		v.push_back(entry_at(fs, out[k])->name);
 	return v;
 }
 
-static std::vector<size_t> refs_of(samplerfs *fs, size_t i)
+static std::vector<size_t> refs_of(syfs_image *fs, size_t i)
 {
 	size_t out[64];
-	size_t n = samplerfs_refs(fs, i, out, 64);
+	size_t n = refs(fs, i, out, 64);
 	return std::vector<size_t>(out, out + std::min<size_t>(n, 64));
 }
 
 // the keys of each split of a board's wave, as its sample entries' tags give them
-static std::vector<std::string> splits(samplerfs *fs, size_t wave)
+static std::vector<std::string> splits(syfs_image *fs, size_t wave)
 {
 	std::vector<std::string> v;
 	for (size_t c : refs_of(fs, wave))
-		v.push_back(samplerfs_entry_at(fs, c)->tag);
+		v.push_back(entry_at(fs, c)->tag);
 	return v;
 }
 
@@ -173,22 +323,22 @@ static Bytes s700_image(const char *system)
 	return b;
 }
 
-static void test_s700(Bytes b, samplerfs_format format, const char *label)
+static void test_s700(Bytes b, syfs_key format, const char *label)
 {
-	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == format);
+	syfs_io io = io_of(b);
+	CHECK(probe(&io, nullptr) == format);
 	char err[64];
-	samplerfs *fs = samplerfs_open(&io, err, sizeof err);
+	syfs_image *fs = syfs_open(&io, err, sizeof err);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(!strcmp(samplerfs_label(fs), label));
-	CHECK(samplerfs_format_of(fs) == format && samplerfs_entry_at(fs, 0)->format == format);
-	CHECK((names(fs, SAMPLERFS_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
-	CHECK((names(fs, SAMPLERFS_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
+	CHECK(!strcmp(label_of(fs), label));
+	CHECK(format_of(fs) == format && entry_at(fs, 0)->format == format);
+	CHECK((names(fs, SYFS_TYPE_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
+	CHECK((names(fs, SYFS_TYPE_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
 	size_t strings = find(fs, "STR:Strings");
-	CHECK(strings != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, strings)->tag, "STR"));
-	CHECK(!samplerfs_entry_at(fs, find(fs, "PRT:Low"))->tag[0]);
+	CHECK(strings != NONE && !strcmp(entry_at(fs, strings)->tag, "STR"));
+	CHECK(!entry_at(fs, find(fs, "PRT:Low"))->tag[0]);
 	CHECK((used(fs, find(fs, "VOL:One")) == std::vector<std::string> { "PRF:One" }));
 	CHECK((used(fs, find(fs, "PRF:One")) == std::vector<std::string> { "STR:Strings" }));
 	CHECK((used(fs, strings) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
@@ -196,26 +346,26 @@ static void test_s700(Bytes b, samplerfs_format format, const char *label)
 	CHECK(used(fs, find(fs, "SMP:Low")).empty());
 	// keys 21-64 partial 1, 65-107 partial 0, 108 off; a partial's first layer naming a sample
 	size_t lo = find(fs, "SMP:Low"), hi = find(fs, "SMP:High");
-	CHECK(samplerfs_sample_at(fs, strings, 21) == hi && samplerfs_sample_at(fs, strings, 64) == hi);
-	CHECK(samplerfs_sample_at(fs, strings, 65) == lo && samplerfs_sample_at(fs, strings, 107) == lo);
-	CHECK(samplerfs_sample_at(fs, strings, 108) == SAMPLERFS_NONE && samplerfs_sample_at(fs, strings, 20) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, find(fs, "PRT:High"), 0) == hi && samplerfs_sample_at(fs, lo, 60) == lo);
-	CHECK(samplerfs_sample_at(fs, find(fs, "PRF:One"), 60) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, find(fs, "VOL:One"), 60) == SAMPLERFS_NONE);
+	CHECK(sample_at(fs, strings, 21) == hi && sample_at(fs, strings, 64) == hi);
+	CHECK(sample_at(fs, strings, 65) == lo && sample_at(fs, strings, 107) == lo);
+	CHECK(sample_at(fs, strings, 108) == NONE && sample_at(fs, strings, 20) == NONE);
+	CHECK(sample_at(fs, find(fs, "PRT:High"), 0) == hi && sample_at(fs, lo, 60) == lo);
+	CHECK(sample_at(fs, find(fs, "PRF:One"), 60) == NONE);
+	CHECK(sample_at(fs, find(fs, "VOL:One"), 60) == NONE);
 	size_t high = find(fs, "SMP:High");
-	CHECK(samplerfs_entry_at(fs, high)->number == 2 && samplerfs_entry_at(fs, high)->bytes == 9216);
-	samplerfs_sample s;
-	CHECK(samplerfs_sample_info(fs, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
-	CHECK(s.start == 10 && s.end == 200 && s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
+	CHECK(entry_at(fs, high)->number == 2 && entry_at(fs, high)->bytes == 9216);
+	syfs::Sample s;
+	CHECK(sample_info(fs, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
+	CHECK(s.start == 10 && s.end == 200 && s.loop == SYFS_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
 	CHECK(s.mode == 4 && !s.reverse && s.channels == 1 && s.bits == 16);
-	CHECK(!samplerfs_sample_info(fs, strings, &s));
+	CHECK(!sample_info(fs, strings, &s));
 	CHECK((wave(fs, high, 0, 2) == std::vector<int16_t> { -2000, -2001 }));
 	size_t low = find(fs, "SMP:Low");
 	auto join = wave(fs, low, 4606, 4);
 	CHECK((join == std::vector<int16_t> { -3006, -3007, -5000, -5001 }));
 	CHECK(wave(fs, low, 0, 10000).size() == 9216 && wave(fs, low, 9214, 100).size() == 2 && wave(fs, low, 9216, 1).empty());
 	CHECK(wave(fs, strings, 0, 1).empty());
-	samplerfs_close(fs);
+	close_image(fs);
 }
 
 // the same image as raw 2352-byte sectors of mode 1
@@ -247,9 +397,9 @@ static void akai_name(Bytes &b, size_t at, const char *name)
 static void akai_partition(Bytes &b, uint64_t base, uint16_t blocks, const std::function<void(uint64_t)> &fill)
 {
 	put16(b, base, blocks);
-	for (uint32_t k = 0; k < sfs::akai::HEADER_WORDS; k++) {
-		b[base + 2 + 2 * k] = uint8_t(k * sfs::akai::HEADER_STEP);
-		b[base + 3 + 2 * k] = uint8_t(k * sfs::akai::HEADER_STEP >> 8);
+	for (uint32_t k = 0; k < syfs::akai::HEADER_WORDS; k++) {
+		b[base + 2 + 2 * k] = uint8_t(k * syfs::akai::HEADER_STEP);
+		b[base + 3 + 2 * k] = uint8_t(k * syfs::akai::HEADER_STEP >> 8);
 	}
 	fill(base);
 }
@@ -337,55 +487,55 @@ static Bytes akai_image(bool s3000_partition)
 static void test_akai()
 {
 	Bytes b = akai_image(true);
-	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S3000);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_AKAI_S3000);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK((names(fs, SAMPLERFS_PARTITION) == std::vector<std::string> { "A", "B" }));
-	CHECK((names(fs, SAMPLERFS_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
-	CHECK((names(fs, SAMPLERFS_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS", "LONG" }));
-	CHECK((names(fs, SAMPLERFS_MULTI) == std::vector<std::string> { "SPLIT" }));
-	CHECK((names(fs, SAMPLERFS_OTHER) == std::vector<std::string> { "FX" }));
+	CHECK((names(fs, SYFS_TYPE_PARTITION) == std::vector<std::string> { "A", "B" }));
+	CHECK((names(fs, SYFS_TYPE_SAMPLE) == std::vector<std::string> { "PIANO C3", "STRINGS A4" }));
+	CHECK((names(fs, SYFS_TYPE_PROGRAM) == std::vector<std::string> { "PIANO PROG", "STRINGS", "LONG" }));
+	CHECK((names(fs, SYFS_TYPE_MULTI) == std::vector<std::string> { "SPLIT" }));
+	CHECK((names(fs, SYFS_TYPE_OTHER) == std::vector<std::string> { "FX" }));
 	size_t piano = find(fs, "PIANO"), c3 = find(fs, "PIANO C3"), a4 = find(fs, "STRINGS A4");
-	CHECK(samplerfs_entry_at(fs, c3)->parent == piano && samplerfs_entry_at(fs, piano)->parent == find(fs, "A"));
-	CHECK(samplerfs_entry_at(fs, piano)->format == SAMPLERFS_AKAI_S1000 && samplerfs_entry_at(fs, find(fs, "A"))->format == SAMPLERFS_AKAI_S1000);
-	CHECK(samplerfs_entry_at(fs, a4)->format == SAMPLERFS_AKAI_S3000 && samplerfs_entry_at(fs, a4)->number == 400);
-	CHECK(samplerfs_entry_at(fs, find(fs, "B"))->format == SAMPLERFS_AKAI_S3000);
-	CHECK(!strcmp(samplerfs_entry_at(fs, c3)->tag, "s") && !strcmp(samplerfs_entry_at(fs, a4)->tag, "s"));
-	CHECK(!strcmp(samplerfs_entry_at(fs, find(fs, "FX"))->tag, "x"));
+	CHECK(entry_at(fs, c3)->parent == piano && entry_at(fs, piano)->parent == find(fs, "A"));
+	CHECK(entry_at(fs, piano)->format == SYFS_FORMAT_AKAI_S1000 && entry_at(fs, find(fs, "A"))->format == SYFS_FORMAT_AKAI_S1000);
+	CHECK(entry_at(fs, a4)->format == SYFS_FORMAT_AKAI_S3000 && entry_at(fs, a4)->number == 400);
+	CHECK(entry_at(fs, find(fs, "B"))->format == SYFS_FORMAT_AKAI_S3000);
+	CHECK(!strcmp(entry_at(fs, c3)->tag, "s") && !strcmp(entry_at(fs, a4)->tag, "s"));
+	CHECK(!strcmp(entry_at(fs, find(fs, "FX"))->tag, "x"));
 	CHECK((used(fs, find(fs, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
 	// the first keygroup holding the key, its first zone found; the second keygroup's sample is missing
 	size_t prog = find(fs, "PIANO PROG");
-	CHECK(samplerfs_sample_at(fs, prog, 0) == c3 && samplerfs_sample_at(fs, prog, 59) == c3);
-	CHECK(samplerfs_sample_at(fs, prog, 60) == SAMPLERFS_NONE && samplerfs_sample_at(fs, prog, 128) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM), 60) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM), 30) == a4);
-	CHECK(samplerfs_sample_at(fs, c3, 100) == c3 && samplerfs_sample_at(fs, find(fs, "SPLIT"), 60) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, piano, 60) == SAMPLERFS_NONE);
-	CHECK((used(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
+	CHECK(sample_at(fs, prog, 0) == c3 && sample_at(fs, prog, 59) == c3);
+	CHECK(sample_at(fs, prog, 60) == NONE && sample_at(fs, prog, 128) == NONE);
+	CHECK(sample_at(fs, find(fs, "STRINGS", SYFS_TYPE_PROGRAM), 60) == NONE);
+	CHECK(sample_at(fs, find(fs, "STRINGS", SYFS_TYPE_PROGRAM), 30) == a4);
+	CHECK(sample_at(fs, c3, 100) == c3 && sample_at(fs, find(fs, "SPLIT"), 60) == NONE);
+	CHECK(sample_at(fs, piano, 60) == NONE);
+	CHECK((used(fs, find(fs, "STRINGS", SYFS_TYPE_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
 	CHECK((used(fs, find(fs, "LONG")) == std::vector<std::string> { "STRINGS A4" }));
 	CHECK((used(fs, find(fs, "SPLIT")) == std::vector<std::string> { "LONG", "STRINGS" }));
-	CHECK(!strcmp(samplerfs_entry_at(fs, find(fs, "SPLIT"))->tag, "m"));
-	samplerfs_sample s;
-	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
-	CHECK(s.start == 2 && s.end == 500 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
-	CHECK(!samplerfs_sample_info(fs, a4, &s));  // no header
+	CHECK(!strcmp(entry_at(fs, find(fs, "SPLIT"))->tag, "m"));
+	syfs::Sample s;
+	CHECK(sample_info(fs, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
+	CHECK(s.start == 2 && s.end == 500 && s.loop == SYFS_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
+	CHECK(!sample_info(fs, a4, &s));  // no header
 	CHECK((wave(fs, c3, 0, 2) == std::vector<int16_t> { -30000, -29869 }));
 	CHECK((wave(fs, c3, 499, 5) == std::vector<int16_t> { int16_t(499 * 131 - 30000) }));
 	CHECK(wave(fs, a4, 0, 1).empty());
-	samplerfs_close(fs);
+	close_image(fs);
 
 	b = akai_image(false);
 	io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S1000);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_AKAI_S1000);
 
 	// a size out of range is no partition
 	b = akai_image(true);
 	put16(b, 0, 0x1E01);
 	io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
+	CHECK(probe(&io, nullptr) == SYFS_NONE);
 }
 
 // ---- S-550: a directory of one area, its patch using tones by two key maps
@@ -437,34 +587,34 @@ static void test_s550()
 	for (uint32_t k = 0; k < 0x3000; k++)
 		put16(b, area + 18 * 512 + 2 * k, uint16_t((int(k % 4096) - 2048) * 16));
 
-	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_S550);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_S550);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(!strcmp(samplerfs_label(fs), "Roland Sound Library    L-CD9"));
-	CHECK((names(fs, SAMPLERFS_AREA) == std::vector<std::string> { "Pianos #1" }));
-	CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Piano Split" }));
-	CHECK((names(fs, SAMPLERFS_TONE) == std::vector<std::string> { "P-C3", "P-C5" }));
+	CHECK(!strcmp(label_of(fs), "Roland Sound Library    L-CD9"));
+	CHECK((names(fs, SYFS_TYPE_AREA) == std::vector<std::string> { "Pianos #1" }));
+	CHECK((names(fs, SYFS_TYPE_PATCH) == std::vector<std::string> { "Piano Split" }));
+	CHECK((names(fs, SYFS_TYPE_TONE) == std::vector<std::string> { "P-C3", "P-C5" }));
 	size_t pianos = find(fs, "Pianos #1"), c3 = find(fs, "P-C3"), c5 = find(fs, "P-C5");
-	CHECK(!strcmp(samplerfs_entry_at(fs, pianos)->tag, "0") && samplerfs_entry_at(fs, c5)->number == 2);
-	CHECK(samplerfs_entry_at(fs, c3)->parent == pianos && samplerfs_entry_at(fs, c3)->bytes == 24576);
+	CHECK(!strcmp(entry_at(fs, pianos)->tag, "0") && entry_at(fs, c5)->number == 2);
+	CHECK(entry_at(fs, c3)->parent == pianos && entry_at(fs, c3)->bytes == 24576);
 	CHECK((used(fs, find(fs, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
 	// the first key map, its first byte key 21: tone 0 on keys 21-70, the second map's tone 2 left out
 	size_t split = find(fs, "Piano Split");
-	CHECK(samplerfs_sample_at(fs, split, 21) == c3 && samplerfs_sample_at(fs, split, 70) == c3);
-	CHECK(samplerfs_sample_at(fs, split, 71) == SAMPLERFS_NONE && samplerfs_sample_at(fs, split, 20) == SAMPLERFS_NONE);
-	CHECK(samplerfs_sample_at(fs, c5, 60) == c5 && samplerfs_sample_at(fs, pianos, 60) == SAMPLERFS_NONE);
-	samplerfs_sample s;
-	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
-	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
-	CHECK(samplerfs_sample_info(fs, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
-	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SAMPLERFS_LOOP_NONE && s.mode == 3);
+	CHECK(sample_at(fs, split, 21) == c3 && sample_at(fs, split, 70) == c3);
+	CHECK(sample_at(fs, split, 71) == NONE && sample_at(fs, split, 20) == NONE);
+	CHECK(sample_at(fs, c5, 60) == c5 && sample_at(fs, pianos, 60) == NONE);
+	syfs::Sample s;
+	CHECK(sample_info(fs, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
+	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SYFS_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
+	CHECK(sample_info(fs, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
+	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SYFS_NONE && s.mode == 3);
 	CHECK(s.bits == 12 && s.channels == 1);
 	CHECK((wave(fs, c3, 4095, 2) == std::vector<int16_t> { 2047 * 16, -2048 * 16 }));
 	CHECK(wave(fs, c5, 0, 0x4000).size() == 0x3000);
-	samplerfs_close(fs);
+	close_image(fs);
 }
 
 // ---- WAV and AIFF files, as a file system holds them
@@ -562,28 +712,28 @@ static void test_iso()
 	std::copy(wav.begin(), wav.end(), b.begin() + 23 * 2048);
 	std::copy(aiff.begin(), aiff.end(), b.begin() + 24 * 2048);
 	iso_dir(b, 22, 20, { { "INFO.TXT;1", 23 } });
-	samplerfs_io io = io_of(b);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_ISO9660 && not_fat(b));
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_ISO9660 && not_fat(b));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(!strcmp(samplerfs_label(fs), "LOOPS"));
-	CHECK((names(fs, SAMPLERFS_DIRECTORY) == std::vector<std::string> { "DRUMS" }));
-	CHECK((names(fs, SAMPLERFS_FILE) == std::vector<std::string> { "KICK.WAV", "SNARE.AIF" }));
+	CHECK(!strcmp(label_of(fs), "LOOPS"));
+	CHECK((names(fs, SYFS_TYPE_DIRECTORY) == std::vector<std::string> { "DRUMS" }));
+	CHECK((names(fs, SYFS_TYPE_FILE) == std::vector<std::string> { "KICK.WAV", "SNARE.AIF" }));
 	size_t kick = find(fs, "KICK.WAV");
-	CHECK(samplerfs_entry_at(fs, kick)->bytes == 1234 && samplerfs_entry_at(fs, kick)->parent == find(fs, "DRUMS"));
-	CHECK(samplerfs_entry_at(fs, kick)->format == SAMPLERFS_ISO9660);
-	samplerfs_sample s;
-	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 32000 && s.key == 36 && s.frames == 500 && s.end == 500);
-	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 10 && s.loop_end == 400 && s.mode == 0);
+	CHECK(entry_at(fs, kick)->bytes == 1234 && entry_at(fs, kick)->parent == find(fs, "DRUMS"));
+	CHECK(entry_at(fs, kick)->format == SYFS_FORMAT_ISO9660);
+	syfs::Sample s;
+	CHECK(sample_info(fs, kick, &s) && s.rate == 32000 && s.key == 36 && s.frames == 500 && s.end == 500);
+	CHECK(s.loop == SYFS_LOOP_FORWARD && s.loop_start == 10 && s.loop_end == 400 && s.mode == 0);
 	CHECK(s.channels == 1 && s.bits == 16);
 	CHECK((wave(fs, kick, 499, 4) == std::vector<int16_t> { int16_t(499 * 37) }));
-	CHECK(samplerfs_sample_info(fs, find(fs, "SNARE.AIF"), &s) && s.rate == 22050 && s.key == 64 && s.frames == 300);
+	CHECK(sample_info(fs, find(fs, "SNARE.AIF"), &s) && s.rate == 22050 && s.key == 64 && s.frames == 300);
 	CHECK(wave(fs, find(fs, "SNARE.AIF"), 0, 1).empty());  // no sound data chunk
-	CHECK(s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 20 && s.loop_end == 250 && s.mode == 2);
-	CHECK(!samplerfs_sample_info(fs, find(fs, "DRUMS"), &s));
-	samplerfs_close(fs);
+	CHECK(s.loop == SYFS_LOOP_ALTERNATE && s.loop_start == 20 && s.loop_end == 250 && s.mode == 2);
+	CHECK(!sample_info(fs, find(fs, "DRUMS"), &s));
+	close_image(fs);
 }
 
 // ---- WAV and AIFF encodings: two channels of 40 frames, value c of frame k given back as expected(k, c)
@@ -695,15 +845,15 @@ static void test_encodings()
 		std::copy(files[k].b.begin(), files[k].b.end(), b.begin() + (21 + k) * 2048);
 	}
 	iso_dir(b, 20, 20, dir);
-	samplerfs_io io = io_of(b);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
 	for (const File &f : files) {
 		size_t i = find(fs, f.name);
-		samplerfs_sample s;
-		CHECK(samplerfs_sample_info(fs, i, &s) && s.channels == 2 && s.bits == f.bits && s.frames == 40 && s.rate == 48000);
+		syfs::Sample s;
+		CHECK(sample_info(fs, i, &s) && s.channels == 2 && s.bits == f.bits && s.frames == 40 && s.rate == 48000);
 		auto got = wave(fs, i, 3, 100, 2);
 		if (!strcmp(f.name, "ULAW.WAV")) {
 			CHECK(got.empty());
@@ -717,7 +867,7 @@ static void test_encodings()
 			fprintf(stderr, "%s read wrong\n", f.name);
 		CHECK(same);
 	}
-	samplerfs_close(fs);
+	close_image(fs);
 }
 
 // ---- FAT: images sparse in memory, a volume laid out by hand
@@ -772,9 +922,9 @@ static size_t sparse_read(void *user, uint64_t offset, void *buf, size_t n)
 	return n;
 }
 
-static samplerfs_io io_of(Sparse &s)
+static syfs_io io_of(Sparse &s)
 {
-	return { &s, sparse_read, s.size };
+	return { &s, sparse_read, nullptr, s.size };
 }
 
 struct FatVolume {
@@ -943,17 +1093,17 @@ static void fat_fill(FatVolume &v, bool damaged, bool label_in_root)
 	v.write(kick, wav);
 }
 
-static void test_fat_volume(Sparse &img, samplerfs_medium medium, bool damaged, const char *label)
+static void test_fat_volume(Sparse &img, syfs_key medium, bool damaged, const char *label)
 {
-	samplerfs_io io = io_of(img);
-	samplerfs_medium m;
-	CHECK(samplerfs_probe(&io, &m) == SAMPLERFS_FAT && m == medium);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(img);
+	syfs_key m;
+	CHECK(probe(&io, &m) == SYFS_FORMAT_FAT && m == medium);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(samplerfs_format_of(fs) == SAMPLERFS_FAT && samplerfs_medium_of(fs) == medium);
-	CHECK(!strcmp(samplerfs_label(fs), label));
+	CHECK(format_of(fs) == SYFS_FORMAT_FAT && medium_of(fs) == medium);
+	CHECK(!strcmp(label_of(fs), label));
 	const char *kick_name = "Kick drum \xE2\x80\x93 long name.wav";
 	std::vector<std::string> dirs { "Samples", "DRUMS" }, files { "README.TXT", kick_name, "WRONG~1.WAV" };
 	if (damaged) {
@@ -961,26 +1111,26 @@ static void test_fat_volume(Sparse &img, samplerfs_medium medium, bool damaged, 
 		dirs.push_back("FAR");
 		files.push_back("LOOP.WAV");
 	}
-	CHECK(names(fs, SAMPLERFS_DIRECTORY) == dirs);
-	CHECK(names(fs, SAMPLERFS_FILE) == files);
+	CHECK(names(fs, SYFS_TYPE_DIRECTORY) == dirs);
+	CHECK(names(fs, SYFS_TYPE_FILE) == files);
 	size_t samples = find(fs, "Samples"), drums = find(fs, "DRUMS"), kick = find(fs, kick_name);
-	CHECK(samplerfs_entry_at(fs, samples)->parent == SAMPLERFS_NONE && samplerfs_entry_at(fs, samples)->number == 1);
-	CHECK(samplerfs_entry_at(fs, drums)->parent == samples);
-	CHECK(kick != SAMPLERFS_NONE && samplerfs_entry_at(fs, kick)->parent == drums);
-	CHECK(samplerfs_entry_at(fs, find(fs, "README.TXT"))->bytes == 100);
-	samplerfs_sample s;
-	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 44100 && s.key == 60);
-	CHECK(s.frames == samplerfs_entry_at(fs, kick)->bytes / 2 - 56 && s.end == s.frames);
-	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 100 && s.loop_end == 900);
+	CHECK(entry_at(fs, samples)->parent == NONE && entry_at(fs, samples)->number == 1);
+	CHECK(entry_at(fs, drums)->parent == samples);
+	CHECK(kick != NONE && entry_at(fs, kick)->parent == drums);
+	CHECK(entry_at(fs, find(fs, "README.TXT"))->bytes == 100);
+	syfs::Sample s;
+	CHECK(sample_info(fs, kick, &s) && s.rate == 44100 && s.key == 60);
+	CHECK(s.frames == entry_at(fs, kick)->bytes / 2 - 56 && s.end == s.frames);
+	CHECK(s.loop == SYFS_LOOP_FORWARD && s.loop_start == 100 && s.loop_end == 900);
 	auto all = wave(fs, kick, 0, size_t(s.frames));
 	bool same = all.size() == s.frames;
 	for (size_t k = 0; same && k < all.size(); k++)
 		same = all[k] == int16_t(k * 37);
 	CHECK(same);
-	CHECK(!samplerfs_sample_info(fs, find(fs, "README.TXT"), &s) && !samplerfs_sample_info(fs, drums, &s));
+	CHECK(!sample_info(fs, find(fs, "README.TXT"), &s) && !sample_info(fs, drums, &s));
 	if (damaged)
-		CHECK(!samplerfs_sample_info(fs, find(fs, "LOOP.WAV"), &s));
-	samplerfs_close(fs);
+		CHECK(!sample_info(fs, find(fs, "LOOP.WAV"), &s));
+	close_image(fs);
 }
 
 static void test_fat()
@@ -990,7 +1140,7 @@ static void test_fat()
 		Sparse img(2880 * 512);
 		FatVolume v { img, 0, 12, 1, 1, 224, 9, 2880, 0xF0 };
 		fat_fill(v, damaged, true);
-		test_fat_volume(img, SAMPLERFS_MEDIUM_FLOPPY, damaged, "TEST VOLUME");
+		test_fat_volume(img, SYFS_MEDIUM_FLOPPY, damaged, "TEST VOLUME");
 	}
 	// FAT16: a 10 MB disk behind an MBR, its partition at sector 63 the second of the table; the label the BPB's
 	for (bool damaged : { false, true }) {
@@ -1007,7 +1157,7 @@ static void test_fat()
 		img.put(0, mbr, 512);
 		FatVolume v { img, start * 512, 16, 4, 1, 512, 20, sectors, 0xF8 };
 		fat_fill(v, damaged, false);
-		test_fat_volume(img, SAMPLERFS_MEDIUM_DISK, damaged, "BPB LABEL");
+		test_fat_volume(img, SYFS_MEDIUM_DISK, damaged, "BPB LABEL");
 	}
 	// FAT32: a bare volume of 66 000 clusters of 512 bytes, sparse in memory
 	for (bool damaged : { false, true }) {
@@ -1015,17 +1165,17 @@ static void test_fat()
 		Sparse img(sectors * 512);
 		FatVolume v { img, 0, 32, 1, 32, 0, uint32_t(fat_sectors), sectors, 0xF8 };
 		fat_fill(v, damaged, true);
-		test_fat_volume(img, SAMPLERFS_MEDIUM_DISK, damaged, "TEST VOLUME");
+		test_fat_volume(img, SYFS_MEDIUM_DISK, damaged, "TEST VOLUME");
 	}
 	// a bare volume's boot sector without its jump is no FAT
 	Sparse img(2880 * 512);
 	FatVolume v { img, 0, 12, 1, 1, 224, 9, 2880, 0xF0 };
 	v.boot("");
-	samplerfs_io io = io_of(img);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_FAT);
+	syfs_io io = io_of(img);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_FAT);
 	uint8_t no_jump = 0;
 	img.put(0, &no_jump, 1);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
+	CHECK(probe(&io, nullptr) == SYFS_NONE);
 }
 
 // ---- formatting: a blank image made a volume, checked against the specification and read back
@@ -1039,9 +1189,9 @@ static size_t sparse_write(void *user, uint64_t offset, const void *buf, size_t 
 	return n;
 }
 
-static samplerfs_write_io writer_of(Sparse &s)
+static syfs_io writer_of(Sparse &s)
 {
-	return { &s, sparse_write, s.size };
+	return { &s, nullptr, sparse_write, s.size };
 }
 
 // the boot sector at base and what it lays out, as the specification requires: the signature, the FAT type the
@@ -1093,16 +1243,16 @@ static void check_fat_volume(const Sparse &img, uint64_t base, int bits, const c
 }
 
 // read back through the library: a FAT volume of the medium, with the label and no entries
-static void check_fat_read(Sparse &img, samplerfs_medium medium, const char *label)
+static void check_fat_read(Sparse &img, syfs_key medium, const char *label)
 {
-	samplerfs_io io = io_of(img);
-	samplerfs_medium m;
-	CHECK(samplerfs_probe(&io, &m) == SAMPLERFS_FAT && m == medium);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
-	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_FAT && samplerfs_medium_of(fs) == medium);
+	syfs_io io = io_of(img);
+	syfs_key m;
+	CHECK(probe(&io, &m) == SYFS_FORMAT_FAT && m == medium);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_FORMAT_FAT && medium_of(fs) == medium);
 	if (fs) {
-		CHECK(samplerfs_count(fs) == 0 && !strcmp(samplerfs_label(fs), label));
-		samplerfs_close(fs);
+		CHECK(count_of(fs) == 0 && !strcmp(label_of(fs), label));
+		close_image(fs);
 	}
 }
 
@@ -1111,10 +1261,10 @@ static void test_format_fat()
 	char err[128];
 	for (uint64_t kb : { 720, 1440 }) {
 		Sparse img(kb * 1024);
-		samplerfs_write_io w = writer_of(img);
-		CHECK(samplerfs_format_dos_floppy(&w, "Samples 1", err, sizeof err));
+		syfs_io w = writer_of(img);
+		CHECK(make(SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, &w, "Samples 1", err, sizeof err));
 		check_fat_volume(img, 0, 12, "SAMPLES 1");
-		check_fat_read(img, SAMPLERFS_MEDIUM_FLOPPY, "SAMPLES 1");
+		check_fat_read(img, SYFS_MEDIUM_FLOPPY, "SAMPLES 1");
 		uint8_t bs[32];
 		img.get(0, bs, 32);
 		CHECK(bs[21] == (kb == 720 ? 0xF9 : 0xF0) && bs[24] == (kb == 720 ? 9 : 18) && bs[26] == 2);
@@ -1122,26 +1272,26 @@ static void test_format_fat()
 	}
 	{
 		Sparse img(1440 * 1024);
-		samplerfs_write_io w = writer_of(img);
-		CHECK(samplerfs_format_dos_floppy(&w, nullptr, err, sizeof err));
+		syfs_io w = writer_of(img);
+		CHECK(make(SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, &w, nullptr, err, sizeof err));
 		check_fat_volume(img, 0, 12, nullptr);
-		check_fat_read(img, SAMPLERFS_MEDIUM_FLOPPY, "");
+		check_fat_read(img, SYFS_MEDIUM_FLOPPY, "");
 		err[0] = 0;
-		CHECK(!samplerfs_format_dos_floppy(&w, "TWELVE CHARS", err, sizeof err) && err[0]);
+		CHECK(!make(SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, &w, "TWELVE CHARS", err, sizeof err) && err[0]);
 		err[0] = 0;
-		CHECK(!samplerfs_format_dos_floppy(&w, "A/B", err, sizeof err) && err[0]);
+		CHECK(!make(SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, &w, "A/B", err, sizeof err) && err[0]);
 		Sparse odd(800 * 1024);
 		w = writer_of(odd);
 		err[0] = 0;
-		CHECK(!samplerfs_format_dos_floppy(&w, nullptr, err, sizeof err) && err[0]);
+		CHECK(!make(SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, &w, nullptr, err, sizeof err) && err[0]);
 	}
 	// disks: FAT16 below 512 MB, FAT32 from there; the MBR's one partition from sector 63 to the end
 	const uint64_t MB = 1 << 20;
 	for (auto [bytes, bits] : std::vector<std::pair<uint64_t, int>> { { 5 * MB, 16 }, { 32 * MB, 16 }, { 512 * MB - 512, 16 },
 		     { 512 * MB, 32 }, { 3072 * MB, 32 } }) {
 		Sparse img(bytes);
-		samplerfs_write_io w = writer_of(img);
-		CHECK(samplerfs_format_fat_disk(&w, "DISK", err, sizeof err));
+		syfs_io w = writer_of(img);
+		CHECK(make(SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, &w, "DISK", err, sizeof err));
 		uint8_t mbr[512];
 		img.get(0, mbr, 512);
 		const uint8_t *e = mbr + 446;
@@ -1149,16 +1299,16 @@ static void test_format_fat()
 		CHECK(bits == 16 ? e[4] == 0x04 || e[4] == 0x06 : e[4] == 0x0B || e[4] == 0x0C);
 		CHECK(!e[16 + 4] && !e[32 + 4] && !e[48 + 4]);
 		check_fat_volume(img, 63 * 512, bits, "DISK");
-		check_fat_read(img, SAMPLERFS_MEDIUM_DISK, "DISK");
+		check_fat_read(img, SYFS_MEDIUM_DISK, "DISK");
 	}
 	for (uint64_t bytes : { uint64_t(4 * MB), uint64_t(3) << 40, uint64_t(5 * MB + 1) }) {
 		Sparse img(bytes);
-		samplerfs_write_io w = writer_of(img);
+		syfs_io w = writer_of(img);
 		err[0] = 0;
-		CHECK(!samplerfs_format_fat_disk(&w, nullptr, err, sizeof err) && err[0]);
+		CHECK(!make(SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, &w, nullptr, err, sizeof err) && err[0]);
 	}
-	samplerfs_write_io none { nullptr, nullptr, 0 };
-	CHECK(!samplerfs_format_fat_disk(&none, nullptr, err, sizeof err));
+	syfs_io none { nullptr, nullptr, nullptr, 0 };
+	CHECK(!make(SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, &none, nullptr, err, sizeof err));
 }
 
 // ---- S-700 series formatting: each layout checked byte by byte against what the machines' own format writes, and
@@ -1185,16 +1335,16 @@ static bool all_of_byte(const Sparse &img, uint64_t sector, uint64_t sectors, ui
 	return !memcmp(s.data(), want.data(), s.size());
 }
 
-static void check_s700_read(Sparse &img, samplerfs_format format, samplerfs_medium medium, const char *label)
+static void check_s700_read(Sparse &img, syfs_key format, syfs_key medium, const char *label)
 {
-	samplerfs_io io = io_of(img);
-	samplerfs_medium m;
-	CHECK(samplerfs_probe(&io, &m) == format && m == medium);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
-	CHECK(fs && samplerfs_format_of(fs) == format && samplerfs_medium_of(fs) == medium);
+	syfs_io io = io_of(img);
+	syfs_key m;
+	CHECK(probe(&io, &m) == format && m == medium);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == format && medium_of(fs) == medium);
 	if (fs) {
-		CHECK(samplerfs_count(fs) == 0 && !strcmp(samplerfs_label(fs), label));
-		samplerfs_close(fs);
+		CHECK(count_of(fs) == 0 && !strcmp(label_of(fs), label));
+		close_image(fs);
 	}
 }
 
@@ -1214,8 +1364,8 @@ static void test_format_s700()
 			const uint8_t junk[512] = { 0xA5 };
 			img.put(2 * 512, junk, 512);
 			img.put(0x15AC * 512, junk, 512);
-			samplerfs_write_io w = writer_of(img);
-			CHECK(s760 ? samplerfs_format_s760_disk(&w, err, sizeof err) : samplerfs_format_s770_disk(&w, err, sizeof err));
+			syfs_io w = writer_of(img);
+			CHECK(s760 ? make(SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, &w, err, sizeof err) : make(SYFS_FORMAT_S770, SYFS_MEDIUM_DISK, &w, err, sizeof err));
 			uint8_t s0[512];
 			img.get(0, s0, 512);
 			Bytes head = s700_head(0, s760 ? " S-760 System Disk    Ver. 2.24" : " SYS-772 HardDisk Sys Ver. 2.25");
@@ -1243,56 +1393,56 @@ static void test_format_s700()
 			// the S-760's extended partials 0xFF; segments 2 to 58 and the system's sectors left as they were
 			CHECK(all_of_byte(img, 0x19AE, 0x400, 0xFF) == s760);
 			CHECK(img.get16(2 * 512) == 0xA5 && img.get16(0x15AC * 512) == 0xA5);
-			check_s700_read(img, s760 ? SAMPLERFS_S760 : SAMPLERFS_S770, SAMPLERFS_MEDIUM_DISK,
+			check_s700_read(img, s760 ? SYFS_FORMAT_S760 : SYFS_FORMAT_S770, SYFS_MEDIUM_DISK,
 				s760 ? "S-760 System Disk    Ver. 2.24" : "SYS-772 HardDisk Sys Ver. 2.25");
 		}
 	for (auto [sectors, ok760, ok770] : std::vector<std::tuple<uint64_t, bool, bool>> { { 7619, true, true },
 		     { 7618, false, true }, { 5567, false, true }, { 5566, false, false }, { 100, false, false } }) {
 		Sparse img(sectors * 512);
-		samplerfs_write_io w = writer_of(img);
+		syfs_io w = writer_of(img);
 		err[0] = 0;
-		CHECK(samplerfs_format_s760_disk(&w, err, sizeof err) == ok760 && (ok760 || err[0]));
-		CHECK(samplerfs_format_s770_disk(&w, err, sizeof err) == ok770);
+		CHECK(make(SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, &w, err, sizeof err) == ok760 && (ok760 || err[0]));
+		CHECK(make(SYFS_FORMAT_S770, SYFS_MEDIUM_DISK, &w, err, sizeof err) == ok770);
 	}
 	Sparse odd(100000 * 512 + 1);
-	samplerfs_write_io w = writer_of(odd);
-	CHECK(!samplerfs_format_s760_disk(&w, err, sizeof err));
+	syfs_io w = writer_of(odd);
+	CHECK(!make(SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, &w, err, sizeof err));
 
 	// floppies: sector 0, every other sector the format's fill
 	for (bool s760 : { true, false })
 		for (uint64_t sectors : { 1440, 2880 }) {
 			Sparse img(sectors * 512);
-			samplerfs_write_io fw = writer_of(img);
-			CHECK(s760 ? samplerfs_format_s760_floppy(&fw, err, sizeof err) : samplerfs_format_s770_floppy(&fw, err, sizeof err));
+			syfs_io fw = writer_of(img);
+			CHECK(s760 ? make(SYFS_FORMAT_S760, SYFS_MEDIUM_FLOPPY, &fw, err, sizeof err) : make(SYFS_FORMAT_S770, SYFS_MEDIUM_FLOPPY, &fw, err, sizeof err));
 			uint8_t s0[512];
 			img.get(0, s0, 512);
 			const char *line = s760 ? " S-760 Formatted Disk Ver. 2.24" : " SYS-772 Formatted    Ver. 2.25";
 			Bytes head = s700_head(sectors == 2880 ? ':' : ';', line);
 			CHECK(!memcmp(s0, head.data(), 0x60) && std::all_of(s0 + 0x60, s0 + 512, [](uint8_t b) { return b == 0xFF; }));
 			CHECK(all_of_byte(img, 1, sectors - 1, 0x0F));
-			check_s700_read(img, s760 ? SAMPLERFS_S760 : SAMPLERFS_S770, SAMPLERFS_MEDIUM_FLOPPY, line + 1);
+			check_s700_read(img, s760 ? SYFS_FORMAT_S760 : SYFS_FORMAT_S770, SYFS_MEDIUM_FLOPPY, line + 1);
 		}
 	Sparse other(1200 * 1024);
 	w = writer_of(other);
-	CHECK(!samplerfs_format_s760_floppy(&w, err, sizeof err) && !samplerfs_format_s770_floppy(&w, err, sizeof err));
+	CHECK(!make(SYFS_FORMAT_S760, SYFS_MEDIUM_FLOPPY, &w, err, sizeof err) && !make(SYFS_FORMAT_S770, SYFS_MEDIUM_FLOPPY, &w, err, sizeof err));
 }
 
 static void test_others()
 {
 	Bytes b(4096, 0);
-	samplerfs_io io = io_of(b);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
-	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_UNKNOWN && samplerfs_count(fs) == 0);
-	samplerfs_close(fs);
+	syfs_io io = io_of(b);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_NONE && count_of(fs) == 0);
+	close_image(fs);
 
 	memcpy(&b[0], "EMU3", 4);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_EMU3);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_EMU3);
 
 	Bytes tiny(100, 0);
 	io = io_of(tiny);
 	char err[64] = "";
-	CHECK(!samplerfs_open(&io, err, sizeof err) && err[0]);
-	CHECK(!samplerfs_open_file("/nonexistent/disc.iso", err, sizeof err));
+	CHECK(!syfs_open(&io, err, sizeof err) && err[0]);
+	CHECK(!syfs_open_path("/nonexistent/disc.iso", err, sizeof err));
 }
 
 // an S-760 sound floppy: a volume, a performance, a patch, a partial, a sample of three segments
@@ -1335,51 +1485,51 @@ static void test_s700_floppy()
 		for (uint32_t k = 0; k < 4608; k++)
 			put16(b, (252 + 18 * n) * 512 + 2 * k, uint16_t(100 * n + k % 50));
 
-	samplerfs_io io = io_of(b);
-	samplerfs_medium medium = SAMPLERFS_MEDIUM_UNKNOWN;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S760 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	syfs_key medium = SYFS_NONE;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_S760 && medium == SYFS_MEDIUM_FLOPPY && not_fat(b));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(samplerfs_medium_of(fs) == SAMPLERFS_MEDIUM_FLOPPY);
-	CHECK(!strcmp(samplerfs_label(fs), "S-760 Sound Disk     Ver. 2.24"));
-	CHECK((names(fs, SAMPLERFS_VOLUME) == std::vector<std::string> { "PAD:Floppy Vol" }));
+	CHECK(medium_of(fs) == SYFS_MEDIUM_FLOPPY);
+	CHECK(!strcmp(label_of(fs), "S-760 Sound Disk     Ver. 2.24"));
+	CHECK((names(fs, SYFS_TYPE_VOLUME) == std::vector<std::string> { "PAD:Floppy Vol" }));
 	CHECK((used(fs, find(fs, "PAD:Floppy Vol")) == std::vector<std::string> { "PAD:Floppy Pfm" }));
 	CHECK((used(fs, find(fs, "PAD:Floppy Pfm")) == std::vector<std::string> { "PAD:Floppy Pch" }));
 	CHECK((used(fs, find(fs, "PAD:Floppy Pch")) == std::vector<std::string> { "PAD:Floppy Prt" }));
 	CHECK((used(fs, find(fs, "PAD:Floppy Prt")) == std::vector<std::string> { "PAD:Floppy Smp" }));
 	size_t s = find(fs, "PAD:Floppy Smp");
-	CHECK(samplerfs_sample_at(fs, find(fs, "PAD:Floppy Pch"), 60) == s);
-	CHECK(samplerfs_sample_at(fs, find(fs, "PAD:Floppy Pch"), 61) == SAMPLERFS_NONE);
-	CHECK(!strcmp(samplerfs_entry_at(fs, s)->tag, "PAD") && samplerfs_entry_at(fs, s)->bytes == 3 * 9216);
-	samplerfs_sample info;
-	CHECK(samplerfs_sample_info(fs, s, &info) && info.rate == 44100 && info.key == 60 && info.frames == 3 * 4608);
-	CHECK(info.loop == SAMPLERFS_LOOP_ALTERNATE && info.loop_start == 100 && info.loop_end == 1000);
+	CHECK(sample_at(fs, find(fs, "PAD:Floppy Pch"), 60) == s);
+	CHECK(sample_at(fs, find(fs, "PAD:Floppy Pch"), 61) == NONE);
+	CHECK(!strcmp(entry_at(fs, s)->tag, "PAD") && entry_at(fs, s)->bytes == 3 * 9216);
+	syfs::Sample info;
+	CHECK(sample_info(fs, s, &info) && info.rate == 44100 && info.key == 60 && info.frames == 3 * 4608);
+	CHECK(info.loop == SYFS_LOOP_ALTERNATE && info.loop_start == 100 && info.loop_end == 1000);
 	CHECK((wave(fs, s, 0, 2) == std::vector<int16_t> { 100, 101 }));
 	CHECK((wave(fs, s, 2 * 4608 - 1, 2) == std::vector<int16_t> { 207, 300 }));
 	CHECK(wave(fs, s, 0, 3 * 4608).size() == 3 * 4608);
-	samplerfs_close(fs);
+	close_image(fs);
 
 	// the second disk of a set, the wave from the first disk's last segment on: its last two segments read here
 	b[0x100] = 1;
 	b[smp + 0x28] = 145;
-	fs = samplerfs_open(&io, nullptr, 0);
+	fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
 	CHECK(wave(fs, s, 0, 10).empty());
 	CHECK((wave(fs, s, 4608, 2) == std::vector<int16_t> { 0, 1 }));
 	CHECK(wave(fs, s, 4608, 3 * 4608).size() == 2 * 4608);
-	samplerfs_close(fs);
+	close_image(fs);
 	b[0x100] = 0;
 
 	// a save under way lists nothing; the disk probe leaves a floppy alone
 	b[0x101] = 0xFF;
-	fs = samplerfs_open(&io, nullptr, 0);
-	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_S760 && samplerfs_count(fs) == 0);
-	samplerfs_close(fs);
-	CHECK(sfs::roland::S700Disk::probe(sfs::Image(io)) == SAMPLERFS_UNKNOWN);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_FORMAT_S760 && count_of(fs) == 0);
+	close_image(fs);
+	CHECK(syfs::roland::S700Disk::probe(syfs::Image(io)) == SYFS_NONE);
 }
 
 // an S-550 floppy: a patch on one tone, the area named from the function block
@@ -1406,29 +1556,29 @@ static void test_s550_floppy()
 		b[at] = uint8_t(v0 >> 4), b[at + 1] = uint8_t((v0 & 15) << 4 | (v1 & 15)), b[at + 2] = uint8_t(v1 >> 4);
 	}
 
-	samplerfs_io io = io_of(b);
-	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_S550 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_S550 && medium == SYFS_MEDIUM_FLOPPY && not_fat(b));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(!strcmp(samplerfs_label(fs), "S-550 System   Ver. 1.12"));
-	CHECK((names(fs, SAMPLERFS_AREA) == std::vector<std::string> { "Strings Vol1" }));
+	CHECK(!strcmp(label_of(fs), "S-550 System   Ver. 1.12"));
+	CHECK((names(fs, SYFS_TYPE_AREA) == std::vector<std::string> { "Strings Vol1" }));
 	CHECK((used(fs, find(fs, "Strings")) == std::vector<std::string> { "Str C3" }));
 	size_t c3 = find(fs, "Str C3");
-	CHECK(samplerfs_entry_at(fs, c3)->bytes == 2 * 24576);
+	CHECK(entry_at(fs, c3)->bytes == 2 * 24576);
 	CHECK((wave(fs, c3, 0, 3) == std::vector<int16_t> { -2048 * 16, -2047 * 16, -2046 * 16 }));
 	CHECK((wave(fs, c3, 2049, 2) == std::vector<int16_t> { 16, 32 }));
 	CHECK(wave(fs, c3, 0, 3 * 12288).size() == 2 * 12288);
-	samplerfs_close(fs);
+	close_image(fs);
 
 	memcpy(&b[4], "S330 MT25C", 10);
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_S330);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_S330);
 	memcpy(&b[4], "S-50 MT25A", 10);
-	fs = samplerfs_open(&io, nullptr, 0);
-	CHECK(fs && samplerfs_format_of(fs) == SAMPLERFS_S50 && samplerfs_count(fs) == 0);
-	samplerfs_close(fs);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_FORMAT_S50 && count_of(fs) == 0);
+	close_image(fs);
 }
 
 // A ROM as dumped: each byte put where the socket's wiring reads it from
@@ -1510,36 +1660,36 @@ static void test_boards()
 	srx.put(0x108010, 4), srx.put(0x108011, uint8_t(-4));
 	srx.be(patches, 1, 2), srx.be(patches + 4, 0x0E, 4), srx.be(patches + 8, 574, 4);
 	srx.packed(patches + 0x0E, "Test Patch", true);
-	samplerfs_io io = io_of(srx.b);
-	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_SRX && medium == SAMPLERFS_MEDIUM_BOARD);
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(srx.b);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_SRX && medium == SYFS_MEDIUM_BOARD);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (fs) {
-		CHECK(!strcmp(samplerfs_label(fs), "SRX-99 Test"));
-		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Kick 1", "Snare 1" }));
-		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Test Patch" }));
-		size_t bank = samplerfs_entry_at(fs, find(fs, "Test Patch"))->parent;
-		CHECK(bank != SAMPLERFS_NONE && !strcmp(samplerfs_entry_at(fs, bank)->tag, "4:7"));
-		CHECK(!strcmp(samplerfs_entry_at(fs, bank)->name, "XV-5080 Patches"));
+		CHECK(!strcmp(label_of(fs), "SRX-99 Test"));
+		CHECK((names(fs, SYFS_TYPE_WAVE) == std::vector<std::string> { "Kick 1", "Snare 1" }));
+		CHECK((names(fs, SYFS_TYPE_PATCH) == std::vector<std::string> { "Test Patch" }));
+		size_t bank = entry_at(fs, find(fs, "Test Patch"))->parent;
+		CHECK(bank != NONE && !strcmp(entry_at(fs, bank)->tag, "4:7"));
+		CHECK(!strcmp(entry_at(fs, bank)->name, "XV-5080 Patches"));
 		// the silent splits have no entry; Snare 1 sounds nothing at middle C and answers with its nearest split
-		size_t kick = find(fs, "Kick 1", SAMPLERFS_WAVE), snare = find(fs, "Snare 1", SAMPLERFS_WAVE);
+		size_t kick = find(fs, "Kick 1", SYFS_TYPE_WAVE), snare = find(fs, "Snare 1", SYFS_TYPE_WAVE);
 		CHECK((splits(fs, kick) == std::vector<std::string> { "60-61" }));
 		CHECK((splits(fs, snare) == std::vector<std::string> { "71-127" }));
 		size_t k0 = refs_of(fs, kick).at(0), s0 = refs_of(fs, snare).at(0);
-		CHECK(samplerfs_sample_at(fs, kick, 60) == k0 && samplerfs_sample_at(fs, kick, 59) == SAMPLERFS_NONE);
-		CHECK(samplerfs_sample_at(fs, kick, 62) == SAMPLERFS_NONE && samplerfs_sample_at(fs, snare, 60) == SAMPLERFS_NONE);
-		CHECK(samplerfs_sample_at(fs, snare, 71) == s0);
-		CHECK(samplerfs_entry_at(fs, k0)->kind == SAMPLERFS_SAMPLE && samplerfs_entry_at(fs, k0)->parent == kick);
-		CHECK(samplerfs_entry_at(fs, k0)->number == 1 && samplerfs_entry_at(fs, k0)->bytes == 3);
-		samplerfs_sample sm;
-		CHECK(samplerfs_sample_info(fs, k0, &sm) && sm.rate == 32000 && sm.key == 60 && sm.frames == 3);
-		CHECK(sm.loop == SAMPLERFS_LOOP_ALTERNATE && sm.loop_start == 1 && sm.loop_end == 3 && !sm.reverse && sm.mode == 1);
+		CHECK(sample_at(fs, kick, 60) == k0 && sample_at(fs, kick, 59) == NONE);
+		CHECK(sample_at(fs, kick, 62) == NONE && sample_at(fs, snare, 60) == NONE);
+		CHECK(sample_at(fs, snare, 71) == s0);
+		CHECK(entry_at(fs, k0)->kind == SYFS_TYPE_SAMPLE && entry_at(fs, k0)->parent == kick);
+		CHECK(entry_at(fs, k0)->number == 1 && entry_at(fs, k0)->bytes == 3);
+		syfs::Sample sm;
+		CHECK(sample_info(fs, k0, &sm) && sm.rate == 32000 && sm.key == 60 && sm.frames == 3);
+		CHECK(sm.loop == SYFS_LOOP_ALTERNATE && sm.loop_start == 1 && sm.loop_end == 3 && !sm.reverse && sm.mode == 1);
 		CHECK((wave(fs, k0, 0, 3) == std::vector<int16_t> { 20, 30, 20 }));
-		CHECK(samplerfs_sample_info(fs, snare, &sm) && sm.rate == 46722 && sm.key == 48 && sm.frames == 2);
-		CHECK(sm.loop == SAMPLERFS_LOOP_NONE && sm.mode == 2);
+		CHECK(sample_info(fs, snare, &sm) && sm.rate == 46722 && sm.key == 48 && sm.frames == 2);
+		CHECK(sm.loop == SYFS_NONE && sm.mode == 2);
 		CHECK((wave(fs, snare, 0, 2) == std::vector<int16_t> { 2, 0 }) && (wave(fs, s0, 1, 5) == std::vector<int16_t> { 0 }));
-		samplerfs_close(fs);
+		close_image(fs);
 	}
 
 	// an SO-PCM1 card: waves, a patch bank in the JV-880's shape and one in the JV-1080's rhythm set shape
@@ -1573,36 +1723,36 @@ static void test_boards()
 	card.text(0xF1000, "Card Piano");
 	card.packed(0xF2000, "Card Drums", false);
 	io = io_of(card.b);
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_SRJV80 && medium == SAMPLERFS_MEDIUM_CARD);
-	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_SRJV80 && medium == SYFS_MEDIUM_CARD);
+	fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (fs) {
-		CHECK(!strcmp(samplerfs_label(fs), "Card09   Ver1.00"));
-		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
-		CHECK((names(fs, SAMPLERFS_PATCH) == std::vector<std::string> { "Card Piano" }));
-		CHECK((names(fs, SAMPLERFS_RHYTHM_SET) == std::vector<std::string> { "Card Drums" }));
-		CHECK((names(fs, SAMPLERFS_BANK) == std::vector<std::string> { "JV-880 Patches", "JV-1080 Rhythm Sets" }));
-		const samplerfs_entry *drums = samplerfs_entry_at(fs, samplerfs_entry_at(fs, find(fs, "Card Drums"))->parent);
-		CHECK(drums->kind == SAMPLERFS_BANK && !strcmp(drums->tag, "4"));
-		size_t a = find(fs, "Piano A", SAMPLERFS_WAVE), b = find(fs, "Piano B", SAMPLERFS_WAVE);
+		CHECK(!strcmp(label_of(fs), "Card09   Ver1.00"));
+		CHECK((names(fs, SYFS_TYPE_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
+		CHECK((names(fs, SYFS_TYPE_PATCH) == std::vector<std::string> { "Card Piano" }));
+		CHECK((names(fs, SYFS_TYPE_RHYTHM_SET) == std::vector<std::string> { "Card Drums" }));
+		CHECK((names(fs, SYFS_TYPE_BANK) == std::vector<std::string> { "JV-880 Patches", "JV-1080 Rhythm Sets" }));
+		const syfs::Entry *drums = entry_at(fs, entry_at(fs, find(fs, "Card Drums"))->parent);
+		CHECK(drums->kind == SYFS_TYPE_BANK && !strcmp(drums->tag, "4"));
+		size_t a = find(fs, "Piano A", SYFS_TYPE_WAVE), b = find(fs, "Piano B", SYFS_TYPE_WAVE);
 		CHECK((splits(fs, a) == std::vector<std::string> { "0-59", "60-127" }));
 		CHECK((splits(fs, b) == std::vector<std::string> { "0-127" }));
-		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
+		CHECK((names(fs, SYFS_TYPE_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
 		size_t a0 = refs_of(fs, a).at(0), b0 = refs_of(fs, b).at(0), a1 = refs_of(fs, a).at(1);
-		CHECK(samplerfs_sample_at(fs, a, 0) == a0 && samplerfs_sample_at(fs, a, 59) == a0);
-		CHECK(samplerfs_sample_at(fs, a, 60) == a1 && samplerfs_sample_at(fs, a, 127) == a1 && samplerfs_sample_at(fs, a1, 0) == a1);
-		CHECK(samplerfs_sample_at(fs, find(fs, "Card Piano"), 60) == SAMPLERFS_NONE);
-		samplerfs_sample sm;
-		CHECK(samplerfs_sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
-		CHECK(sm.loop == SAMPLERFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
+		CHECK(sample_at(fs, a, 0) == a0 && sample_at(fs, a, 59) == a0);
+		CHECK(sample_at(fs, a, 60) == a1 && sample_at(fs, a, 127) == a1 && sample_at(fs, a1, 0) == a1);
+		CHECK(sample_at(fs, find(fs, "Card Piano"), 60) == NONE);
+		syfs::Sample sm;
+		CHECK(sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
+		CHECK(sm.loop == SYFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
 		CHECK((wave(fs, a0, 0, 6) == std::vector<int16_t> { 1, 3, 6, 5, 3, 3 }));
 		CHECK((wave(fs, a0, 4, 9) == std::vector<int16_t> { 3, 3 }));
-		CHECK(samplerfs_sample_info(fs, a, &sm) && sm.rate == 32000 && sm.key == 72 && sm.frames == 3);
-		CHECK(sm.loop == SAMPLERFS_LOOP_NONE && !sm.reverse && sm.mode == 2);
+		CHECK(sample_info(fs, a, &sm) && sm.rate == 32000 && sm.key == 72 && sm.frames == 3);
+		CHECK(sm.loop == SYFS_NONE && !sm.reverse && sm.mode == 2);
 		CHECK((wave(fs, a, 0, 3) == std::vector<int16_t> { 1, 9, 1 }));
-		CHECK(samplerfs_sample_info(fs, b0, &sm) && sm.key == 48 && sm.reverse && sm.loop == SAMPLERFS_LOOP_NONE);
-		CHECK(samplerfs_sample_info(fs, b, &sm) && sm.key == 48);
-		samplerfs_close(fs);
+		CHECK(sample_info(fs, b0, &sm) && sm.key == 48 && sm.reverse && sm.loop == SYFS_NONE);
+		CHECK(sample_info(fs, b, &sm) && sm.key == 48);
+		close_image(fs);
 	}
 
 	// a loop starting before its sample's start: played on after the frames from the start
@@ -1610,15 +1760,15 @@ static void test_boards()
 	for (int k = 0; k < 18; k++)
 		card.put(0xF0800 + 18 * 2 + k, early[k]);
 	card.put(0x8000, 1), card.put(0x8001, 2), card.put(0x8002, uint8_t(-1)), card.put(0x8003, uint8_t(-2));
-	fs = samplerfs_open(&io, nullptr, 0);
+	fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (fs) {
-		size_t b0 = refs_of(fs, find(fs, "Piano B", SAMPLERFS_WAVE)).at(0);
-		samplerfs_sample sm;
-		CHECK(samplerfs_sample_info(fs, b0, &sm) && sm.frames == 6 && sm.start == 0 && sm.loop_start == 2 && sm.loop_end == 6);
-		CHECK(samplerfs_entry_at(fs, b0)->bytes == 4);
+		size_t b0 = refs_of(fs, find(fs, "Piano B", SYFS_TYPE_WAVE)).at(0);
+		syfs::Sample sm;
+		CHECK(sample_info(fs, b0, &sm) && sm.frames == 6 && sm.start == 0 && sm.loop_start == 2 && sm.loop_end == 6);
+		CHECK(entry_at(fs, b0)->bytes == 4);
 		CHECK((wave(fs, b0, 0, 6) == std::vector<int16_t> { -1, -3, -2, 0, -1, -3 }));
-		samplerfs_close(fs);
+		close_image(fs);
 	}
 }
 
@@ -1651,26 +1801,26 @@ static void test_akai_floppy()
 		put16(b, (at < K ? 7 * K + at : 9 * K + at - K), uint16_t(k - 300));
 	}
 
-	samplerfs_io io = io_of(b);
-	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S1000 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_AKAI_S1000 && medium == SYFS_MEDIUM_FLOPPY && not_fat(b));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK(!strcmp(samplerfs_label(fs), "MY FLOPPY"));
-	CHECK((names(fs, SAMPLERFS_VOLUME) == std::vector<std::string> { "MY FLOPPY" }));
+	CHECK(!strcmp(label_of(fs), "MY FLOPPY"));
+	CHECK((names(fs, SYFS_TYPE_VOLUME) == std::vector<std::string> { "MY FLOPPY" }));
 	CHECK((used(fs, find(fs, "PIANO")) == std::vector<std::string> { "PIANO C3" }));
-	samplerfs_sample info;
+	syfs::Sample info;
 	size_t c3 = find(fs, "PIANO C3");
-	CHECK(samplerfs_sample_info(fs, c3, &info) && info.rate == 44100 && info.frames == 600 && info.end == 600);
+	CHECK(sample_info(fs, c3, &info) && info.rate == 44100 && info.frames == 600 && info.end == 600);
 	CHECK((wave(fs, c3, 436, 2) == std::vector<int16_t> { 136, 137 }));
 	auto all = wave(fs, c3, 0, 1000);
 	CHECK(all.size() == 600 && all[0] == -300 && all[599] == 299);
-	samplerfs_close(fs);
+	close_image(fs);
 
 	b[16] = 0xF0;
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_AKAI_S3000);
+	CHECK(probe(&io, nullptr) == SYFS_FORMAT_AKAI_S3000);
 }
 
 // an S900 floppy: a program on one sample, the sample's header (60 bytes) and its loop
@@ -1715,20 +1865,20 @@ static void test_s900()
 	for (uint32_t k = 0; k < data.size(); k++)
 		b[60 + k < K ? smp + 60 + k : 6 * K + 60 + k - K] = data[k];
 
-	samplerfs_io io = io_of(b);
-	samplerfs_medium medium;
-	CHECK(samplerfs_probe(&io, &medium) == SAMPLERFS_AKAI_S900 && medium == SAMPLERFS_MEDIUM_FLOPPY && not_fat(b));
-	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	syfs_io io = io_of(b);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_AKAI_S900 && medium == SYFS_MEDIUM_FLOPPY && not_fat(b));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (!fs)
 		return;
-	CHECK((names(fs, SAMPLERFS_PROGRAM) == std::vector<std::string> { "BASS" }));
+	CHECK((names(fs, SYFS_TYPE_PROGRAM) == std::vector<std::string> { "BASS" }));
 	CHECK((used(fs, find(fs, "BASS")) == std::vector<std::string> { "BASS E1" }));
-	CHECK(samplerfs_sample_at(fs, find(fs, "BASS"), 24) == find(fs, "BASS E1") && samplerfs_sample_at(fs, find(fs, "BASS"), 23) == SAMPLERFS_NONE);
-	samplerfs_sample info;
-	CHECK(samplerfs_sample_info(fs, find(fs, "BASS E1"), &info) && info.rate == 25000 && info.key == 40);
+	CHECK(sample_at(fs, find(fs, "BASS"), 24) == find(fs, "BASS E1") && sample_at(fs, find(fs, "BASS"), 23) == NONE);
+	syfs::Sample info;
+	CHECK(sample_info(fs, find(fs, "BASS E1"), &info) && info.rate == 25000 && info.key == 40);
 	CHECK(info.frames == 1000 && info.start == 10 && info.end == 1000);
-	CHECK(info.loop == SAMPLERFS_LOOP_FORWARD && info.loop_start == 800 && info.loop_end == 1000);
+	CHECK(info.loop == SYFS_LOOP_FORWARD && info.loop_start == 800 && info.loop_end == 1000);
 	CHECK(info.bits == 12);
 	auto all = wave(fs, find(fs, "BASS E1"), 0, 2000);
 	bool same = all.size() == 1000;
@@ -1736,19 +1886,36 @@ static void test_s900()
 		same = all[j] == int16_t(value(j) << 4);
 	CHECK(same);
 	CHECK((wave(fs, find(fs, "BASS E1"), 499, 2) == std::vector<int16_t> { int16_t(value(499) << 4), int16_t(value(500) << 4) }));
-	samplerfs_close(fs);
+	close_image(fs);
 
 	// a lower-case type is no S900's
 	b[24 + 16] = 's';
-	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_UNKNOWN);
+	CHECK(probe(&io, nullptr) == SYFS_NONE);
+}
+
+// ---- every key is its name's hash, and the names read back
+static void test_keys()
+{
+	size_t formats = 0;
+#define X(constant, cls, name, title) \
+	CHECK(syfs_key_of(name) == constant && constant != SYFS_NONE && constant <= 0x7FFFFFFF); \
+	CHECK(!strcmp(syfs_name(constant), name) && !strcmp(syfs_title(constant), title)); \
+	formats += !strcmp(cls, "format");
+	SYFS_KEYS(X)
+#undef X
+	CHECK(formats == 16 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_FAT
+		&& syfs_format_at(formats) == SYFS_NONE);
+	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
+	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
 }
 
 int main()
 {
+	test_keys();
 	Bytes s760 = s700_image(" S-760 System Disk    Ver. 2.24");
-	test_s700(s760, SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
-	test_s700(raw_of(s760), SAMPLERFS_S760, "S-760 System Disk    Ver. 2.24");
-	test_s700(s700_image(" SYS-772 HardDisk Sys Ver. 2.25"), SAMPLERFS_S770, "SYS-772 HardDisk Sys Ver. 2.25");
+	test_s700(s760, SYFS_FORMAT_S760, "S-760 System Disk    Ver. 2.24");
+	test_s700(raw_of(s760), SYFS_FORMAT_S760, "S-760 System Disk    Ver. 2.24");
+	test_s700(s700_image(" SYS-772 HardDisk Sys Ver. 2.25"), SYFS_FORMAT_S770, "SYS-772 HardDisk Sys Ver. 2.25");
 	test_akai();
 	test_s550();
 	test_s700_floppy();

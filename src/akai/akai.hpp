@@ -4,7 +4,7 @@
 
 #include "../internal.hpp"
 
-namespace sfs::akai {
+namespace syfs::akai {
 
 // a partition header's 98 halfwords after its size: k times HEADER_STEP
 constexpr uint32_t HEADER_WORDS = 98;
@@ -16,8 +16,8 @@ public:
 	using Medium::Medium;
 	std::vector<size_t> refs(size_t i) const override;
 	size_t sample_at(size_t i, int key) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
-	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	bool sample(size_t i, syfs::Sample &out) const override;
+	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 protected:
 	// where a volume's blocks are: a partition's, or a floppy's; its FAT, a halfword a block
@@ -32,15 +32,15 @@ protected:
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
 	// n bytes of file i from offset along its volume's FAT; the count read, short where its chain ends
 	size_t read_at(size_t i, uint64_t offset, uint8_t *buf, size_t n) const;
-	size_t in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const;
+	size_t in_volume(size_t vol, syfs_key kind, const std::string &name) const;
 };
 
 // a disk: partitions of volumes
 class S1000Disk final : public S1000 {
 public:
 	using S1000::S1000;
-	static samplerfs_format probe(const Image &im);
-	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	void list() override;
 };
 
@@ -48,8 +48,8 @@ public:
 class S1000Floppy final : public S1000 {
 public:
 	using S1000::S1000;
-	static samplerfs_format probe(const Image &im);
-	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	void list() override;
 };
 
@@ -57,17 +57,17 @@ public:
 class S900 final : public Medium {
 public:
 	using Medium::Medium;
-	static samplerfs_format probe(const Image &im);
-	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	size_t sample_at(size_t i, int key) const override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
-	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	bool sample(size_t i, syfs::Sample &out) const override;
+	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
-	size_t named(samplerfs_kind kind, const std::string &name) const;
+	size_t named(syfs_key kind, const std::string &name) const;
 };
 
 }

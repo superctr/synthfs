@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace sfs::roland::s700 {
+namespace syfs::roland::s700 {
 
 namespace {
 
@@ -23,7 +23,7 @@ constexpr uint8_t FLOPPY_FILL = 0x0F;
 
 class Writer {
 public:
-	Writer(const samplerfs_write_io &io, std::string &why) : io_(io), why_(why) {}
+	Writer(const syfs_io &io, std::string &why) : io_(io), why_(why) {}
 	bool put(uint64_t at, const void *p, size_t n)
 	{
 		if (at > io_.size || n > io_.size - at || io_.write(io_.user, at, p, n) != n)
@@ -50,7 +50,7 @@ public:
 	}
 
 private:
-	const samplerfs_write_io &io_;
+	const syfs_io &io_;
 	std::string &why_;
 };
 
@@ -69,7 +69,7 @@ void header(uint8_t *s0, uint8_t kind, const char *line)
 	memcpy(s0 + 0x40, "       Copyright   Roland      ", 31);
 }
 
-bool format_disk(const samplerfs_write_io &io, bool s760, std::string &why)
+bool format_disk(const syfs_io &io, bool s760, std::string &why)
 {
 	Writer w(io, why);
 	if (io.size % SECTOR)
@@ -106,7 +106,7 @@ bool format_disk(const samplerfs_write_io &io, bool s760, std::string &why)
 	return !s760 || w.fill(EXTENDED, EXTENDED_SECTORS, 0xFF);
 }
 
-bool format_floppy(const samplerfs_write_io &io, bool s760, std::string &why)
+bool format_floppy(const syfs_io &io, bool s760, std::string &why)
 {
 	Writer w(io, why);
 	if (io.size != FLOPPY_2DD && io.size != FLOPPY_2HD)
@@ -118,9 +118,9 @@ bool format_floppy(const samplerfs_write_io &io, bool s760, std::string &why)
 
 }
 
-bool format_s760_disk(const samplerfs_write_io &io, std::string &why) { return format_disk(io, true, why); }
-bool format_s770_disk(const samplerfs_write_io &io, std::string &why) { return format_disk(io, false, why); }
-bool format_s760_floppy(const samplerfs_write_io &io, std::string &why) { return format_floppy(io, true, why); }
-bool format_s770_floppy(const samplerfs_write_io &io, std::string &why) { return format_floppy(io, false, why); }
+bool format_s760_disk(const syfs_io &io, std::string &why) { return format_disk(io, true, why); }
+bool format_s770_disk(const syfs_io &io, std::string &why) { return format_disk(io, false, why); }
+bool format_s760_floppy(const syfs_io &io, std::string &why) { return format_floppy(io, true, why); }
+bool format_s770_floppy(const syfs_io &io, std::string &why) { return format_floppy(io, false, why); }
 
 }

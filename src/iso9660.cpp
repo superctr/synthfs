@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace sfs {
+namespace syfs {
 
 namespace {
 
@@ -17,10 +17,10 @@ constexpr uint32_t DIR_BYTES = 1 << 22;
 
 }
 
-samplerfs_format Iso9660::probe(const Image &im)
+syfs_key Iso9660::probe(const Image &im)
 {
 	uint8_t pvd[6];
-	return im.read(16 * BLOCK, pvd, sizeof pvd) && !memcmp(pvd, "\1CD001", 6) ? SAMPLERFS_ISO9660 : SAMPLERFS_UNKNOWN;
+	return im.read(16 * BLOCK, pvd, sizeof pvd) && !memcmp(pvd, "\1CD001", 6) ? SYFS_FORMAT_ISO9660 : SYFS_NONE;
 }
 
 // a directory's audio files and the directories that hold some; whether it held any
@@ -52,7 +52,7 @@ bool Iso9660::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
 		uint32_t ext = le32(r + 2), size = le32(r + 10);
 		if (r[25] & 2) {
 			size_t mark = entries.size();
-			size_t di = add(SAMPLERFS_DIRECTORY, SAMPLERFS_ISO9660, number++, parent, name, 0, ext * BLOCK);
+			size_t di = add(SYFS_TYPE_DIRECTORY, SYFS_FORMAT_ISO9660, number++, parent, name, 0, ext * BLOCK);
 			if (walk(ext, size, di, depth + 1))
 				any = true;
 			else {
@@ -61,7 +61,7 @@ bool Iso9660::walk(uint32_t extent, uint32_t bytes, size_t parent, int depth)
 				number--;
 			}
 		} else if (audio_name(name)) {
-			add(SAMPLERFS_FILE, SAMPLERFS_ISO9660, number++, parent, name, size, ext * BLOCK);
+			add(SYFS_TYPE_FILE, SYFS_FORMAT_ISO9660, number++, parent, name, size, ext * BLOCK);
 			any = true;
 		}
 	}
@@ -75,26 +75,26 @@ void Iso9660::list()
 		return;
 	label = trimmed(std::string_view(reinterpret_cast<const char *>(&pvd[40]), 32));
 	const uint8_t *root = &pvd[156];
-	walk(le32(root + 2), le32(root + 10), SAMPLERFS_NONE, 0);
+	walk(le32(root + 2), le32(root + 10), syfs::NONE, 0);
 }
 
-bool Iso9660::sample(size_t i, samplerfs_sample &out) const
+bool Iso9660::sample(size_t i, syfs::Sample &out) const
 {
-	if (entries[i].kind != SAMPLERFS_FILE)
+	if (entries[i].kind != SYFS_TYPE_FILE)
 		return false;
 	uint64_t at = where[i];
 	return audio_sample([&](uint64_t offset, void *buf, size_t n) { return image.read(at + offset, buf, n); },
 		entries[i].bytes, out);
 }
 
-size_t Iso9660::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+size_t Iso9660::wave(size_t i, const syfs::Sample &, uint64_t first, int16_t *out, size_t frames) const
 {
 	uint64_t at = where[i];
 	return audio_wave([&](uint64_t offset, void *buf, size_t n) { return image.read(at + offset, buf, n); },
 		entries[i].bytes, first, out, frames);
 }
 
-std::unique_ptr<Medium> Iso9660::open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> Iso9660::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<Iso9660>(io, format);
 }

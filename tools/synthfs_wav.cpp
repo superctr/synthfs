@@ -1,8 +1,8 @@
 // Copyright 2026 Ian Karlsson
-// samplerfs-wav: an image's samples written out as WAV files, 16-bit, with their key and loop in a smpl chunk
-//   samplerfs-wav -n IMAGE                 the samples it would write: index, name, frames, rate
-//   samplerfs-wav IMAGE DIR [INDEX...]     every sample, or the entries given by index, into DIR
-#include <samplerfs/samplerfs.h>
+// synthfs-wav: an image's samples written out as WAV files, 16-bit, with their key and loop in a smpl chunk
+//   synthfs-wav -n IMAGE                 the samples it would write: number, name, frames, rate
+//   synthfs-wav IMAGE DIR [NODE...]     every sample, or the nodes given by number, into DIR
+#include <synthfs/synthfs.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -11,6 +11,30 @@
 #include <vector>
 
 namespace {
+
+// a sample's header, of its properties
+struct Sample {
+	uint32_t rate, channels, bits;
+	int key;
+	uint64_t frames, loop_start, loop_end;
+	syfs_key loop;
+};
+
+bool sample_of(syfs_image *im, syfs_node n, Sample &s)
+{
+	auto num = [&](syfs_key key) {
+		int64_t v = 0;
+		syfs_get_int(im, n, key, &v);
+		return v;
+	};
+	int64_t rate;
+	if (!syfs_get_int(im, n, SYFS_PROP_RATE, &rate))
+		return false;
+	s = { uint32_t(rate), uint32_t(num(SYFS_PROP_CHANNELS)), uint32_t(num(SYFS_PROP_BITS)), int(num(SYFS_PROP_KEY)),
+		uint64_t(num(SYFS_PROP_FRAMES)), uint64_t(num(SYFS_PROP_LOOP_START)), uint64_t(num(SYFS_PROP_LOOP_END)),
+		syfs_key(num(SYFS_PROP_LOOP)) };
+	return true;
+}
 
 void put(std::vector<uint8_t> &b, uint32_t v, int n)
 {
@@ -24,11 +48,11 @@ void tag(std::vector<uint8_t> &b, const char *t)
 }
 
 // the header up to the data chunk's body, and the smpl chunk after it
-std::vector<uint8_t> header(const samplerfs_sample &s, uint32_t data_bytes, std::vector<uint8_t> &smpl)
+std::vector<uint8_t> header(const Sample &s, uint32_t data_bytes, std::vector<uint8_t> &smpl)
 {
 	smpl.clear();
-	if (s.key >= 0 || s.loop != SAMPLERFS_LOOP_NONE) {
-		bool loop = s.loop != SAMPLERFS_LOOP_NONE;
+	if (s.key >= 0 || s.loop != SYFS_NONE) {
+		bool loop = s.loop != SYFS_NONE;
 		tag(smpl, "smpl");
 		put(smpl, 36 + (loop ? 24 : 0), 4);
 		put(smpl, 0, 4);
@@ -42,7 +66,7 @@ std::vector<uint8_t> header(const samplerfs_sample &s, uint32_t data_bytes, std:
 		put(smpl, 0, 4);
 		if (loop) {
 			put(smpl, 0, 4);
-			put(smpl, s.loop == SAMPLERFS_LOOP_ALTERNATE ? 1 : 0, 4);
+			put(smpl, s.loop == SYFS_LOOP_ALTERNATE ? 1 : 0, 4);
 			put(smpl, uint32_t(s.loop_start), 4);
 			put(smpl, uint32_t(s.loop_end - 1), 4);
 			put(smpl, 0, 4);
@@ -77,7 +101,7 @@ std::string file_name(size_t i, const char *name)
 }
 
 // sample i into path; the frames written, or -1 where it could not be
-long long write(samplerfs *fs, size_t i, const samplerfs_sample &s, const std::string &path)
+long long write(syfs_image *im, syfs_node n, const Sample &s, const std::string &path)
 {
 	uint64_t bytes = s.frames * s.channels * 2;
 	if (bytes > 0xFFFFFF00u)
@@ -92,7 +116,7 @@ long long write(samplerfs *fs, size_t i, const samplerfs_sample &s, const std::s
 	std::vector<uint8_t> le(buf.size() * 2);
 	uint64_t done = 0;
 	while (done < s.frames) {
-		size_t got = samplerfs_sample_read(fs, i, done, buf.data(), 65536);
+		size_t got = syfs_read(im, n, SYFS_AS_S16, done * s.channels * 2, buf.data(), buf.size() * 2) / (s.channels * 2);
 		if (!got)
 			break;
 		for (size_t k = 0; k < got * s.channels; k++) {
@@ -127,40 +151,42 @@ int main(int argc, char **argv)
 	bool dry = argc > 1 && !strcmp(argv[1], "-n");
 	int a = dry ? 2 : 1;
 	if (argc < a + (dry ? 1 : 2)) {
-		fprintf(stderr, "usage: samplerfs-wav -n IMAGE\n       samplerfs-wav IMAGE DIR [INDEX...]\n");
+		fprintf(stderr, "usage: synthfs-wav -n IMAGE\n       synthfs-wav IMAGE DIR [NODE...]\n");
 		return 2;
 	}
 	char err[256];
-	samplerfs *fs = samplerfs_open_file(argv[a], err, sizeof err);
-	if (!fs) {
+	syfs_image *im = syfs_open_path(argv[a], err, sizeof err);
+	if (!im) {
 		fprintf(stderr, "%s: %s\n", argv[a], err);
 		return 1;
 	}
-	std::vector<size_t> which;
+	std::vector<syfs_node> which;
 	for (int k = a + 2; k < argc; k++)
-		which.push_back(strtoull(argv[k], nullptr, 10));
-	if (which.empty())
-		for (size_t i = 0; i < samplerfs_count(fs); i++)
-			which.push_back(i);
+		which.push_back(syfs_node(strtoull(argv[k], nullptr, 10)));
+	if (which.empty()) {
+		which.resize(syfs_list(im, SYFS_ROOT, SYFS_REL_ALL, nullptr, 0));
+		syfs_list(im, SYFS_ROOT, SYFS_REL_ALL, which.data(), which.size());
+	}
 	int status = 0;
-	for (size_t i : which) {
-		samplerfs_sample s;
-		const samplerfs_entry *e = samplerfs_entry_at(fs, i);
-		if (!e || !samplerfs_sample_info(fs, i, &s))
+	for (syfs_node i : which) {
+		Sample s;
+		syfs_info info;
+		if (!syfs_node_info(im, i, &info) || !sample_of(im, i, s))
 			continue;
+		const syfs_info *e = &info;
 		if (dry) {
-			printf("%zu  %-16s  %llu frames  %u Hz  %u×%u bits\n", i, e->name, (unsigned long long)s.frames, s.rate,
+			printf("%u  %-16s  %llu frames  %u Hz  %u×%u bits\n", i, e->name, (unsigned long long)s.frames, s.rate,
 				s.channels, s.bits);
 			continue;
 		}
 		std::string path = std::string(argv[a + 1]) + "/" + file_name(i, e->name);
-		long long n = write(fs, i, s, path);
+		long long n = write(im, i, s, path);
 		if (n < 0) {
 			fprintf(stderr, "%s: not written (no wave read, or the file could not be)\n", path.c_str());
 			status = 1;
 		} else
 			printf("%s  %lld of %llu frames\n", path.c_str(), n, (unsigned long long)s.frames);
 	}
-	samplerfs_close(fs);
+	syfs_close(im);
 	return status;
 }

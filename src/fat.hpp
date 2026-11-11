@@ -7,7 +7,7 @@
 #include <map>
 #include <optional>
 
-namespace sfs {
+namespace syfs {
 
 namespace fat {
 
@@ -36,21 +36,21 @@ std::optional<Geometry> find(const Image &im);
 
 // an empty volume written over a blank image: a DOS floppy, or a hard disk behind an MBR; false with why where the
 // image's size or the label cannot be had
-bool format_floppy(const samplerfs_write_io &io, const char *label, std::string &why);
-bool format_disk(const samplerfs_write_io &io, const char *label, std::string &why);
+bool format_floppy(const syfs_io &io, const char *label, std::string &why);
+bool format_disk(const syfs_io &io, const char *label, std::string &why);
 
 }
 
 class Fat final : public Medium {
 public:
 	using Medium::Medium;
-	static samplerfs_format probe(const Image &im);
-	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	// a floppy where the volume is bare and of a floppy's size, else a disk
-	static samplerfs_medium medium_of(const Image &im);
+	static syfs_key medium_of(const Image &im);
 	void list() override;
-	bool sample(size_t i, samplerfs_sample &out) const override;
-	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	bool sample(size_t i, syfs::Sample &out) const override;
+	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	fat::Geometry g_;

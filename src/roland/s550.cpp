@@ -3,7 +3,7 @@
 // itself, the S-550's, S-330's and W-30's (docs/formats.md, "S-550")
 #include "roland.hpp"
 
-namespace sfs::roland {
+namespace syfs::roland {
 
 namespace {
 
@@ -18,28 +18,28 @@ constexpr uint32_t FUNCTION_BLOCK = 8, DISK_NAME = 0x33;
 
 }
 
-samplerfs_format S550Disk::probe(const Image &im)
+syfs_key S550Disk::probe(const Image &im)
 {
 	uint8_t s0[16];
-	return im.read(0, s0, sizeof s0) && !memcmp(s0, "* ROLAND S-550 *", 16) ? SAMPLERFS_S550 : SAMPLERFS_UNKNOWN;
+	return im.read(0, s0, sizeof s0) && !memcmp(s0, "* ROLAND S-550 *", 16) ? SYFS_FORMAT_S550 : SYFS_NONE;
 }
 
 // four zero bytes and the system's ID
-samplerfs_format S550Floppy::probe(const Image &im)
+syfs_key S550Floppy::probe(const Image &im)
 {
 	uint8_t s0[14];
 	if (im.size() > FLOPPY_MAX || !im.read(0, s0, sizeof s0) || memcmp(s0, "\0\0\0\0", 4))
-		return SAMPLERFS_UNKNOWN;
+		return SYFS_NONE;
 	auto id = [&](const char *s) { return !memcmp(s0 + 4, s, strlen(s)); };
 	if (id("S550 MT25B") || id("S500 MT25B"))
-		return SAMPLERFS_S550;
+		return SYFS_FORMAT_S550;
 	if (id("S330 MT25C") || id("S300 MT25C"))
-		return SAMPLERFS_S330;
+		return SYFS_FORMAT_S330;
 	if (id("W-30"))
-		return SAMPLERFS_W30;
+		return SYFS_FORMAT_W30;
 	if (id("S-50 MT25A") || id("S-51 MT25A"))
-		return SAMPLERFS_S50;
-	return SAMPLERFS_UNKNOWN;
+		return SYFS_FORMAT_S50;
+	return SYFS_NONE;
 }
 
 namespace {
@@ -82,7 +82,7 @@ void S550Disk::list()
 		uint32_t start = be32(e + 0x30), length = be32(e + 0x34);
 		if (length < PARAMETER_BLOCKS || start + uint64_t(length) > blocks)
 			continue;
-		size_t ai = add(SAMPLERFS_AREA, SAMPLERFS_S550, n, SAMPLERFS_NONE, text(e, 32), length * BLOCK, start * BLOCK);
+		size_t ai = add(SYFS_TYPE_AREA, SYFS_FORMAT_S550, n, syfs::NONE, text(e, 32), length * BLOCK, start * BLOCK);
 		tag(ai, std::to_string(e[0x39]));
 		list_area(ai, start * BLOCK);
 	}
@@ -97,12 +97,12 @@ void S550Floppy::list()
 		return;
 	label = trimmed(text(&s0[0x20], 31));
 	label.erase(0, label.find_first_not_of(' '));
-	if (format == SAMPLERFS_S50 || image.size() <= FLOPPY_AREA + PARAMETER_BLOCKS * BLOCK)
+	if (format == SYFS_FORMAT_S50 || image.size() <= FLOPPY_AREA + PARAMETER_BLOCKS * BLOCK)
 		return;
 	uint8_t name[12];
 	if (!image.read(FLOPPY_AREA + FUNCTION_BLOCK * BLOCK + DISK_NAME, name, sizeof name))
 		return;
-	size_t ai = add(SAMPLERFS_AREA, format, 0, SAMPLERFS_NONE, text(name, sizeof name), image.size() - FLOPPY_AREA, FLOPPY_AREA);
+	size_t ai = add(SYFS_TYPE_AREA, format, 0, syfs::NONE, text(name, sizeof name), image.size() - FLOPPY_AREA, FLOPPY_AREA);
 	list_area(ai, FLOPPY_AREA);
 	// a system or utility disk without sounds lists none
 	if (entries.size() == ai + 1) {
@@ -116,22 +116,22 @@ void S550::list_area(size_t ai, uint64_t start)
 	auto par = image.read(start, PARAMETER_BLOCKS * BLOCK);
 	if (par.empty())
 		return;
-	samplerfs_format f = entries[ai].format;
+	syfs_key f = entries[ai].format;
 	for (uint32_t k = 0; k < PATCHES; k++)
 		if (!blank(&par[k * PATCH], 12))
-			add(SAMPLERFS_PATCH, f, k, ai, text(&par[k * PATCH], 12), 0, start + k * PATCH);
+			add(SYFS_TYPE_PATCH, f, k, ai, text(&par[k * PATCH], 12), 0, start + k * PATCH);
 	for (uint32_t k = 0; k < TONES; k++) {
 		const uint8_t *t = &par[TONES_AT + k * TONE];
 		if (!blank(t, 8))
-			add(SAMPLERFS_TONE, f, k, ai, text(t, 8), uint64_t(t[0x0F]) * SEGMENT_WORDS * 2, start + TONES_AT + k * TONE);
+			add(SYFS_TYPE_TONE, f, k, ai, text(t, 8), uint64_t(t[0x0F]) * SEGMENT_WORDS * 2, start + TONES_AT + k * TONE);
 	}
 }
 
 // a patch's key maps: the first at +0x1A, the second at +0x87 where the key mode (+0x0F) is 1 to 3; a tone number a key
 std::vector<size_t> S550::refs(size_t i) const
 {
-	const samplerfs_entry &e = entries[i];
-	if (e.kind != SAMPLERFS_PATCH)
+	const syfs::Entry &e = entries[i];
+	if (e.kind != SYFS_TYPE_PATCH)
 		return {};
 	auto rec = image.read(where[i], PATCH);
 	if (rec.empty())
@@ -142,8 +142,8 @@ std::vector<size_t> S550::refs(size_t i) const
 			uint8_t tone = rec[(map ? 0x87 : 0x1A) + k];
 			if (tone > LAST_TONE)
 				continue;
-			size_t j = child(e.parent, SAMPLERFS_TONE, tone);
-			if (j != SAMPLERFS_NONE && std::find(out.begin(), out.end(), j) == out.end())
+			size_t j = child(e.parent, SYFS_TYPE_TONE, tone);
+			if (j != syfs::NONE && std::find(out.begin(), out.end(), j) == out.end())
 				out.push_back(j);
 		}
 	return out;
@@ -152,19 +152,19 @@ std::vector<size_t> S550::refs(size_t i) const
 // A patch's key: the tone its first key map gives, the map's first byte key 21
 size_t S550::sample_at(size_t i, int key) const
 {
-	if (entries[i].kind != SAMPLERFS_PATCH)
+	if (entries[i].kind != SYFS_TYPE_PATCH)
 		return Medium::sample_at(i, key);
 	uint8_t tone;
 	if (key < 21 || uint32_t(key - 21) >= KEYS || !image.read(where[i] + 0x1A + uint32_t(key - 21), &tone, 1) || tone > LAST_TONE)
-		return SAMPLERFS_NONE;
-	return child(entries[i].parent, SAMPLERFS_TONE, tone);
+		return syfs::NONE;
+	return child(entries[i].parent, SYFS_TYPE_TONE, tone);
 }
 
 // a tone: 30 kHz where +0x0B is 0, else 15 kHz; the original key at +0x0C; its segments at +0x0F; its start, end and
 // loop point at +0x10, +0x13 and +0x16, 24-bit big-endian words from its first segment; the loop mode at +0x19
-bool S550::sample(size_t i, samplerfs_sample &out) const
+bool S550::sample(size_t i, syfs::Sample &out) const
 {
-	if (entries[i].kind != SAMPLERFS_TONE)
+	if (entries[i].kind != SYFS_TYPE_TONE)
 		return false;
 	uint8_t t[0x1A];
 	if (!image.read(where[i], t, sizeof t))
@@ -179,8 +179,8 @@ bool S550::sample(size_t i, samplerfs_sample &out) const
 	out.loop_end = out.end;
 	out.mode = t[0x19];
 	switch (out.mode) {
-	case 0: out.loop = SAMPLERFS_LOOP_FORWARD; break;
-	case 1: out.loop = SAMPLERFS_LOOP_ALTERNATE; break;
+	case 0: out.loop = SYFS_LOOP_FORWARD; break;
+	case 1: out.loop = SYFS_LOOP_ALTERNATE; break;
 	case 3: out.reverse = 1; break;
 	default: break;
 	}
@@ -190,7 +190,7 @@ bool S550::sample(size_t i, samplerfs_sample &out) const
 // a tone's wave from word bank × 18 × 12 288 + first segment × 12 288 of its area's waves (+0x2400): 16-bit words
 // on a disk, the 12-bit value in the top bits; on a floppy three bytes to two values, b0 b1 b2 giving b0 b1-high and
 // b2 b1-low
-size_t S550::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+size_t S550::wave(size_t i, const syfs::Sample &, uint64_t first, int16_t *out, size_t frames) const
 {
 	uint8_t t[0x10];
 	if (!image.read(where[i], t, sizeof t))
@@ -218,12 +218,12 @@ size_t S550::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *o
 	return done;
 }
 
-std::unique_ptr<Medium> S550Disk::open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S550Disk::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<S550Disk>(io, format);
 }
 
-std::unique_ptr<Medium> S550Floppy::open(const samplerfs_io &io, samplerfs_format format)
+std::unique_ptr<Medium> S550Floppy::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<S550Floppy>(io, format);
 }

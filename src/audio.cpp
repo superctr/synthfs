@@ -6,7 +6,7 @@
 #include <cctype>
 #include <cmath>
 
-namespace sfs {
+namespace syfs {
 
 namespace {
 
@@ -29,7 +29,7 @@ AudioLayout::Code wav_code(uint16_t tag, uint32_t width)
 	return AudioLayout::NONE;
 }
 
-bool wav(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayout &layout)
+bool wav(const FileRead &read, uint64_t bytes, syfs::Sample &out, AudioLayout &layout)
 {
 	uint8_t h[12];
 	if (bytes < 12 || !read(0, h, 12) || memcmp(h, "RIFF", 4) || memcmp(h + 8, "WAVE", 4))
@@ -89,7 +89,7 @@ bool wav(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayou
 	out.end = out.frames;
 	if (loop.found) {
 		out.mode = int(loop.type);
-		out.loop = loop.type == 1 ? SAMPLERFS_LOOP_ALTERNATE : SAMPLERFS_LOOP_FORWARD;
+		out.loop = loop.type == 1 ? SYFS_LOOP_ALTERNATE : SYFS_LOOP_FORWARD;
 		out.loop_start = loop.start;
 		out.loop_end = loop.end;
 	}
@@ -119,7 +119,7 @@ AudioLayout::Code aifc_code(const uint8_t *type, uint32_t width, bool &big)
 	return AudioLayout::NONE;
 }
 
-bool aiff(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayout &layout)
+bool aiff(const FileRead &read, uint64_t bytes, syfs::Sample &out, AudioLayout &layout)
 {
 	uint8_t h[12];
 	if (bytes < 12 || !read(0, h, 12) || memcmp(h, "FORM", 4) || (memcmp(h + 8, "AIFF", 4) && memcmp(h + 8, "AIFC", 4)))
@@ -197,7 +197,7 @@ bool aiff(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayo
 		int64_t b = position(begin), e = position(end);
 		if (b >= 0 && e > b) {
 			out.mode = mode;
-			out.loop = mode == 2 ? SAMPLERFS_LOOP_ALTERNATE : SAMPLERFS_LOOP_FORWARD;
+			out.loop = mode == 2 ? SYFS_LOOP_ALTERNATE : SYFS_LOOP_FORWARD;
 			out.loop_start = uint64_t(b);
 			out.loop_end = uint64_t(e);
 		}
@@ -218,10 +218,10 @@ bool audio_name(std::string_view name)
 	return ext == "wav" || ext == "aif" || ext == "aiff" || ext == "aifc";
 }
 
-bool audio_sample(const FileRead &read, uint64_t bytes, samplerfs_sample &out, AudioLayout *layout)
+bool audio_sample(const FileRead &read, uint64_t bytes, syfs::Sample &out, AudioLayout *layout)
 {
 	for (auto *reader : { wav, aiff }) {
-		samplerfs_sample s = blank_sample();
+		syfs::Sample s = blank_sample();
 		s.channels = 0;
 		AudioLayout l;
 		if (reader(read, bytes, s, l) && s.channels) {
@@ -271,7 +271,7 @@ int16_t decoded(const uint8_t *p, const AudioLayout &l)
 
 size_t audio_wave(const FileRead &read, uint64_t bytes, uint64_t first, int16_t *out, size_t frames)
 {
-	samplerfs_sample s;
+	syfs::Sample s;
 	AudioLayout l;
 	if (!audio_sample(read, bytes, s, &l) || l.code == AudioLayout::NONE || first >= s.frames)
 		return 0;

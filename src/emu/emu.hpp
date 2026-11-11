@@ -4,13 +4,13 @@
 
 #include "../internal.hpp"
 
-namespace sfs::emu {
+namespace syfs::emu {
 
 class Disk final : public Medium {
 public:
 	using Medium::Medium;
-	static samplerfs_format probe(const Image &im);
-	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 };
 
 }

@@ -1,6 +1,6 @@
 # The formats
 
-What samplerfs reads of each format.  Every number is little-endian unless it says otherwise.  **[seen]** marks
+What synthfs reads of each format.  Every number is little-endian unless it says otherwise.  **[seen]** marks
 what the images at hand show and the library relies on without a machine's reading behind it.
 
 Each image is also of a medium: a disk (a hard disk's, MO's or CD-ROM's image, which share their layouts), a
@@ -369,7 +369,7 @@ The original keys are the pitches the samples were recorded at, checked against 
 samples above the keys they serve: a piano's split for keys 59 to 61 holds the sample of key 64, a drum menu's key
 60 a sample of key 66, so the machine plays them lowered.  The basses of SR-JV80-06, -10 and -19 carry an original
 key an octave above their pitch, and sound an octave below the key played, as on the machine **[seen]**.  The fine
-tune is what the machine adds to the original key's pitch; samplerfs gives it in the rate, rate × 2^((fine −
+tune is what the machine adds to the original key's pitch; synthfs gives it in the rate, rate × 2^((fine −
 1024) / 12000), so that the rate at the original key plays as the machine does.
 
 The flags: bit 0 a back and forth loop, bit 1 played once (its loop's start then equals its end on nearly every
