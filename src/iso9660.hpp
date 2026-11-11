@@ -1,5 +1,6 @@
 // Copyright 2026 Ian Karlsson
-// A plain CD-ROM: its WAV and AIFF files
+//! \file iso9660.hpp
+//! A plain CD-ROM: its WAV and AIFF files.
 #pragma once
 
 #include "internal.hpp"

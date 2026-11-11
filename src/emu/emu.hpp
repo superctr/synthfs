@@ -1,5 +1,6 @@
 // Copyright 2026 Ian Karlsson
-// E-mu: the EIII's, E-IV's and Emax II's disks, told apart
+//! \file emu.hpp
+//! E-mu: the EIII's, E-IV's and Emax II's disks, told apart.
 #pragma once
 
 #include "../internal.hpp"
