@@ -136,7 +136,8 @@ first, then the directory's entries, then the table and the counts.
 
 Checked: the lists' chains, places and sizes and the table's account on disks so made, by a reading of them apart
 from the library's and the same reading of the five discs here; the waves and what each entry uses against the
-disc they came from.  Not yet loaded on a machine.
+disc they came from.  An S-760 (system 2.24) lists such a disk's performances with their lengths, loads them
+without complaint, shows the performance's patch in its part, and sounds it.
 
 Not written: a floppy's volume into a disk (its records are of another shape), entries removed or named anew, a
 new sample from a WAV file.
