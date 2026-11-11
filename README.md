@@ -54,16 +54,18 @@ if (!samplerfs_format_dos_floppy(&w, "SAMPLES", err, sizeof err))
 ## Building
 
 ```sh
-just build          # the library, samplerfs-ls and the tests (CMake 3.23+, a C++20 compiler)
+just build          # the library, samplerfs-ls, samplerfs-wav and the tests (CMake 3.23+, a C++20 compiler)
 just test
 just scan DIR       # every image under DIR, one line each
 ```
 
-In another project: `add_subdirectory(samplerfs)` and link `samplerfs`; the tool and the tests are built only
+In another project: `add_subdirectory(samplerfs)` and link `samplerfs`; the tools and the tests are built only
 where samplerfs is the top level (`SAMPLERFS_TOOLS`, `SAMPLERFS_TESTS`).
 
 `samplerfs-ls IMAGE...` prints each image's format, counts and label; `-l` lists every entry under what holds
-it, `-r` adds what each uses and each sample's header.
+it, `-r` adds what each uses and each sample's header.  `samplerfs-wav IMAGE DIR [INDEX...]` writes every sample (or
+the entries given by index) into DIR as 16-bit WAV files, named by index and name, the original key and loop in a
+`smpl` chunk; `samplerfs-wav -n IMAGE` lists what it would write.
 
 ## Layout
 
@@ -73,5 +75,5 @@ a class with a static `probe` and `open`.
 
 ## Later
 
-Writing a sample's wave out to a WAV file, writing sounds into an image, and formatting a DJ-70's floppy and an S-760's
+Writing sounds into an image, and formatting a DJ-70's floppy and an S-760's
 Volume Dump FD disk.

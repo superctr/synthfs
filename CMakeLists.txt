@@ -1,9 +1,9 @@
 # Copyright 2026 Ian Karlsson
-# samplerfs: sampler disk images read (the library), samplerfs-ls (the tool) and the tests
+# samplerfs: sampler disk images read (the library), samplerfs-ls and samplerfs-wav (the tools) and the tests
 cmake_minimum_required(VERSION 3.23)
 project(samplerfs VERSION 0.1.0 LANGUAGES CXX)
 
-option(SAMPLERFS_TOOLS "Build samplerfs-ls, the command line tool" ${PROJECT_IS_TOP_LEVEL})
+option(SAMPLERFS_TOOLS "Build samplerfs-ls and samplerfs-wav, the command line tools" ${PROJECT_IS_TOP_LEVEL})
 option(SAMPLERFS_TESTS "Build the tests" ${PROJECT_IS_TOP_LEVEL})
 
 set(CMAKE_CXX_STANDARD 20)
@@ -28,6 +28,9 @@ if(SAMPLERFS_TOOLS)
 	add_executable(samplerfs-ls tools/samplerfs_ls.cpp)
 	target_link_libraries(samplerfs-ls PRIVATE samplerfs)
 	target_compile_options(samplerfs-ls PRIVATE ${SAMPLERFS_WARNINGS})
+	add_executable(samplerfs-wav tools/samplerfs_wav.cpp)
+	target_link_libraries(samplerfs-wav PRIVATE samplerfs)
+	target_compile_options(samplerfs-wav PRIVATE ${SAMPLERFS_WARNINGS})
 endif()
 
 if(SAMPLERFS_TESTS)
