@@ -430,8 +430,8 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 	if (!is_floppy && medium != SYFS_MEDIUM_DISK)
 		return say(err, err_size, "a medium that cannot be made"), 0;
 	bool labelled = label && *label;
-	if (labelled && format != SYFS_FORMAT_FAT)
-		return say(err, err_size, "the format holds no label"), 0;
+	if (labelled && format != SYFS_FORMAT_FAT && (is_floppy || (format != SYFS_FORMAT_S760 && format != SYFS_FORMAT_S770)))
+		return say(err, err_size, "the format holds no name"), 0;
 	try {
 		std::string why;
 		bool ok;
@@ -440,10 +440,10 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 			ok = (is_floppy ? fat::format_floppy : fat::format_disk)(*io, label, why);
 			break;
 		case SYFS_FORMAT_S760:
-			ok = (is_floppy ? roland::s700::format_s760_floppy : roland::s700::format_s760_disk)(*io, why);
+			ok = is_floppy ? roland::s700::format_s760_floppy(*io, why) : roland::s700::format_s760_disk(*io, label, why);
 			break;
 		case SYFS_FORMAT_S770:
-			ok = (is_floppy ? roland::s700::format_s770_floppy : roland::s700::format_s770_disk)(*io, why);
+			ok = is_floppy ? roland::s700::format_s770_floppy(*io, why) : roland::s700::format_s770_disk(*io, label, why);
 			break;
 		default:
 			return say(err, err_size, "a format that cannot be made"), 0;

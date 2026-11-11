@@ -43,7 +43,9 @@ The S-700 series' disk layout, the same on a hard disk's, an MO's and a CD-ROM's
 of the image.
 
 **Sector 0**: four zero bytes, `S770 MR25A` at +4, the system line at +0x20 (32 characters), the disk's name at
-+0x100 (16 characters), its last sector at +0x110 (a long), and at +0x114 five halfwords: how many slots each list
++0x100 (16 characters: `ID`, the SCSI ID it was formatted at, a colon, then twelve of the name itself, which is
+what a machine's drive list shows; `ID0:Formatted` as formatted, or with the name `syfs_create` is given), its last
+sector at +0x110 (a long), and at +0x114 five halfwords: how many slots each list
 has.  A count above its list's capacity is no volume.  The system line names
 the system the disc was made with, "S-760 System Disk Ver. 2.24" or "SYS-772 HardDisk Sys Ver. 2.25" (the S-770's
 and S-750's): a disc whose line starts `S-760` is an S-760 disc **[seen]**.  Sectors 2 to 0x403 hold that system's

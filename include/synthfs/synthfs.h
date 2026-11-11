@@ -116,7 +116,9 @@ int syfs_image_io(syfs_image *im, syfs_io *out);
  *               card's size.
  * \param medium SYFS_MEDIUM_DISK or SYFS_MEDIUM_FLOPPY, or SYFS_NONE for a floppy where the size is one's (720 KB,
  *               1.44 MB) and a disk otherwise.
- * \param label  NULL or "" for none; only SYFS_FORMAT_FAT holds one (a DOS short name's 11 characters).
+ * \param label  The volume's name, NULL or "" for none: a FAT volume's label (a DOS short name's 11 characters), an
+ *               S-760's or S-770's hard disk's name (12 characters of ASCII; "Formatted" without one).  Their
+ *               floppies hold none.
  * \return 1 done, or 0 with why in err: a format or medium that cannot be made, a size the layout cannot have, a
  *         label it cannot hold, a write that failed.
  */
@@ -187,7 +189,8 @@ syfs_node syfs_at_key(syfs_image *im, syfs_node n, int key);
 
 //! A property: a value of a node's by its key (SYFS_PROP_).
 /*!
- * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL, and what
+ * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL, the volume's
+ * name where it is apart from the label (SYFS_PROP_VOLUME, an S-760's or S-770's disk's), and what
  * tells a board or card apart (SYFS_PROP_MODEL, _TITLE, _NUMBER, _ID, _DATE), none of which reads the image's lists.
  * Every other node has SYFS_PROP_NAME, _TYPE, _NUMBER, _SIZE and _FORMAT (the format of the volume it is in: one
  * disk may mix two), _TAG where the image gives it a code of its own, and _EXPORTS where its contents can be read; a
@@ -241,7 +244,8 @@ int syfs_set_str(syfs_image *im, syfs_node n, syfs_key key, const char *value);
  * \return SYFS_NO_NODE with why in syfs_error: a parent that holds no nodes, a name it has already or cannot
  *         hold, a volume that is full.
  */
-syfs_node syfs_import(syfs_image *im, syfs_node parent, syfs_key type, syfs_key as, const char *name, const syfs_io *from);
+syfs_node syfs_import(syfs_image *im, syfs_node parent, syfs_key type, syfs_key as, const char *name,
+	const syfs_io *from);
 
 //! Removes node n from the image, with what it holds.
 /*!

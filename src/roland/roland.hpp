@@ -23,8 +23,8 @@ std::string system_line(const uint8_t *s0);
 /*!
  * An S-760's or S-770's hard disk, an S-760's or S-770's floppy; false with why where the image's size cannot be had.
  */
-bool format_s760_disk(const syfs_io &io, std::string &why);
-bool format_s770_disk(const syfs_io &io, std::string &why);
+bool format_s760_disk(const syfs_io &io, const char *label, std::string &why);
+bool format_s770_disk(const syfs_io &io, const char *label, std::string &why);
 bool format_s760_floppy(const syfs_io &io, std::string &why);
 bool format_s770_floppy(const syfs_io &io, std::string &why);
 }
@@ -40,6 +40,8 @@ public:
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 	size_t sample_at(size_t i, int key) const override;
+	//! The disk's name, apart from its label.
+	void identify() override;
 	//! Written by taking another S-700 disk's entries in, each with what it uses (docs/formats.md).
 	bool writes() const override { return true; }
 	bool names() const override { return false; }

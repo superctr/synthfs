@@ -56,6 +56,7 @@ prop FORMAT        format
 prop MEDIUM        medium
 prop CONTAINER     container
 prop LABEL         label
+prop VOLUME        volume
 prop MODEL         model
 prop TITLE         title
 prop ID            id

@@ -1449,6 +1449,31 @@ static void test_format_s700()
 	Sparse odd(100000 * 512 + 1);
 	syfs_io w = writer_of(odd);
 	CHECK(!make(SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, &w, err, sizeof err));
+	// a disk's name: twelve characters of ASCII after the ID, "Formatted" without one; a floppy holds none
+	{
+		Sparse named(8 << 20);
+		syfs_io nw = writer_of(named), nr = io_of(named);
+		uint8_t at[16];
+		CHECK(syfs_create(&nw, SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, "My Sounds 12", err, sizeof err));
+		named.get(0x100, at, 16);
+		CHECK(!memcmp(at, "ID0:My Sounds 12", 16));
+		syfs_image *fs = syfs_open(&nr, nullptr, 0);
+		CHECK(fs && text_of(fs, SYFS_PROP_VOLUME) == "My Sounds 12" && !strcmp(label_of(fs), "S-760 System Disk    Ver. 2.24"));
+		close_image(fs);
+		CHECK(syfs_create(&nw, SYFS_FORMAT_S770, SYFS_MEDIUM_DISK, "Short", err, sizeof err));
+		named.get(0x100, at, 16);
+		CHECK(!memcmp(at, "ID0:Short       ", 16));
+		CHECK(syfs_create(&nw, SYFS_FORMAT_S770, SYFS_MEDIUM_DISK, nullptr, err, sizeof err));
+		fs = syfs_open(&nr, nullptr, 0);
+		CHECK(fs && text_of(fs, SYFS_PROP_VOLUME) == "Formatted");
+		close_image(fs);
+		err[0] = 0;
+		CHECK(!syfs_create(&nw, SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, "Thirteen long", err, sizeof err) && err[0]);
+		CHECK(!syfs_create(&nw, SYFS_FORMAT_S760, SYFS_MEDIUM_DISK, "Bj\xC3\xB6rk", err, sizeof err));
+		Sparse flop(1440 * 1024);
+		syfs_io fw = writer_of(flop);
+		CHECK(!syfs_create(&fw, SYFS_FORMAT_S760, SYFS_MEDIUM_FLOPPY, "Name", err, sizeof err));
+	}
 
 	// floppies: sector 0, every other sector the format's fill
 	for (bool s760 : { true, false })

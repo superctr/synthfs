@@ -69,9 +69,16 @@ void header(uint8_t *s0, uint8_t kind, const char *line)
 	memcpy(s0 + 0x40, "       Copyright   Roland      ", 31);
 }
 
-bool format_disk(const syfs_io &io, bool s760, std::string &why)
+bool format_disk(const syfs_io &io, bool s760, const char *label, std::string &why)
 {
 	Writer w(io, why);
+	// the disk's name: twelve characters after the ID it was formatted at
+	const size_t named = label ? strlen(label) : 0;
+	if (named > 12)
+		return w.fail("an S-700 disk's name is twelve characters at most");
+	for (size_t k = 0; k < named; k++)
+		if (label[k] < 32 || label[k] > 126)
+			return w.fail("an S-700 disk's name is letters, digits and signs of ASCII");
 	if (io.size % SECTOR)
 		return w.fail("a disk is whole 512-byte sectors");
 	// the disk's last sector, as far as the segment table reaches; its segments the whole ones from there down
@@ -84,6 +91,10 @@ bool format_disk(const syfs_io &io, bool s760, std::string &why)
 	uint8_t s[2 * SECTOR];
 	header(s, 0, s760 ? " S-760 System Disk    Ver. 2.24" : " SYS-772 HardDisk Sys Ver. 2.25");
 	memcpy(s + 0x100, "ID0:Formatted   ", 16);
+	if (named) {
+		memset(s + 0x104, ' ', 12);
+		memcpy(s + 0x104, label, named);
+	}
 	s[0x110] = uint8_t(last), s[0x111] = uint8_t(last >> 8), s[0x112] = uint8_t(last >> 16), s[0x113] = uint8_t(last >> 24);
 	memset(s + 0x114, 0, 10);
 	memset(s + SECTOR, 0xFF, SECTOR);
@@ -118,8 +129,16 @@ bool format_floppy(const syfs_io &io, bool s760, std::string &why)
 
 }
 
-bool format_s760_disk(const syfs_io &io, std::string &why) { return format_disk(io, true, why); }
-bool format_s770_disk(const syfs_io &io, std::string &why) { return format_disk(io, false, why); }
+bool format_s760_disk(const syfs_io &io, const char *label, std::string &why)
+{
+	return format_disk(io, true, label, why);
+}
+
+bool format_s770_disk(const syfs_io &io, const char *label, std::string &why)
+{
+	return format_disk(io, false, label, why);
+}
+
 bool format_s760_floppy(const syfs_io &io, std::string &why) { return format_floppy(io, true, why); }
 bool format_s770_floppy(const syfs_io &io, std::string &why) { return format_floppy(io, false, why); }
 

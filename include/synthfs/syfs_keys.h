@@ -68,6 +68,7 @@ enum syfs_keys {
 	SYFS_PROP_MEDIUM = 0x35afd776,            //!< "medium"
 	SYFS_PROP_CONTAINER = 0x0daff178,         //!< "container"
 	SYFS_PROP_LABEL = 0x769717fd,             //!< "label"
+	SYFS_PROP_VOLUME = 0x2ee0698f,            //!< "volume"
 	SYFS_PROP_MODEL = 0x308b665a,             //!< "model"
 	SYFS_PROP_TITLE = 0x1865b509,             //!< "title"
 	SYFS_PROP_ID = 0x37386ae0,                //!< "id"
@@ -151,6 +152,7 @@ enum syfs_keys {
 	X(SYFS_PROP_MEDIUM, "prop", "medium", "medium") \
 	X(SYFS_PROP_CONTAINER, "prop", "container", "container") \
 	X(SYFS_PROP_LABEL, "prop", "label", "label") \
+	X(SYFS_PROP_VOLUME, "prop", "volume", "volume") \
 	X(SYFS_PROP_MODEL, "prop", "model", "model") \
 	X(SYFS_PROP_TITLE, "prop", "title", "title") \
 	X(SYFS_PROP_ID, "prop", "id", "id") \

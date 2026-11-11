@@ -112,6 +112,14 @@ syfs_key S700Disk::probe(const Image &im)
 	return system_line(s0).starts_with("S-760") ? SYFS_FORMAT_S760 : SYFS_FORMAT_S770;
 }
 
+// the disk's name at +0x100: "ID", the SCSI ID it was formatted at, a colon and twelve characters
+void S700Disk::identify()
+{
+	uint8_t name[16];
+	if (image.read(0x100, name, sizeof name) && !memcmp(name, "ID", 2) && name[3] == ':')
+		set(SYFS_PROP_VOLUME, trimmed(name_of(name).substr(4)));
+}
+
 void S700Disk::list()
 {
 	auto s0 = image.read(0, SECTOR);
