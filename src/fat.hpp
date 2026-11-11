@@ -50,6 +50,7 @@ public:
 	static samplerfs_medium medium_of(const Image &im);
 	void list() override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	fat::Geometry g_;

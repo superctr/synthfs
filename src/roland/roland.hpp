@@ -8,7 +8,7 @@ namespace sfs::roland {
 
 // what the S-700 series' disk and floppy readers share
 namespace s700 {
-constexpr uint32_t SECTOR = 512, SEGMENT_BYTES = 18 * SECTOR;
+constexpr uint32_t SECTOR = 512, SEGMENT_BYTES = 18 * SECTOR, SEGMENT_WORDS = SEGMENT_BYTES / 2;
 // a 48-byte sample record's rate, key, points and loop; frames as stored
 void sample_of(const uint8_t *rec, uint64_t frames, samplerfs_sample &out);
 // the category code a name starts with, else ""
@@ -33,10 +33,13 @@ public:
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	// an entry's index by its list and number
 	std::vector<size_t> numbered_[5];
+	// the segment table, read when a wave is first
+	mutable std::vector<uint8_t> segments_;
 };
 
 // an S-760's, S-770's or DJ-70's floppy: one volume
@@ -48,6 +51,7 @@ public:
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	size_t volume_ = SAMPLERFS_NONE;
@@ -60,10 +64,13 @@ public:
 	using Medium::Medium;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 protected:
 	// an area's patches and tones, from its parameters at start
 	void list_area(size_t ai, uint64_t start);
+	// the waves three bytes to two values (a floppy's), else a 16-bit word a value
+	virtual bool packed() const { return false; }
 };
 
 // the S-550's and W-30's SCSI format: a directory of areas
@@ -82,6 +89,9 @@ public:
 	static samplerfs_format probe(const Image &im);
 	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 	void list() override;
+
+protected:
+	bool packed() const override { return true; }
 };
 
 class Socket;

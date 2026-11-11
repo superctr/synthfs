@@ -83,11 +83,14 @@ loop mode (+36), the rate (+44: 0 48 kHz, 1 44.1, 2 24, 3 22.05, 4 30, 5 15, 6 3
 | 4 | Alt | start to the sustain loop's end | the sustain loop, back and forth |
 | 5 | Rev One | the sustain loop's end down to the start | none |
 | 6 | Rev | the same | from the start to the sustain loop's start |
-  The wave is 16-bit linear, mono (a stereo
-sound is two samples), in segments of 18 sectors (4608 frames): segment *n* (from 2) at sector 0x15AC + 18 × (*n* −
-2), the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above end it).  The
-table's entry 0 is 0xFFFA and entry 1 the count of free segments; a free segment is 0, one past the disk's end
-0xFFFF.
+
+**The wave**: 16-bit little-endian two's complement, mono (a stereo sound is two samples), in segments of 18 sectors
+(4608 frames): segment *n* (from 2) at sector 0x15AC + 18 × (*n* − 2), the first the sample's segment top (+28 of its
+directory entry) and the next of each in the segment table from sector 0x404 (a halfword a segment; 0xFFF8 and above
+end it).  The table's entry 0 is 0xFFFA and entry 1 the count of free segments; a free segment is 0, one past the
+disk's end 0xFFFF.  A sample's frames are its segments' whole, the last padded past the wave's end.  On the library's
+discs the waves run smoothly across their segments' joins and an instrument disc's sustain loops meet without a step
+**[seen]**.
 
 **The S-760's extended records**: a disc formatted on an S-760 reserves segments 2 to 58 (0xFFFE in the segment
 table, left as they were) and 59 to 115 (0xFFFD), and marks the table's entry 0xFFFE with 0xFFFE (0xFFFF on an
@@ -122,12 +125,15 @@ total at 0x110; its name at 0x180 and its performances from 0x1A0, a byte each u
 anything.
 
 **The lists**: the first *count* names of each, an entry whose first byte is not printable an empty slot.  A
-performance names its parts' patches in bytes at +0x10 (0xFF none), a patch its keys' partials in 88 bytes at
-+0x20, a partial its samples as on a disk.  A sample record is the disk's, with the sample's place at +0x28 (the
-disk of its set in the high byte, the segment in the low) and its segments at +0x2A.  Every disk of a set carries
-the whole volume's lists and records; a sample's wave may lie on another disk of the set, or run over two.  An S-760
-disk whose byte 0x1FF is 0xFE keeps its extended records in sectors 252 to 331 of its first disk, and its waves start
-at segment 5; the library reads neither.
+performance names its parts' patches in bytes at +0x10 (0xFF none), a patch its keys' partials in 88 bytes at +0x20, a
+partial its samples as on a disk.  A sample record is the disk's, with the sample's place at +0x28 (the disk of its
+set in the high byte, the segment in the low) and its segments at +0x2A.  The wave is a disk's, 16-bit little-endian,
+its segments in order from that one.  Every disk of a set carries the whole volume's lists and records; a sample's
+wave may lie on another disk of the set, or run off a disk's last segment (65 on 2DD, 145 on 2HD) onto segment 0 of
+the next.  The disk's own number is at 0x100 of sector 0; the library reads the part of a wave a disk holds, and the
+samples running over two disks here join seamlessly when the two parts are put together **[seen]**.  An S-760 disk
+whose byte 0x1FF is 0xFE keeps its extended records in sectors 252 to 331 of its first disk, and its waves start at
+segment 5; the library reads neither.
 
 A volume may be saved without its upper levels: some of Roland's S-760 disks hold a patch and its partials with no
 volume or performance **[seen]**.
@@ -170,18 +176,20 @@ and the loop point (+0x16) as 24-bit words counted from that first segment, and 
 1 alternate, the loop running from the loop point to the end; 2 one shot; 3 reverse, one shot).  The tone's wave is at word bank × 18 × 12 288 + first segment × 12 288 of the area's
 waves.
 
-**The waves** are 12-bit samples left in 16-bit little-endian words, the low four bits zero **[seen]**.
+**The waves** are 12-bit two's complement samples left in 16-bit little-endian words, the low four bits zero
+**[seen]**, read as they stand.  A tone's frames run from its first segment for its count of segments.
 
 ### On a floppy
 
 A 2DD floppy of 512-byte sectors.  Sector 0: four zero bytes and the system's ID (`S550 MT25B` and `S500 MT25B` an
 S-550's, `S330 MT25C` and `S300 MT25C` an S-330's, `W-30` a W-30's, `S-50 MT25A` and `S-51 MT25A` an S-50's), two
-bytes, and the system line at 0x20, the label.  The area is sectors 126 to 143 and the waves after them, as on a
-disk, but packed: three bytes hold two 12-bit samples, `b0 b1 b2` giving `b0 << 4 | b1 >> 4` and `b2 << 4 | b1 &
-0x0F`.  The disk's name, at +0x33 of the function sector (134), names the area; a disk whose patches and tones are
-all blank (an S-330 system or utility disk) lists none.  The S-330's and W-30's parameters are read as the S-550's:
-the S-330 disks here list sensibly so **[seen]**; no W-30 disk is at hand.  An S-50 disk is another layout and is
-told apart only.
+bytes, and the system line at 0x20, the label.  The area is sectors 126 to 143 and the waves after them, as on a disk,
+but packed: three bytes hold two 12-bit samples, `b0 b1 b2` giving `b0 << 4 | b1 >> 4` and `b2 << 4 | b1 & 0x0F`, read
+as 16 bits with the low four zero: the S-550 library's floppies decode to the same words as the same tones on L-CD1,
+1302 waves alike, and the S-330's system disks share theirs with it too **[seen]**.  The disk's name, at +0x33 of the
+function sector (134), names the area; a disk whose patches and tones are all blank (an S-330 system or utility disk)
+lists none.  The S-330's and W-30's parameters are read as the S-550's: the S-330 disks here list sensibly so
+**[seen]**; no W-30 disk is at hand.  An S-50 disk is another layout and is told apart only.
 
 ## AKAI
 
@@ -223,13 +231,13 @@ or none (copyright notes).
 blank for none.  Of the 2491 parts naming one here, 2375 name a program of the same volume; the rest name
 programs of other volumes, or the default "TEST PROGRAM" **[seen]**.
 
-**A sample's header** at the file's start: 3 at +0, the original key at +2, the name at +3, the loops in use at
-+0x10 (0 to 4 here), the loop mode at +0x13, the frames, start and end at +0x1A, +0x1E and +0x22 (longs), eight
-loops of 12 bytes from +0x26 and the rate at +0x8A (a halfword, in Hz); 150 bytes on an S1000, 192 on an S3000, the
-16-bit wave after it: every sample here is the header and two bytes a frame **[seen]**.  A loop: the frame it
-ends at (a long), a fraction (+4), its length (+6, a long) and a hold time (+10, 9999 the most seen).  Mode 2
-samples hold loops that fall outside them, and the library takes it as no loop; on the others it gives the first
-loop where it lies within the sample **[seen]**.
+**A sample's header** at the file's start: 3 at +0, the original key at +2, the name at +3, the loops in use at +0x10
+(0 to 4 here), the loop mode at +0x13, the frames, start and end at +0x1A, +0x1E and +0x22 (longs), eight loops of 12
+bytes from +0x26 and the rate at +0x8A (a halfword, in Hz); 150 bytes on an S1000, 192 on an S3000, the 16-bit
+little-endian two's complement wave after it: every sample here is the header and two bytes a frame **[seen]**.  A
+loop: the frame it ends at (a long), a fraction (+4), its length (+6, a long) and a hold time (+10, 9999 the most
+seen).  Mode 2 samples hold loops that fall outside them, and the library takes it as no loop; on the others it gives
+the first loop where it lies within the sample **[seen]**.
 
 ## Roland wave expansion boards and cards
 
@@ -246,10 +254,13 @@ dump's bit *L*[*k*], and data bit *k* is the dump's bit *D*[*k*]:
 The first 32 bytes are plain in the dump: `Roland JV80 ` or `Roland SRX`, then from 0x10 the board's name ("SR-JV80-06
 Dance", "Card01   Ver0.10"), the label.  Numbers are big-endian.
 
-**SR-JV80 boards and SO-PCM1 cards** share the format.  An image of 1 MB, or of 2 MB named `SO-PCM1` or `Card`, is
-a card; the rest are boards (8 MB, or 2 MB for the Experience boards).  Each 1 MB block starts with a header (the
-board's ID and date at 0x20 and 0x30), whose slots *n* give a type byte at 0x50 + *n*, a count at 0x60 + 2*n* and
-the address of their records at 0x80 + 4*n*:
+The waves' sample data is in the tone generators' own encoding and is not read: a wave is listed, with no header or
+frames.
+
+**SR-JV80 boards and SO-PCM1 cards** share the format.  An image of 1 MB, or of 2 MB named `SO-PCM1` or `Card`, is a
+card; the rest are boards (8 MB, or 2 MB for the Experience boards).  Each 1 MB block starts with a header (the
+board's ID and date at 0x20 and 0x30), whose slots *n* give a type byte at 0x50 + *n*, a count at 0x60 + 2*n* and the
+address of their records at 0x80 + 4*n*:
 
 | Slot | Type | What | Record |
 |---|---|---|---|
@@ -296,11 +307,16 @@ entries of 24 bytes from byte 0, each a name (10 ASCII characters, spaces after)
 program, and `O`, `D`, `F`, listed as others), its size at +17 (three bytes) and its first block at +20.  The FAT from
 0x600, a halfword a block: the next block, 0x8000 the end; the first four blocks (directory and FAT) stay zero.
 
-**A sample** (`S`): a 60-byte header, then the wave, 12-bit samples packed three bytes to two (the file is 60 + 1.5
-bytes a frame on all 3472 samples here).  The name (10), the frames at +0x10 (a long), the rate in Hz at +0x14, the
-pitch at +0x16 in sixteenths of a semitone (C1 576, AKAI numbering the octaves from C1 = 36), the loop mode at +0x1A
-(`O` one shot, `L` loop, `A` alternating), the end at +0x1C, the start at +0x20 and the loop's length at +0x24 (longs),
-the loop running up to the end **[seen]**: the S20 conversions of the same disks keep the frames and starts.
+**A sample** (`S`): a 60-byte header, then the wave, 12-bit two's complement samples in 1.5 bytes a frame (the file is
+60 + 1.5 bytes a frame on all 3472 samples here) in two parts: the first half's samples as 16-bit little-endian words,
+each its sample's top eight bits in the high byte, its low four bits in the low byte's high nibble and the low four
+bits of its partner half the frames on in the low nibble; then the second half's top eight bits, a byte each.  Every
+sample here has an even count of frames **[seen]**; an odd one is read with the first half the larger.  The S900
+samples AKAI's CD-ROMs carry over keep these same values (TABLA 8 alike in every frame's top twelve bits) **[seen]**.
+The name (10), the frames at +0x10 (a long), the rate in Hz at +0x14, the pitch at +0x16 in sixteenths of a semitone
+(C1 576, AKAI numbering the octaves from C1 = 36), the loop mode at +0x1A (`O` one shot, `L` loop, `A` alternating),
+the end at +0x1C, the start at +0x20 and the loop's length at +0x24 (longs), the loop running up to the end
+**[seen]**: the S20 conversions of the same disks keep the frames and starts.
 
 **A program** (`P`): a 0x26-byte header with the keygroups' count at +0x17, then the keygroups, 70 bytes each: the
 highest key at +0, the lowest at +1, and two sample names at +0x18 and +0x2E (the second for loud notes; often an
@@ -357,11 +373,21 @@ A file of a CD-ROM or a FAT volume is read as a WAV or an AIFF where its header 
 `RIFF` … `WAVE`, then chunks (padded to even sizes): `fmt ` gives the rate (+4) and the bytes a frame (+12), `data`
 the frames (its size over the bytes a frame, no more than the file holds), and `smpl` the original key (MIDI unity
 note, +12, where at most 127) and, where its loop count (+28) is not zero, the first loop from +36: its type (+4; 0
-forward, 1 alternating, 2 backward, given as forward; the type is the mode), its start (+8) and its last frame
-(+12).  **AIFF** (and AIFC): `FORM` … `AIFF`, chunks big-endian: `COMM` the frames (+2) and the rate as an 80-bit
-extended number (+8), `INST` the original key (+0) and the sustain loop (+8: its play mode, 1 forward, 2
-forward-backward, the mode; its start and end markers' IDs), and `MARK` the markers' positions.  A sample plays
-the whole file, start to end.  Neither the channels nor the sample width are given: a frame is all channels'.
+forward, 1 alternating, 2 backward, given as forward; the type is the mode), its start (+8) and its last frame (+12).
+The format tag (`fmt ` +0) tells the values: 1 integers (8-bit unsigned, 16, 24 and 32-bit signed, the channels (+2)
+side by side, little-endian), 3 floating point (32 and 64-bit); 0xFFFE (extensible) names one of them in the first
+halfword of its subformat (+24).  The sample size (+14) is given as the bits; each value takes the bytes a frame over
+the channels.  **AIFF** (and AIFC): `FORM` … `AIFF`, chunks big-endian: `COMM` the channels (+0), the frames (+2), the
+sample size (+6), the rate as an 80-bit extended number (+8) and, on an AIFC, the compression type (+18), `SSND` the
+frames from its offset (+0) past its 8-byte head, `INST` the original key (+0) and the sustain loop (+8: its play
+mode, 1 forward, 2 forward-backward, the mode; its start and end markers' IDs), and `MARK` the markers' positions.  An
+AIFF's values are signed big-endian integers in the sample size rounded up to bytes; an AIFC's compression type `NONE`
+or `twos` the same, `sowt` little-endian ones, `fl32` and `fl64` floating point (whose sample size is given as 32 and
+64).  A sample plays the whole file, start to end, and gives no more frames than the file holds.  Read as 16 bits:
+8-bit values shifted up (an unsigned one's 128 taken off), wider ones cut to their top 16 bits, floating point times
+32 768, rounded and clipped; the files of a WAV CD-ROM here and files in each of these encodings decode to what
+another reader makes of them, bit for bit **[seen]**.  Compressed encodings (µ-law, A-law, ADPCM, an AIFC's other
+types) give a header but no frames.
 
 ## Formatting
 
@@ -442,9 +468,10 @@ own) and the system disks; a DJ-70's floppy, whose format was not read.
 
 - S-550: the patches' and tones' other parameters; a W-30 hard disk's layout; a W-30 floppy (none at hand).
 - S-50 floppies: told apart only.
-- S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves across its disks.
-- Boards and cards: the samples' and waves' parameters and the patches' other fields; the SO-JD80 cards (JD-800,
-  JD-990), another format.
+- S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves as one (each disk gives its own part).
+- Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; the SO-JD80
+  cards (JD-800, JD-990), another format.
 - AKAI S900: the `O`, `D` and `F` files; the programs' other parameters.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.
+- WAV and AIFF files: compressed encodings.

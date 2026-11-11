@@ -4,8 +4,9 @@ Sampler disk images (CD-ROMs, hard disks, floppies) and wave expansion ROMs read
 (Roland S-550, S-330, W-30, S-760, S-770 and DJ-70, AKAI S900, S1000 and S3000, E-mu, ISO 9660 and FAT disks and
 floppies; Roland SR-JV80 and SRX boards and SO-PCM1 cards), the sounds listed, what each uses (an S-760/S-770
 volume's performances down to a partial's samples, an AKAI program's samples and a multi's programs, an S-550
-patch's tones), a sample's (or a WAV or AIFF file's) rate, key, length and loop, and a board's banks of patches and
-rhythm sets and its waves by name.  C++20 inside, a C interface (`include/samplerfs/samplerfs.h`), no dependencies.
+patch's tones), a sample's (or a WAV or AIFF file's) rate, key, length and loop and its wave decoded to 16 bits, and a
+board's banks of patches and rhythm sets and its waves by name.  C++20 inside, a C interface
+(`include/samplerfs/samplerfs.h`), no dependencies.
 
 The image is read through the host's callback (`samplerfs_io`: n bytes at an offset), so a file, a buffer or a
 stream all work; `samplerfs_open_file` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`)
@@ -19,6 +20,22 @@ for (size_t i = 0; i < samplerfs_count(fs); i++) {
 		printf("%s\n", e->name);
 }
 samplerfs_close(fs);
+```
+
+A sample's wave is read in pieces from any frame: `samplerfs_sample_read` gives 16-bit values, a frame's channels side
+by side, whatever the format stores (12-bit, 16-bit, a WAV's or AIFF's 8 to 32-bit integers or floating point).
+
+```c
+samplerfs_sample s;
+int16_t buf[4096];
+if (samplerfs_sample_info(fs, i, &s))
+	for (uint64_t at = 0; at < s.frames;) {
+		size_t n = samplerfs_sample_read(fs, i, at, buf, 4096 / s.channels);
+		if (!n)
+			break;
+		play(buf, n, s.channels);
+		at += n;
+	}
 ```
 
 A blank image is made an empty volume through the host's writer (`samplerfs_write_io`: n bytes written at an
@@ -56,5 +73,5 @@ a class with a static `probe` and `open`.
 
 ## Later
 
-Reading a sample's wave out (to WAV), writing sounds into an image, and formatting a DJ-70's floppy and an S-760's
+Writing a sample's wave out to a WAV file, writing sounds into an image, and formatting a DJ-70's floppy and an S-760's
 Volume Dump FD disk.

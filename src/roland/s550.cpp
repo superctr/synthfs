@@ -11,7 +11,7 @@ constexpr uint64_t BLOCK = 512;
 constexpr uint32_t DIRECTORY = 1, DIRECTORY_END = 0x100, ENTRY = 64, COUNT_AT = 0x139;
 constexpr uint32_t PARAMETER_BLOCKS = 18;
 constexpr uint32_t PATCHES = 16, PATCH = 256, TONES = 32, TONES_AT = 0x1200, TONE = 128;
-constexpr uint32_t SEGMENT_WORDS = 12288, KEYS = 109, LAST_TONE = 31;
+constexpr uint32_t SEGMENT_WORDS = 12288, BANK_SEGMENTS = 18, KEYS = 109, LAST_TONE = 31;
 
 constexpr uint64_t FLOPPY_AREA = 126 * BLOCK, FLOPPY_MAX = 2 * 1024 * 1024;
 constexpr uint32_t FUNCTION_BLOCK = 8, DISK_NAME = 0x33;
@@ -159,6 +159,7 @@ bool S550::sample(size_t i, samplerfs_sample &out) const
 	if (!image.read(where[i], t, sizeof t))
 		return false;
 	out.rate = t[0x0B] ? 15000 : 30000;
+	out.bits = 12;
 	out.key = t[0x0C] <= 127 ? t[0x0C] : -1;
 	out.frames = uint64_t(t[0x0F]) * SEGMENT_WORDS;
 	out.start = be24(t + 0x10);
@@ -173,6 +174,37 @@ bool S550::sample(size_t i, samplerfs_sample &out) const
 	default: break;
 	}
 	return true;
+}
+
+// a tone's wave from word bank × 18 × 12 288 + first segment × 12 288 of its area's waves (+0x2400): 16-bit words
+// on a disk, the 12-bit value in the top bits; on a floppy three bytes to two values, b0 b1 b2 giving b0 b1-high and
+// b2 b1-low
+size_t S550::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint8_t t[0x10];
+	if (!image.read(where[i], t, sizeof t))
+		return 0;
+	uint64_t area = where[entries[i].parent], word = (uint64_t(t[0x0D]) * BANK_SEGMENTS + t[0x0E]) * SEGMENT_WORDS + first;
+	uint64_t waves = area + PARAMETER_BLOCKS * BLOCK;
+	if (!packed())
+		return read_words(image, waves + 2 * word, out, frames);
+	size_t done = 0;
+	uint8_t buf[3 * 1024];
+	while (done < frames) {
+		uint64_t w = word + done, pair = w / 2;
+		size_t pairs = size_t(std::min<uint64_t>((w % 2 + frames - done + 1) / 2, sizeof buf / 3));
+		if (waves + 3 * (pair + pairs) > image.size())
+			pairs = waves + 3 * pair >= image.size() ? 0 : size_t((image.size() - waves) / 3 - pair);
+		if (!pairs || !image.read(waves + 3 * pair, buf, 3 * pairs))
+			break;
+		for (size_t p = 0; p < pairs; p++) {
+			const uint8_t *b = &buf[3 * p];
+			int16_t v[2] = { int16_t(b[0] << 8 | (b[1] & 0xF0)), int16_t(b[2] << 8 | (b[1] & 0x0F) << 4) };
+			for (unsigned h = (p == 0 ? w % 2 : 0); h < 2 && done < frames; h++)
+				out[done++] = v[h];
+		}
+	}
+	return done;
 }
 
 std::unique_ptr<Medium> S550Disk::open(const samplerfs_io &io, samplerfs_format format)

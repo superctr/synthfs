@@ -13,6 +13,7 @@ constexpr uint16_t BLOCKS_MIN = 4, BLOCKS_MAX = 0x1E00;
 constexpr size_t MULTI_PARTS_AT = 0x400, MULTI_PARTS = 16, MULTI_PART = 0xC0;
 constexpr uint64_t FLOPPY_BLOCK = 1024, FLOPPY_FAT = 0x600, FLOPPY_DD = 819200, FLOPPY_HD = 1638400;
 constexpr uint32_t FLOPPY_FILES = 64;
+constexpr uint64_t S1000_HEADER = 150, S3000_HEADER = 192;
 
 // the blocks the directory, the FAT and the name take: four on a 2DD floppy, five on a 2HD one
 uint32_t system_blocks(uint64_t size)
@@ -122,7 +123,7 @@ void S1000Disk::list()
 			continue;
 		size_t pi = add(SAMPLERFS_PARTITION, SAMPLERFS_AKAI_S1000, uint32_t(p), SAMPLERFS_NONE, std::string(1, char('A' + p)),
 			P.blocks * BLOCK, P.base);
-		stores_.push_back({ P.base, BLOCK, P.base + FAT_AT, P.blocks });
+		stores_.push_back({ P.base, BLOCK, P.blocks, std::vector<uint8_t>(h.begin() + FAT_AT, h.end()) });
 		for (uint32_t v = 0; v < VOLUMES; v++) {
 			const uint8_t *e = &h[VOLUMES_AT + 16 * v];
 			uint8_t type = e[12];
@@ -170,7 +171,10 @@ void S1000Floppy::list()
 	if (dir.empty() || !image.read(FLOPPY_FAT + 2 * blocks, name, sizeof name))
 		return;
 	label = trimmed(name_of(name));
-	stores_.push_back({ 0, FLOPPY_BLOCK, FLOPPY_FAT, blocks });
+	auto fat = image.read(FLOPPY_FAT, 2 * blocks);
+	if (fat.empty())
+		return;
+	stores_.push_back({ 0, FLOPPY_BLOCK, blocks, std::move(fat) });
 	size_t vi = add(SAMPLERFS_VOLUME, format, 0, SAMPLERFS_NONE, label, 0, 0);
 	volume_store_.emplace_back(vi, 0);
 	uint64_t bytes = 0;
@@ -193,29 +197,39 @@ void S1000Floppy::list()
 	entries[vi].bytes = bytes;
 }
 
-// file i's first max bytes, block by block along its volume's FAT
-std::vector<uint8_t> S1000::read_file(size_t i, uint64_t max) const
+// file i's bytes from offset, block by block along its volume's FAT
+size_t S1000::read_at(size_t i, uint64_t offset, uint8_t *buf, size_t n) const
 {
 	const samplerfs_entry &e = entries[i];
 	const Store *s = nullptr;
-	for (auto [v, k] : volume_store_)
+	for (const auto &[v, k] : volume_store_)
 		if (v == e.parent)
 			s = &stores_[k];
-	if (!s)
-		return {};
-	uint64_t left = std::min(max, e.bytes), b = (where[i] - s->base) / s->block;
-	std::vector<uint8_t> out;
-	while (left && b && b < s->blocks) {
-		auto chunk = image.read(s->base + b * s->block, size_t(std::min(left, s->block)));
-		if (chunk.empty())
+	if (!s || offset >= e.bytes)
+		return 0;
+	n = size_t(std::min<uint64_t>(n, e.bytes - offset));
+	auto next = [&](uint64_t b) -> uint64_t { return 2 * b + 2 <= s->fat.size() ? le16(&s->fat[2 * b]) : 0; };
+	uint64_t b = (where[i] - s->base) / s->block;
+	for (uint64_t k = offset / s->block; k && b && b < s->blocks; k--)
+		b = next(b);
+	size_t done = 0;
+	uint64_t at = offset % s->block;
+	while (done < n && b && b < s->blocks) {
+		size_t k = size_t(std::min<uint64_t>(n - done, s->block - at));
+		if (!image.read(s->base + b * s->block + at, buf + done, k))
 			break;
-		out.insert(out.end(), chunk.begin(), chunk.end());
-		left -= chunk.size();
-		uint8_t next[2];
-		if (!left || !image.read(s->fat + 2 * b, next, 2))
-			break;
-		b = le16(next);
+		done += k;
+		at = 0;
+		b = next(b);
 	}
+	return done;
+}
+
+// file i's first max bytes
+std::vector<uint8_t> S1000::read_file(size_t i, uint64_t max) const
+{
+	std::vector<uint8_t> out(size_t(std::min(max, entries[i].bytes)));
+	out.resize(read_at(i, 0, out.data(), out.size()));
 	return out;
 }
 
@@ -256,7 +270,7 @@ std::vector<size_t> S1000::refs(size_t i) const
 	}
 	if (e.kind != SAMPLERFS_PROGRAM)
 		return {};
-	size_t block = e.format == SAMPLERFS_AKAI_S1000 ? 150 : 192;
+	size_t block = e.format == SAMPLERFS_AKAI_S1000 ? S1000_HEADER : S3000_HEADER;
 	auto pr = read_file(i, block * 100);
 	if (pr.size() < block || pr[0] != 1)
 		return {};
@@ -296,6 +310,24 @@ bool S1000::sample(size_t i, samplerfs_sample &out) const
 		out.loop_end = at;
 	}
 	return true;
+}
+
+// the wave after the header (150 bytes on an S1000, 192 on an S3000), 16-bit little-endian
+size_t S1000::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint64_t header = entries[i].format == SAMPLERFS_AKAI_S1000 ? S1000_HEADER : S3000_HEADER;
+	uint8_t buf[8192];
+	size_t done = 0;
+	while (done < frames) {
+		size_t k = std::min(frames - done, sizeof buf / 2);
+		size_t got = read_at(i, header + 2 * (first + done), buf, 2 * k) / 2;
+		for (size_t j = 0; j < got; j++)
+			out[done + j] = int16_t(le16(buf + 2 * j));
+		done += got;
+		if (got < k)
+			break;
+	}
+	return done;
 }
 
 std::unique_ptr<Medium> S1000Disk::open(const samplerfs_io &io, samplerfs_format format)

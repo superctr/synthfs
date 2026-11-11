@@ -294,14 +294,27 @@ int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out)
 	if (i >= fs->medium->entries.size() || !out)
 		return 0;
 	try {
-		samplerfs_sample s {};
-		s.key = -1;
+		samplerfs_sample s = blank_sample();
 		bool ok = fs->medium->sample(i, s);
 		if (ok) {
 			clamp_points(s);
 			*out = s;
 		}
 		return ok;
+	} catch (...) {
+		return 0;
+	}
+}
+
+size_t samplerfs_sample_read(samplerfs *fs, size_t i, uint64_t first, int16_t *out, size_t frames)
+{
+	if (i >= fs->medium->entries.size() || !out || !frames)
+		return 0;
+	try {
+		samplerfs_sample s = blank_sample();
+		if (!fs->medium->sample(i, s) || first >= s.frames || !s.channels)
+			return 0;
+		return fs->medium->wave(i, s, first, out, size_t(std::min<uint64_t>(frames, s.frames - first)));
 	} catch (...) {
 		return 0;
 	}

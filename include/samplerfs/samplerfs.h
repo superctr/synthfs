@@ -95,6 +95,9 @@ typedef enum samplerfs_loop {
  * format's finer behaviour (an S-760/S-770 release loop, an AKAI sample's other seven loops) is left to mode. */
 typedef struct samplerfs_sample {
 	uint32_t rate;           /* Hz */
+	uint32_t channels;       /* values a frame: 1 for the samplers' own formats, a WAV's or AIFF's own count */
+	uint32_t bits;           /* each value's bits as stored (12 or 16 on the samplers; a WAV's or AIFF's own); read
+	                            as 16 whatever they are */
 	int32_t key;             /* the original key, MIDI number; -1 unknown */
 	uint64_t frames;         /* the frames stored (S-760/S-770, S-550: the segments', the end padded) */
 	uint64_t start, end;     /* the frames played */
@@ -136,6 +139,14 @@ size_t samplerfs_refs(samplerfs *fs, size_t i, size_t *out, size_t max);
 /* A sample's or tone's (or a WAV or AIFF file's) rate, key, length and loop, read from its header; 0 where entry i
  * has none or it cannot be read */
 int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out);
+
+/* Entry i's wave decoded to 16-bit signed values in the host's byte order, the channels of a frame side by side: up to
+ * frames frames from frame first (counted as samplerfs_sample's points are) into out, which holds frames × channels
+ * values.  The count read is returned: short at the wave's end, where the image ends or a chain breaks, or where the
+ * wave goes on onto another disk of a floppy set; 0 where entry i has no wave samplerfs can read (a board's or card's
+ * wave, a WAV or AIFF file in a compressed encoding).  12-bit values come scaled to 16 (the low four bits zero), 8-bit
+ * ones likewise, wider ones cut to their top 16 bits, floating point rounded and clipped. */
+size_t samplerfs_sample_read(samplerfs *fs, size_t i, uint64_t first, int16_t *out, size_t frames);
 
 /* A blank image to format, written through the host: n bytes from buf at offset, the count written returned (short
  * on an error); size is the whole image's.  A struct of its own beside samplerfs_io, which keeps its shape. */

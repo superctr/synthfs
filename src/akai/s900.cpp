@@ -93,6 +93,7 @@ bool S900::sample(size_t i, samplerfs_sample &out) const
 		return false;
 	out.frames = le32(&h[0x10]);
 	out.rate = le16(&h[0x14]);
+	out.bits = 12;
 	uint32_t key = (le16(&h[0x16]) + 8) / 16;
 	out.key = key <= 127 ? int32_t(key) : -1;
 	out.mode = h[0x1A];
@@ -105,6 +106,29 @@ bool S900::sample(size_t i, samplerfs_sample &out) const
 		out.loop_end = out.end;
 	}
 	return true;
+}
+
+// the wave after the header in two parts: the first half's values as words, each its value's top eight bits over the
+// low four bits of it (the byte's high nibble) and of its partner in the second half (the low nibble); then the second
+// half's top eight bits, a byte each
+size_t S900::wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint64_t half = (s.frames + 1) / 2;
+	auto f = read_file(i, HEADER + half + s.frames);
+	if (f.size() <= HEADER)
+		return 0;
+	const uint8_t *d = &f[HEADER];
+	uint64_t have = f.size() - HEADER;
+	size_t done = 0;
+	for (uint64_t j = first; done < frames; j++, done++) {
+		bool second = j >= half;
+		uint64_t word = 2 * (second ? j - half : j), top = second ? 2 * half + (j - half) : word + 1;
+		if (top >= have)
+			break;
+		uint8_t low = second ? d[word] & 0x0F : d[word] >> 4;
+		out[done] = int16_t(d[top] << 8 | low << 4);
+	}
+	return done;
 }
 
 // whole 1024-byte blocks, the first four's FAT halfwords zero, and a directory of printable names, upper-case types

@@ -53,6 +53,9 @@ public:
 	virtual std::vector<size_t> refs(size_t) const { return {}; }
 	// entry i's wave and how it plays; false where it is no sample or its header cannot be read
 	virtual bool sample(size_t, samplerfs_sample &) const { return false; }
+	// frames of entry i's wave from frame first, its header s, decoded to 16 bits; the count read.  frames is within
+	// s.frames
+	virtual size_t wave(size_t, const samplerfs_sample &, uint64_t, int16_t *, size_t) const { return 0; }
 
 	const Image image;
 	const samplerfs_format format;
@@ -70,6 +73,12 @@ protected:
 	// the entry of a kind with the number under parent, or SAMPLERFS_NONE
 	size_t child(size_t parent, samplerfs_kind kind, uint32_t number) const;
 };
+
+// n 16-bit little-endian values at offset of the image into out; the count read, short where the image ends
+size_t read_words(const Image &im, uint64_t offset, int16_t *out, size_t n);
+
+// a sample's header as a format's sample() starts from: no key, one channel of 16 bits
+samplerfs_sample blank_sample();
 
 // a sample's points kept within its frames, the loop within the frames played
 void clamp_points(samplerfs_sample &s);

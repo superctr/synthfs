@@ -81,6 +81,14 @@ static size_t find(samplerfs *fs, const char *name, int kind = -1)
 	return SAMPLERFS_NONE;
 }
 
+// up to frames frames of entry i's wave from first, as read
+static std::vector<int16_t> wave(samplerfs *fs, size_t i, uint64_t first, size_t frames, size_t channels = 1)
+{
+	std::vector<int16_t> v(frames * channels);
+	v.resize(samplerfs_sample_read(fs, i, first, v.data(), frames) * channels);
+	return v;
+}
+
 static std::vector<std::string> used(samplerfs *fs, size_t i)
 {
 	size_t out[64];
@@ -131,6 +139,14 @@ static Bytes s700_image(const char *system)
 	for (int p = 0; p < 2; p++)
 		for (int k = 0; k < 4; k++)
 			put16(b, 0xEAC * 512 + p * 128 + 16 + 16 * k, p == 0 ? (k == 0 ? 0 : k == 1 ? 1 : 0xFFFF) : (k == 0 ? 2 : 0xFFFF));
+	// SMP:Low's wave in segments 3 then 5, SMP:High's in 2; segment n's word k is -(1000n + k mod 100)
+	put16(b, 0x66C * 512 + 28, 3);
+	put16(b, 0x404 * 512 + 2 * 3, 5);
+	put16(b, 0x404 * 512 + 2 * 5, 0xFFFF);
+	put16(b, 0x404 * 512 + 2 * 2, 0xFFF8);
+	for (uint32_t n = 2; n < 6; n++)
+		for (uint32_t k = 0; k < 4608; k++)
+			put16(b, (0x15AC + 18 * (n - 2)) * 512 + 2 * k, uint16_t(-int(1000 * n + k % 100)));
 	size_t smp = 0x12AC * 512 + 2 * 48;
 	b[smp + 44] = 1;
 	b[smp + 45] = 72;
@@ -167,8 +183,14 @@ static void test_s700(Bytes b, samplerfs_format format, const char *label)
 	samplerfs_sample s;
 	CHECK(samplerfs_sample_info(fs, high, &s) && s.rate == 44100 && s.key == 72 && s.frames == 4608);
 	CHECK(s.start == 10 && s.end == 200 && s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 100 && s.loop_end == 200);
-	CHECK(s.mode == 4 && !s.reverse);
+	CHECK(s.mode == 4 && !s.reverse && s.channels == 1 && s.bits == 16);
 	CHECK(!samplerfs_sample_info(fs, strings, &s));
+	CHECK((wave(fs, high, 0, 2) == std::vector<int16_t> { -2000, -2001 }));
+	size_t low = find(fs, "SMP:Low");
+	auto join = wave(fs, low, 4606, 4);
+	CHECK((join == std::vector<int16_t> { -3006, -3007, -5000, -5001 }));
+	CHECK(wave(fs, low, 0, 10000).size() == 9216 && wave(fs, low, 9214, 100).size() == 2 && wave(fs, low, 9216, 1).empty());
+	CHECK(wave(fs, strings, 0, 1).empty());
 	samplerfs_close(fs);
 }
 
@@ -240,7 +262,7 @@ static Bytes akai_image(bool s3000_partition)
 		put16(b, base + 0xCA + 14, 3);
 		size_t dir = base + 3 * AKAI_BLOCK;
 		akai_file(b, dir, "PIANO PROG", 'p', 450, 4);
-		akai_file(b, dir + 24, "PIANO C3", 's', 1000, 5);
+		akai_file(b, dir + 24, "PIANO C3", 's', 150 + 2 * 500, 5);
 		akai_file(b, dir + 126 * 24, "VOLUME DATA", 's', 1, 6);  // past an S1000 directory's 126
 		akai_program(b, base + 4 * AKAI_BLOCK, 150, { { "PIANO C3", "", "PIANO C3" }, { "MISSING" } });
 		size_t smp = base + 5 * AKAI_BLOCK;
@@ -254,6 +276,8 @@ static Bytes akai_image(bool s3000_partition)
 		put32(b, smp + 0x22, 499);
 		put32(b, smp + 0x26, 400);
 		put32(b, smp + 0x2C, 100);
+		for (uint32_t k = 0; k < 500; k++)
+			put16(b, smp + 150 + 2 * k, uint16_t(k * 131 - 30000));
 	});
 	if (s3000_partition)
 		akai_partition(b, 8 * AKAI_BLOCK, 12, [&](uint64_t base) {
@@ -315,6 +339,9 @@ static void test_akai()
 	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 22050 && s.key == 60 && s.frames == 500);
 	CHECK(s.start == 2 && s.end == 500 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 300 && s.loop_end == 400);
 	CHECK(!samplerfs_sample_info(fs, a4, &s));  // no header
+	CHECK((wave(fs, c3, 0, 2) == std::vector<int16_t> { -30000, -29869 }));
+	CHECK((wave(fs, c3, 499, 5) == std::vector<int16_t> { int16_t(499 * 131 - 30000) }));
+	CHECK(wave(fs, a4, 0, 1).empty());
 	samplerfs_close(fs);
 
 	b = akai_image(false);
@@ -374,6 +401,8 @@ static void test_s550()
 	put_be(b, t2 + 0x10, 0x100, 3);
 	put_be(b, t2 + 0x13, 0x1FF, 3);
 	b[t2 + 0x19] = 3;
+	for (uint32_t k = 0; k < 0x3000; k++)
+		put16(b, area + 18 * 512 + 2 * k, uint16_t((int(k % 4096) - 2048) * 16));
 
 	samplerfs_io io = io_of(b);
 	CHECK(samplerfs_probe(&io, nullptr) == SAMPLERFS_S550);
@@ -394,6 +423,9 @@ static void test_s550()
 	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
 	CHECK(samplerfs_sample_info(fs, c5, &s) && s.rate == 15000 && s.key == 84 && s.frames == 0x3000);
 	CHECK(s.start == 0x100 && s.end == 0x200 && s.reverse && s.loop == SAMPLERFS_LOOP_NONE && s.mode == 3);
+	CHECK(s.bits == 12 && s.channels == 1);
+	CHECK((wave(fs, c3, 4095, 2) == std::vector<int16_t> { 2047 * 16, -2048 * 16 }));
+	CHECK(wave(fs, c5, 0, 0x4000).size() == 0x3000);
 	samplerfs_close(fs);
 }
 
@@ -507,9 +539,146 @@ static void test_iso()
 	samplerfs_sample s;
 	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 32000 && s.key == 36 && s.frames == 500 && s.end == 500);
 	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 10 && s.loop_end == 400 && s.mode == 0);
+	CHECK(s.channels == 1 && s.bits == 16);
+	CHECK((wave(fs, kick, 499, 4) == std::vector<int16_t> { int16_t(499 * 37) }));
 	CHECK(samplerfs_sample_info(fs, find(fs, "SNARE.AIF"), &s) && s.rate == 22050 && s.key == 64 && s.frames == 300);
+	CHECK(wave(fs, find(fs, "SNARE.AIF"), 0, 1).empty());  // no sound data chunk
 	CHECK(s.loop == SAMPLERFS_LOOP_ALTERNATE && s.loop_start == 20 && s.loop_end == 250 && s.mode == 2);
 	CHECK(!samplerfs_sample_info(fs, find(fs, "DRUMS"), &s));
+	samplerfs_close(fs);
+}
+
+// ---- WAV and AIFF encodings: two channels of 40 frames, value c of frame k given back as expected(k, c)
+static int16_t expected(uint32_t k, uint32_t c)
+{
+	return int16_t(k * 523 + c * 7919);
+}
+
+using PutValue = std::function<void(uint8_t *, int16_t)>;
+
+static Bytes wav_of(uint16_t tag, bool extensible, uint16_t bits, uint32_t width, const PutValue &put)
+{
+	const uint32_t frames = 40, channels = 2, fmt = extensible ? 40 : 16, data = frames * channels * width;
+	Bytes b(12 + 8 + fmt + 8 + data, 0);
+	memcpy(&b[0], "RIFF", 4);
+	put32(b, 4, uint32_t(b.size() - 8));
+	memcpy(&b[8], "WAVE", 4);
+	memcpy(&b[12], "fmt ", 4);
+	put32(b, 16, fmt);
+	put16(b, 20, extensible ? 0xFFFE : tag), put16(b, 22, channels), put32(b, 24, 48000);
+	put32(b, 28, 48000 * channels * width), put16(b, 32, uint16_t(channels * width)), put16(b, 34, bits);
+	if (extensible)
+		put16(b, 36, 22), put16(b, 38, bits), put16(b, 44, tag);
+	size_t at = 20 + fmt;
+	memcpy(&b[at], "data", 4);
+	put32(b, at + 4, data);
+	for (uint32_t k = 0; k < frames; k++)
+		for (uint32_t c = 0; c < channels; c++)
+			put(&b[at + 8 + (k * channels + c) * width], expected(k, c));
+	return b;
+}
+
+// an AIFF, or an AIFC of the compression type given
+static Bytes aiff_of(const char *compression, uint16_t bits, uint32_t width, const PutValue &put)
+{
+	const uint32_t frames = 40, channels = 2, comm = compression ? 24 : 18, data = frames * channels * width;
+	Bytes b(12 + 8 + comm + 16 + data, 0);
+	memcpy(&b[0], "FORM", 4);
+	put_be32(b, 4, uint32_t(b.size() - 8));
+	memcpy(&b[8], compression ? "AIFC" : "AIFF", 4);
+	memcpy(&b[12], "COMM", 4);
+	put_be32(b, 16, comm);
+	put_be(b, 20, channels, 2), put_be32(b, 22, frames), put_be(b, 26, bits, 2);
+	const uint8_t rate[10] = { 0x40, 0x0E, 0xBB, 0x80, 0, 0, 0, 0, 0, 0 };  // 48000
+	memcpy(&b[28], rate, 10);
+	if (compression)
+		memcpy(&b[38], compression, 4);
+	size_t at = 20 + comm;
+	memcpy(&b[at], "SSND", 4);
+	put_be32(b, at + 4, 8 + data);
+	for (uint32_t k = 0; k < frames; k++)
+		for (uint32_t c = 0; c < channels; c++)
+			put(&b[at + 16 + (k * channels + c) * width], expected(k, c));
+	return b;
+}
+
+static void test_encodings()
+{
+	auto le = [](uint32_t width, uint32_t low) {
+		return [=](uint8_t *p, int16_t v) {
+			for (uint32_t k = 0; k + 2 < width; k++)
+				p[k] = uint8_t(low >> 8 * k);
+			p[width - 2] = uint8_t(v), p[width - 1] = uint8_t(uint16_t(v) >> 8);
+		};
+	};
+	auto be16 = [](uint8_t *p, int16_t v) { p[0] = uint8_t(uint16_t(v) >> 8), p[1] = uint8_t(v); };
+	auto f32 = [](bool big) {
+		return [=](uint8_t *p, int16_t v) {
+			float f = v / 32768.0f;
+			uint32_t u;
+			memcpy(&u, &f, 4);
+			for (int k = 0; k < 4; k++)
+				p[big ? 3 - k : k] = uint8_t(u >> 8 * k);
+		};
+	};
+	auto f64 = [](uint8_t *p, int16_t v) {
+		double f = v / 32768.0;
+		uint64_t u;
+		memcpy(&u, &f, 8);
+		for (int k = 0; k < 8; k++)
+			p[k] = uint8_t(u >> 8 * k);
+	};
+	struct File {
+		const char *name;
+		Bytes b;
+		uint32_t bits;
+		bool eight;  // only the top eight bits kept
+	};
+	std::vector<File> files {
+		{ "U8.WAV", wav_of(1, false, 8, 1, [](uint8_t *p, int16_t v) { p[0] = uint8_t((v >> 8) + 128); }), 8, true },
+		{ "S24.WAV", wav_of(1, false, 24, 3, le(3, 0x5A)), 24, false },
+		{ "S32.WAV", wav_of(1, true, 32, 4, le(4, 0xA55A)), 32, false },
+		{ "F32.WAV", wav_of(3, true, 32, 4, f32(false)), 32, false },
+		{ "F64.WAV", wav_of(3, false, 64, 8, f64), 64, false },
+		{ "S16.AIF", aiff_of(nullptr, 16, 2, be16), 16, false },
+		{ "S8.AIF", aiff_of(nullptr, 8, 1, [](uint8_t *p, int16_t v) { p[0] = uint8_t(v >> 8); }), 8, true },
+		{ "SOWT.AIF", aiff_of("sowt", 16, 2, le(2, 0)), 16, false },
+		{ "FL32.AIF", aiff_of("fl32", 32, 4, f32(true)), 32, false },
+		{ "ULAW.WAV", wav_of(7, false, 8, 1, [](uint8_t *p, int16_t) { p[0] = 0xFF; }), 8, false },
+	};
+	Bytes b((21 + files.size()) * 2048, 0);
+	memcpy(&b[16 * 2048], "\1CD001", 6);
+	size_t root = 16 * 2048 + 156;
+	b[root + 2] = 20;
+	b[root + 11] = 0x08;
+	std::vector<std::pair<const char *, uint32_t>> dir;
+	for (size_t k = 0; k < files.size(); k++) {
+		dir.emplace_back(files[k].name, uint32_t(21 + k));
+		std::copy(files[k].b.begin(), files[k].b.end(), b.begin() + (21 + k) * 2048);
+	}
+	iso_dir(b, 20, 20, dir);
+	samplerfs_io io = io_of(b);
+	samplerfs *fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	for (const File &f : files) {
+		size_t i = find(fs, f.name);
+		samplerfs_sample s;
+		CHECK(samplerfs_sample_info(fs, i, &s) && s.channels == 2 && s.bits == f.bits && s.frames == 40 && s.rate == 48000);
+		auto got = wave(fs, i, 3, 100, 2);
+		if (!strcmp(f.name, "ULAW.WAV")) {
+			CHECK(got.empty());
+			continue;
+		}
+		bool same = got.size() == 2 * 37;
+		for (uint32_t k = 0; same && k < 37; k++)
+			for (uint32_t c = 0; c < 2; c++)
+				same = same && got[2 * k + c] == int16_t(f.eight ? expected(k + 3, c) & 0xFF00 : expected(k + 3, c));
+		if (!same)
+			fprintf(stderr, "%s read wrong\n", f.name);
+		CHECK(same);
+	}
 	samplerfs_close(fs);
 }
 
@@ -765,6 +934,11 @@ static void test_fat_volume(Sparse &img, samplerfs_medium medium, bool damaged, 
 	CHECK(samplerfs_sample_info(fs, kick, &s) && s.rate == 44100 && s.key == 60);
 	CHECK(s.frames == samplerfs_entry_at(fs, kick)->bytes / 2 - 56 && s.end == s.frames);
 	CHECK(s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 100 && s.loop_end == 900);
+	auto all = wave(fs, kick, 0, size_t(s.frames));
+	bool same = all.size() == s.frames;
+	for (size_t k = 0; same && k < all.size(); k++)
+		same = all[k] == int16_t(k * 37);
+	CHECK(same);
 	CHECK(!samplerfs_sample_info(fs, find(fs, "README.TXT"), &s) && !samplerfs_sample_info(fs, drums, &s));
 	if (damaged)
 		CHECK(!samplerfs_sample_info(fs, find(fs, "LOOP.WAV"), &s));
@@ -1116,6 +1290,12 @@ static void test_s700_floppy()
 	put16(b, smp + 0x2A, 3);
 	b[smp + 44] = 1;
 	b[smp + 45] = 60;
+	// its wave from segment 1 of disk 0; segment n's word k is 100n + k mod 50
+	b[smp + 0x28] = 1;
+	b[smp + 0x29] = 0;
+	for (uint32_t n = 0; n < 146; n++)
+		for (uint32_t k = 0; k < 4608; k++)
+			put16(b, (252 + 18 * n) * 512 + 2 * k, uint16_t(100 * n + k % 50));
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium = SAMPLERFS_MEDIUM_UNKNOWN;
@@ -1136,7 +1316,23 @@ static void test_s700_floppy()
 	samplerfs_sample info;
 	CHECK(samplerfs_sample_info(fs, s, &info) && info.rate == 44100 && info.key == 60 && info.frames == 3 * 4608);
 	CHECK(info.loop == SAMPLERFS_LOOP_ALTERNATE && info.loop_start == 100 && info.loop_end == 1000);
+	CHECK((wave(fs, s, 0, 2) == std::vector<int16_t> { 100, 101 }));
+	CHECK((wave(fs, s, 2 * 4608 - 1, 2) == std::vector<int16_t> { 207, 300 }));
+	CHECK(wave(fs, s, 0, 3 * 4608).size() == 3 * 4608);
 	samplerfs_close(fs);
+
+	// the second disk of a set, the wave from the first disk's last segment on: its last two segments read here
+	b[0x100] = 1;
+	b[smp + 0x28] = 145;
+	fs = samplerfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	CHECK(wave(fs, s, 0, 10).empty());
+	CHECK((wave(fs, s, 4608, 2) == std::vector<int16_t> { 0, 1 }));
+	CHECK(wave(fs, s, 4608, 3 * 4608).size() == 2 * 4608);
+	samplerfs_close(fs);
+	b[0x100] = 0;
 
 	// a save under way lists nothing; the disk probe leaves a floppy alone
 	b[0x101] = 0xFF;
@@ -1163,6 +1359,12 @@ static void test_s550_floppy()
 	put_name(b, area + 0x1200, "Str C3", 8);
 	b[area + 0x1200 + 0x0F] = 2;
 	put_name(b, area + 8 * 512 + 0x33, "Strings Vol1", 12);
+	// two 12-bit values in three bytes from sector 144: value k is k mod 4096 - 2048
+	for (uint32_t k = 0; k < 2 * 12288; k += 2) {
+		uint32_t v0 = (k % 4096 - 2048) & 0xFFF, v1 = ((k + 1) % 4096 - 2048) & 0xFFF;
+		size_t at = 144 * 512 + 3 * (k / 2);
+		b[at] = uint8_t(v0 >> 4), b[at + 1] = uint8_t((v0 & 15) << 4 | (v1 & 15)), b[at + 2] = uint8_t(v1 >> 4);
+	}
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
@@ -1174,7 +1376,11 @@ static void test_s550_floppy()
 	CHECK(!strcmp(samplerfs_label(fs), "S-550 System   Ver. 1.12"));
 	CHECK((names(fs, SAMPLERFS_AREA) == std::vector<std::string> { "Strings Vol1" }));
 	CHECK((used(fs, find(fs, "Strings")) == std::vector<std::string> { "Str C3" }));
-	CHECK(samplerfs_entry_at(fs, find(fs, "Str C3"))->bytes == 2 * 24576);
+	size_t c3 = find(fs, "Str C3");
+	CHECK(samplerfs_entry_at(fs, c3)->bytes == 2 * 24576);
+	CHECK((wave(fs, c3, 0, 3) == std::vector<int16_t> { -2048 * 16, -2047 * 16, -2046 * 16 }));
+	CHECK((wave(fs, c3, 2049, 2) == std::vector<int16_t> { 16, 32 }));
+	CHECK(wave(fs, c3, 0, 3 * 12288).size() == 2 * 12288);
 	samplerfs_close(fs);
 
 	memcpy(&b[4], "S330 MT25C", 10);
@@ -1298,19 +1504,25 @@ static void test_akai_floppy()
 		put16(b, 0x600 + 2 * k, 0x4000);
 	akai_name(b, 0x600 + 2 * blocks, "MY FLOPPY");
 	akai_file(b, 0, "PIANO", 'p', 150 * 8, 5);
-	akai_file(b, 24, "PIANO C3", 's', 0x8C + 2 * 300, 7);
+	akai_file(b, 24, "PIANO C3", 's', 150 + 2 * 600, 7);
 	put16(b, 0x600 + 2 * 5, 6);
 	put16(b, 0x600 + 2 * 6, 0xC000);
-	put16(b, 0x600 + 2 * 7, 0xC000);
+	put16(b, 0x600 + 2 * 7, 9);
+	put16(b, 0x600 + 2 * 9, 0xC000);
 	Bytes pr(150 * 8, 0);
 	akai_program(pr, 0, 150, { { "PIANO C3" } });
 	memcpy(&b[5 * K], pr.data(), pr.size());
 	size_t smp = 7 * K;
 	b[smp] = 3;
 	b[smp + 2] = 60;
-	put32(b, smp + 0x1A, 300);
-	put32(b, smp + 0x22, 299);
+	put32(b, smp + 0x1A, 600);
+	put32(b, smp + 0x22, 599);
 	put16(b, smp + 0x8A, 44100);
+	// frame k is k - 300, over block 7 and on into block 9
+	for (uint32_t k = 0; k < 600; k++) {
+		uint32_t at = 150 + 2 * k;
+		put16(b, (at < K ? 7 * K + at : 9 * K + at - K), uint16_t(k - 300));
+	}
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
@@ -1323,7 +1535,11 @@ static void test_akai_floppy()
 	CHECK((names(fs, SAMPLERFS_VOLUME) == std::vector<std::string> { "MY FLOPPY" }));
 	CHECK((used(fs, find(fs, "PIANO")) == std::vector<std::string> { "PIANO C3" }));
 	samplerfs_sample info;
-	CHECK(samplerfs_sample_info(fs, find(fs, "PIANO C3"), &info) && info.rate == 44100 && info.frames == 300 && info.end == 300);
+	size_t c3 = find(fs, "PIANO C3");
+	CHECK(samplerfs_sample_info(fs, c3, &info) && info.rate == 44100 && info.frames == 600 && info.end == 600);
+	CHECK((wave(fs, c3, 436, 2) == std::vector<int16_t> { 136, 137 }));
+	auto all = wave(fs, c3, 0, 1000);
+	CHECK(all.size() == 600 && all[0] == -300 && all[599] == 299);
 	samplerfs_close(fs);
 
 	b[16] = 0xF0;
@@ -1359,6 +1575,17 @@ static void test_s900()
 	put32(b, smp + 0x1C, 1000);
 	put32(b, smp + 0x20, 10);
 	put32(b, smp + 0x24, 200);
+	// value j is (7j mod 4096) - 2048: the first 500 as words of their top eight bits over the low four bits of each
+	// and of its partner 500 on, then the last 500's top eight bits; on over blocks 5 and 6
+	auto value = [](uint32_t j) { return uint32_t(int(7 * j % 4096) - 2048) & 0xFFF; };
+	Bytes data(1500);
+	for (uint32_t j = 0; j < 500; j++) {
+		data[2 * j] = uint8_t((value(j) & 15) << 4 | (value(j + 500) & 15));
+		data[2 * j + 1] = uint8_t(value(j) >> 4);
+		data[1000 + j] = uint8_t(value(j + 500) >> 4);
+	}
+	for (uint32_t k = 0; k < data.size(); k++)
+		b[60 + k < K ? smp + 60 + k : 6 * K + 60 + k - K] = data[k];
 
 	samplerfs_io io = io_of(b);
 	samplerfs_medium medium;
@@ -1373,6 +1600,13 @@ static void test_s900()
 	CHECK(samplerfs_sample_info(fs, find(fs, "BASS E1"), &info) && info.rate == 25000 && info.key == 40);
 	CHECK(info.frames == 1000 && info.start == 10 && info.end == 1000);
 	CHECK(info.loop == SAMPLERFS_LOOP_FORWARD && info.loop_start == 800 && info.loop_end == 1000);
+	CHECK(info.bits == 12);
+	auto all = wave(fs, find(fs, "BASS E1"), 0, 2000);
+	bool same = all.size() == 1000;
+	for (uint32_t j = 0; same && j < 1000; j++)
+		same = all[j] == int16_t(value(j) << 4);
+	CHECK(same);
+	CHECK((wave(fs, find(fs, "BASS E1"), 499, 2) == std::vector<int16_t> { int16_t(value(499) << 4), int16_t(value(500) << 4) }));
 	samplerfs_close(fs);
 
 	// a lower-case type is no S900's
@@ -1394,6 +1628,7 @@ int main()
 	test_akai_floppy();
 	test_s900();
 	test_iso();
+	test_encodings();
 	test_fat();
 	test_format_fat();
 	test_format_s700();

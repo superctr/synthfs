@@ -82,6 +82,33 @@ std::string trimmed(std::string_view s)
 	return std::string(s);
 }
 
+size_t read_words(const Image &im, uint64_t offset, int16_t *out, size_t n)
+{
+	if (offset >= im.size())
+		return 0;
+	n = size_t(std::min<uint64_t>(n, (im.size() - offset) / 2));
+	uint8_t buf[8192];
+	size_t done = 0;
+	while (done < n) {
+		size_t k = std::min(n - done, sizeof buf / 2);
+		if (!im.read(offset + 2 * done, buf, 2 * k))
+			break;
+		for (size_t j = 0; j < k; j++)
+			out[done + j] = int16_t(le16(buf + 2 * j));
+		done += k;
+	}
+	return done;
+}
+
+samplerfs_sample blank_sample()
+{
+	samplerfs_sample s {};
+	s.key = -1;
+	s.channels = 1;
+	s.bits = 16;
+	return s;
+}
+
 void clamp_points(samplerfs_sample &s)
 {
 	s.end = std::min(s.end, s.frames);

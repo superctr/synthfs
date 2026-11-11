@@ -27,6 +27,7 @@ constexpr List lists[5] = {
 constexpr const char *categories[] = { "---", "BEL", "BRS", "BS ", "BTS", "CMB", "CYM", "DRM", "FLT", "GTR", "HAT", "HIT",
 	"KEY", "KIK", "KIT", "MLT", "ORC", "ORG", "PAD", "PNO", "PRC", "SAX", "SFX", "SNR", "STR", "TOM", "VOX", "WND" };
 constexpr uint32_t rates[8] = { 48000, 44100, 24000, 22050, 30000, 15000, 32000, 16000 };
+constexpr uint32_t SEGMENT_TABLE = 0x404, WAVES = 0x15AC, FIRST_SEGMENT = 2, LAST_SEGMENT = 0xFFF8;
 
 static bool counts(const uint8_t *s0, uint16_t *out)
 {
@@ -182,6 +183,36 @@ bool S700Disk::sample(size_t i, samplerfs_sample &out) const
 		return false;
 	sample_of(rec.data(), entries[i].bytes / 2, out);
 	return true;
+}
+
+// the sample's segments from its directory entry's segment top (+28), each the next of the one before in the segment
+// table, 0xFFF8 and above ending it; segment n at sector 0x15AC + 18 × (n − 2)
+size_t S700Disk::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint8_t e[32];
+	if (!image.read(uint64_t(lists[4].dir) * SECTOR + uint64_t(entries[i].number) * 32, e, sizeof e))
+		return 0;
+	if (segments_.empty())
+		segments_ = image.read(uint64_t(SEGMENT_TABLE) * SECTOR, 2 * 0x10000);
+	if (segments_.empty())
+		return 0;
+	auto next = [&](uint32_t n) { return uint32_t(le16(&segments_[2 * n])); };
+	uint32_t seg = le16(e + 28);
+	for (uint64_t k = first / SEGMENT_WORDS; k && seg >= FIRST_SEGMENT && seg < LAST_SEGMENT; k--)
+		seg = next(seg);
+	size_t done = 0;
+	uint64_t at = first % SEGMENT_WORDS;
+	while (done < frames && seg >= FIRST_SEGMENT && seg < LAST_SEGMENT) {
+		size_t k = size_t(std::min<uint64_t>(frames - done, SEGMENT_WORDS - at));
+		uint64_t sector = WAVES + uint64_t(SEGMENT_BYTES / SECTOR) * (seg - FIRST_SEGMENT);
+		size_t got = read_words(image, sector * SECTOR + 2 * at, out + done, k);
+		done += got;
+		if (got < k)
+			break;
+		at = 0;
+		seg = next(seg);
+	}
+	return done;
 }
 
 std::unique_ptr<Medium> S700Disk::open(const samplerfs_io &io, samplerfs_format format)

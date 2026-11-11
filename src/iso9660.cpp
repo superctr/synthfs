@@ -87,6 +87,13 @@ bool Iso9660::sample(size_t i, samplerfs_sample &out) const
 		entries[i].bytes, out);
 }
 
+size_t Iso9660::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint64_t at = where[i];
+	return audio_wave([&](uint64_t offset, void *buf, size_t n) { return image.read(at + offset, buf, n); },
+		entries[i].bytes, first, out, frames);
+}
+
 std::unique_ptr<Medium> Iso9660::open(const samplerfs_io &io, samplerfs_format format)
 {
 	return std::make_unique<Iso9660>(io, format);

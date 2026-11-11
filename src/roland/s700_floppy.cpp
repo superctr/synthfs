@@ -24,7 +24,7 @@ constexpr FloppyList lists[4] = {
 	{ SAMPLERFS_SAMPLE, 23, 480, 199, 48, 10 },
 };
 constexpr uint64_t MAX_SIZE = 2 * 1024 * 1024;
-constexpr uint32_t SEGMENT_WORDS = SEGMENT_BYTES / 2;
+constexpr uint32_t WAVES = 252;
 
 // a sound disk, 2HD and 2DD: Roland's S-760s and S-770s, a DJ-70's
 bool sound(uint8_t type)
@@ -138,6 +138,30 @@ bool S700Floppy::sample(size_t i, samplerfs_sample &out) const
 		return false;
 	sample_of(rec, uint64_t(le16(rec + 0x2A)) * SEGMENT_WORDS, out);
 	return true;
+}
+
+// the sample's place at +0x28 (the disk of its set, the segment on it), segment n of a disk at sector 252 + 18n, the
+// wave running on from a disk's last segment to the next disk's segment 0; what lies on this disk is read
+size_t S700Floppy::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint8_t rec[48], s0[0x101];
+	if (!image.read(where[i], rec, sizeof rec) || !image.read(0, s0, sizeof s0) || image.size() / SECTOR <= WAVES)
+		return 0;
+	uint64_t per = (image.size() / SECTOR - WAVES) / (SEGMENT_BYTES / SECTOR);
+	uint64_t disk = rec[0x29], segment = rec[0x28];
+	size_t done = 0;
+	while (done < frames) {
+		uint64_t f = first + done, n = segment + f / SEGMENT_WORDS, at = f % SEGMENT_WORDS;
+		if (disk + n / per != s0[0x100])
+			break;
+		size_t k = size_t(std::min<uint64_t>(frames - done, SEGMENT_WORDS - at));
+		uint64_t sector = WAVES + (n % per) * (SEGMENT_BYTES / SECTOR);
+		size_t got = read_words(image, sector * SECTOR + 2 * at, out + done, k);
+		done += got;
+		if (got < k)
+			break;
+	}
+	return done;
 }
 
 std::unique_ptr<Medium> S700Floppy::open(const samplerfs_io &io, samplerfs_format format)

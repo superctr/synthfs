@@ -348,6 +348,14 @@ bool Fat::sample(size_t i, samplerfs_sample &out) const
 		bytes, out);
 }
 
+size_t Fat::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
+{
+	uint64_t bytes = entries[i].bytes;
+	auto clusters = chain(first_[i], (bytes + g_.cluster - 1) / g_.cluster);
+	return audio_wave([&](uint64_t offset, void *buf, size_t n) { return read_file(clusters, offset, buf, n); }, bytes,
+		first, out, frames);
+}
+
 std::unique_ptr<Medium> Fat::open(const samplerfs_io &io, samplerfs_format format)
 {
 	return std::make_unique<Fat>(io, format);

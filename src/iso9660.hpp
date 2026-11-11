@@ -13,6 +13,7 @@ public:
 	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 	void list() override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	bool walk(uint32_t extent, uint32_t bytes, size_t parent, int depth);

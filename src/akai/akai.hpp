@@ -16,17 +16,21 @@ public:
 	using Medium::Medium;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 protected:
-	// where a volume's blocks are: a partition's, or a floppy's
+	// where a volume's blocks are: a partition's, or a floppy's; its FAT, a halfword a block
 	struct Store {
-		uint64_t base, block, fat;
+		uint64_t base, block;
 		uint32_t blocks;
+		std::vector<uint8_t> fat;
 	};
 	std::vector<Store> stores_;
 	std::vector<std::pair<size_t, size_t>> volume_store_;  // a volume's entry, its store
 
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
+	// n bytes of file i from offset along its volume's FAT; the count read, short where its chain ends
+	size_t read_at(size_t i, uint64_t offset, uint8_t *buf, size_t n) const;
 	size_t in_volume(size_t vol, samplerfs_kind kind, const std::string &name) const;
 };
 
@@ -57,6 +61,7 @@ public:
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
+	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;
