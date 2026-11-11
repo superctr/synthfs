@@ -76,9 +76,14 @@ void geometry(uint64_t sectors, uint8_t *out)
 
 std::shared_ptr<const Store> Vhd::over(std::shared_ptr<const Store> under)
 {
+	// a dynamic disk is told by the footer's copy at its start, which stays where it is: the footer at the end
+	// moves as another host adds blocks, and may not be where the size last counted puts it.  A fixed disk has
+	// only the one at its end, and does not grow
 	uint8_t f[FOOTER];
 	const uint64_t whole = under->size();
-	if (whole < FOOTER || !footer_at(*under, whole - FOOTER, f))
+	if (whole < FOOTER)
+		return nullptr;
+	if (!(footer_at(*under, 0, f) && be32(f + 60) == DYNAMIC) && !footer_at(*under, whole - FOOTER, f))
 		return nullptr;
 	const uint32_t type = be32(f + 60);
 	const uint64_t size = be64(f + 48);

@@ -2261,6 +2261,19 @@ static void test_vhd_shared()
 		for (uint64_t at : { 3 * MB, 3 * MB + 5000, 9 * MB, 15 * MB, 20 * MB })
 			CHECK(same(*d, at));
 	syfs_close(a), syfs_close(b), syfs_close(c);
+	// opened while another adds a block, the file's end is not where its size as counted put the footer: it is
+	// still the disk, by the footer's copy at its start
+	{
+		Sparse grown = file;
+		const uint8_t junk[512] = { 1, 2, 3 };
+		grown.put(grown.size - 512, junk, 512);
+		syfs_io late { &grown, sparse_read, growing_write, grown.size, sparse_length, counted_hold };
+		syfs_image *d = syfs_open(&late, nullptr, 0);
+		syfs_io dd {};
+		CHECK(d && num(d, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_VHD && syfs_image_io(d, &dd) && dd.size == SIZE);
+		CHECK(same(dd, 9 * MB));
+		syfs_close(d);
+	}
 	// and the file is a VHD of the disk both wrote
 	Sparse out(SIZE);
 	syfs_io again = io_of(file), to = writer_of(out);

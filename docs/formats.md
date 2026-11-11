@@ -482,7 +482,9 @@ Microsoft's virtual hard disk (the Virtual Hard Disk Image Format Specification,
 the disk's sectors, 512 bytes each, behind it.  Every number is big-endian.
 
 **Telling it**: the file's last 512 bytes are a footer: `conectix` at +0, and at +64 a checksum, the one's
-complement of the sum of the footer's other bytes, that holds.  The disk's size in bytes is at +48 (whole sectors,
+complement of the sum of the footer's other bytes, that holds.  A dynamic disk is told first by the footer's copy
+in its first 512 bytes, which never moves, since the one at its end moves whenever a block is added and another
+host may be adding one as the file is opened.  The disk's size in bytes is at +48 (whole sectors,
 2040 GB at most) and its type at +60: 2 fixed, 3 dynamic.  A differencing disk (4), whose sectors are partly
 another file's, is not read: the file is then taken as it lies, as is one whose checksum does not hold.
 
