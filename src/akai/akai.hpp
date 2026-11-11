@@ -15,6 +15,7 @@ class S1000 : public Medium {
 public:
 	using Medium::Medium;
 	std::vector<size_t> refs(size_t i) const override;
+	size_t sample_at(size_t i, int key) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
@@ -60,6 +61,7 @@ public:
 	static std::unique_ptr<Medium> open(const samplerfs_io &io, samplerfs_format format);
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
+	size_t sample_at(size_t i, int key) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 

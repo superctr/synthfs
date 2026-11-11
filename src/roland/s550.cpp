@@ -149,6 +149,17 @@ std::vector<size_t> S550::refs(size_t i) const
 	return out;
 }
 
+// A patch's key: the tone its first key map gives, the map's first byte key 21
+size_t S550::sample_at(size_t i, int key) const
+{
+	if (entries[i].kind != SAMPLERFS_PATCH)
+		return Medium::sample_at(i, key);
+	uint8_t tone;
+	if (key < 21 || uint32_t(key - 21) >= KEYS || !image.read(where[i] + 0x1A + uint32_t(key - 21), &tone, 1) || tone > LAST_TONE)
+		return SAMPLERFS_NONE;
+	return child(entries[i].parent, SAMPLERFS_TONE, tone);
+}
+
 // a tone: 30 kHz where +0x0B is 0, else 15 kHz; the original key at +0x0C; its segments at +0x0F; its start, end and
 // loop point at +0x10, +0x13 and +0x16, 24-bit big-endian words from its first segment; the loop mode at +0x19
 bool S550::sample(size_t i, samplerfs_sample &out) const

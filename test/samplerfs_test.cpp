@@ -194,6 +194,14 @@ static void test_s700(Bytes b, samplerfs_format format, const char *label)
 	CHECK((used(fs, strings) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
 	CHECK((used(fs, find(fs, "PRT:Low")) == std::vector<std::string> { "SMP:Low" }));
 	CHECK(used(fs, find(fs, "SMP:Low")).empty());
+	// keys 21-64 partial 1, 65-107 partial 0, 108 off; a partial's first layer naming a sample
+	size_t lo = find(fs, "SMP:Low"), hi = find(fs, "SMP:High");
+	CHECK(samplerfs_sample_at(fs, strings, 21) == hi && samplerfs_sample_at(fs, strings, 64) == hi);
+	CHECK(samplerfs_sample_at(fs, strings, 65) == lo && samplerfs_sample_at(fs, strings, 107) == lo);
+	CHECK(samplerfs_sample_at(fs, strings, 108) == SAMPLERFS_NONE && samplerfs_sample_at(fs, strings, 20) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, find(fs, "PRT:High"), 0) == hi && samplerfs_sample_at(fs, lo, 60) == lo);
+	CHECK(samplerfs_sample_at(fs, find(fs, "PRF:One"), 60) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, find(fs, "VOL:One"), 60) == SAMPLERFS_NONE);
 	size_t high = find(fs, "SMP:High");
 	CHECK(samplerfs_entry_at(fs, high)->number == 2 && samplerfs_entry_at(fs, high)->bytes == 9216);
 	samplerfs_sample s;
@@ -256,7 +264,7 @@ static void akai_file(Bytes &b, size_t at, const char *name, uint8_t type, uint3
 	put16(b, at + 20, start);
 }
 
-// a program: a header and keygroups of block bytes each, each zone naming a sample
+// a program: a header and keygroups of block bytes each, keygroup k keys 60k to 60k + 59, each zone naming a sample
 static void akai_program(Bytes &b, size_t at, size_t block, const std::vector<std::vector<const char *>> &keygroups)
 {
 	b[at] = 1;
@@ -264,6 +272,7 @@ static void akai_program(Bytes &b, size_t at, size_t block, const std::vector<st
 	for (size_t k = 0; k < keygroups.size(); k++) {
 		size_t kg = at + (k + 1) * block;
 		b[kg] = 2;
+		b[kg + 3] = uint8_t(60 * k), b[kg + 4] = uint8_t(std::min<size_t>(60 * k + 59, 127));
 		for (int z = 0; z < 4; z++)
 			akai_name(b, kg + 34 + 24 * z, z < int(keygroups[k].size()) ? keygroups[k][z] : "");
 	}
@@ -347,6 +356,14 @@ static void test_akai()
 	CHECK(!strcmp(samplerfs_entry_at(fs, c3)->tag, "s") && !strcmp(samplerfs_entry_at(fs, a4)->tag, "s"));
 	CHECK(!strcmp(samplerfs_entry_at(fs, find(fs, "FX"))->tag, "x"));
 	CHECK((used(fs, find(fs, "PIANO PROG")) == std::vector<std::string> { "PIANO C3" }));
+	// the first keygroup holding the key, its first zone found; the second keygroup's sample is missing
+	size_t prog = find(fs, "PIANO PROG");
+	CHECK(samplerfs_sample_at(fs, prog, 0) == c3 && samplerfs_sample_at(fs, prog, 59) == c3);
+	CHECK(samplerfs_sample_at(fs, prog, 60) == SAMPLERFS_NONE && samplerfs_sample_at(fs, prog, 128) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM), 60) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM), 30) == a4);
+	CHECK(samplerfs_sample_at(fs, c3, 100) == c3 && samplerfs_sample_at(fs, find(fs, "SPLIT"), 60) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, piano, 60) == SAMPLERFS_NONE);
 	CHECK((used(fs, find(fs, "STRINGS", SAMPLERFS_PROGRAM)) == std::vector<std::string> { "STRINGS A4" }));
 	CHECK((used(fs, find(fs, "LONG")) == std::vector<std::string> { "STRINGS A4" }));
 	CHECK((used(fs, find(fs, "SPLIT")) == std::vector<std::string> { "LONG", "STRINGS" }));
@@ -434,6 +451,11 @@ static void test_s550()
 	CHECK(!strcmp(samplerfs_entry_at(fs, pianos)->tag, "0") && samplerfs_entry_at(fs, c5)->number == 2);
 	CHECK(samplerfs_entry_at(fs, c3)->parent == pianos && samplerfs_entry_at(fs, c3)->bytes == 24576);
 	CHECK((used(fs, find(fs, "Piano Split")) == std::vector<std::string> { "P-C3", "P-C5" }));
+	// the first key map, its first byte key 21: tone 0 on keys 21-70, the second map's tone 2 left out
+	size_t split = find(fs, "Piano Split");
+	CHECK(samplerfs_sample_at(fs, split, 21) == c3 && samplerfs_sample_at(fs, split, 70) == c3);
+	CHECK(samplerfs_sample_at(fs, split, 71) == SAMPLERFS_NONE && samplerfs_sample_at(fs, split, 20) == SAMPLERFS_NONE);
+	CHECK(samplerfs_sample_at(fs, c5, 60) == c5 && samplerfs_sample_at(fs, pianos, 60) == SAMPLERFS_NONE);
 	samplerfs_sample s;
 	CHECK(samplerfs_sample_info(fs, c3, &s) && s.rate == 30000 && s.key == 60 && s.frames == 0x3000);
 	CHECK(s.start == 0 && s.end == 0x3000 && s.loop == SAMPLERFS_LOOP_FORWARD && s.loop_start == 0x1000 && s.loop_end == 0x3000);
@@ -1328,6 +1350,8 @@ static void test_s700_floppy()
 	CHECK((used(fs, find(fs, "PAD:Floppy Pch")) == std::vector<std::string> { "PAD:Floppy Prt" }));
 	CHECK((used(fs, find(fs, "PAD:Floppy Prt")) == std::vector<std::string> { "PAD:Floppy Smp" }));
 	size_t s = find(fs, "PAD:Floppy Smp");
+	CHECK(samplerfs_sample_at(fs, find(fs, "PAD:Floppy Pch"), 60) == s);
+	CHECK(samplerfs_sample_at(fs, find(fs, "PAD:Floppy Pch"), 61) == SAMPLERFS_NONE);
 	CHECK(!strcmp(samplerfs_entry_at(fs, s)->tag, "PAD") && samplerfs_entry_at(fs, s)->bytes == 3 * 9216);
 	samplerfs_sample info;
 	CHECK(samplerfs_sample_info(fs, s, &info) && info.rate == 44100 && info.key == 60 && info.frames == 3 * 4608);
@@ -1502,6 +1526,9 @@ static void test_boards()
 		CHECK((splits(fs, kick) == std::vector<std::string> { "60-61" }));
 		CHECK((splits(fs, snare) == std::vector<std::string> { "71-127" }));
 		size_t k0 = refs_of(fs, kick).at(0), s0 = refs_of(fs, snare).at(0);
+		CHECK(samplerfs_sample_at(fs, kick, 60) == k0 && samplerfs_sample_at(fs, kick, 59) == SAMPLERFS_NONE);
+		CHECK(samplerfs_sample_at(fs, kick, 62) == SAMPLERFS_NONE && samplerfs_sample_at(fs, snare, 60) == SAMPLERFS_NONE);
+		CHECK(samplerfs_sample_at(fs, snare, 71) == s0);
 		CHECK(samplerfs_entry_at(fs, k0)->kind == SAMPLERFS_SAMPLE && samplerfs_entry_at(fs, k0)->parent == kick);
 		CHECK(samplerfs_entry_at(fs, k0)->number == 1 && samplerfs_entry_at(fs, k0)->bytes == 3);
 		samplerfs_sample sm;
@@ -1557,7 +1584,10 @@ static void test_boards()
 		CHECK((splits(fs, a) == std::vector<std::string> { "0-59", "60-127" }));
 		CHECK((splits(fs, b) == std::vector<std::string> { "0-127" }));
 		CHECK((names(fs, SAMPLERFS_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
-		size_t a0 = refs_of(fs, a).at(0), b0 = refs_of(fs, b).at(0);
+		size_t a0 = refs_of(fs, a).at(0), b0 = refs_of(fs, b).at(0), a1 = refs_of(fs, a).at(1);
+		CHECK(samplerfs_sample_at(fs, a, 0) == a0 && samplerfs_sample_at(fs, a, 59) == a0);
+		CHECK(samplerfs_sample_at(fs, a, 60) == a1 && samplerfs_sample_at(fs, a, 127) == a1 && samplerfs_sample_at(fs, a1, 0) == a1);
+		CHECK(samplerfs_sample_at(fs, find(fs, "Card Piano"), 60) == SAMPLERFS_NONE);
 		samplerfs_sample sm;
 		CHECK(samplerfs_sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
 		CHECK(sm.loop == SAMPLERFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
@@ -1657,6 +1687,7 @@ static void test_s900()
 	put16(b, 0x600 + 2 * 6, 0x8000);
 	put_name(b, 4 * K, "BASS", 16);
 	b[4 * K + 0x17] = 1;
+	b[4 * K + 0x26] = 127, b[4 * K + 0x26 + 1] = 24;
 	put_name(b, 4 * K + 0x26 + 0x18, "BASS E1", 10);
 	put_name(b, 4 * K + 0x26 + 0x2E, "SAMPLE 2", 10);
 	size_t smp = 5 * K;
@@ -1689,6 +1720,7 @@ static void test_s900()
 		return;
 	CHECK((names(fs, SAMPLERFS_PROGRAM) == std::vector<std::string> { "BASS" }));
 	CHECK((used(fs, find(fs, "BASS")) == std::vector<std::string> { "BASS E1" }));
+	CHECK(samplerfs_sample_at(fs, find(fs, "BASS"), 24) == find(fs, "BASS E1") && samplerfs_sample_at(fs, find(fs, "BASS"), 23) == SAMPLERFS_NONE);
 	samplerfs_sample info;
 	CHECK(samplerfs_sample_info(fs, find(fs, "BASS E1"), &info) && info.rate == 25000 && info.key == 40);
 	CHECK(info.frames == 1000 && info.start == 10 && info.end == 1000);

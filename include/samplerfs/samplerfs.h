@@ -143,6 +143,14 @@ size_t samplerfs_refs(samplerfs *fs, size_t i, size_t *out, size_t max);
  * header; 0 where entry i has none or it cannot be read */
 int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out);
 
+/* The sample entry i sounds at MIDI key (0 to 127), by index, an entry samplerfs_sample_info and samplerfs_sample_read
+ * answer for; SAMPLERFS_NONE where nothing sounds there or entry i plays no samples by key (a volume, performance,
+ * multi or bank).  A sample, tone or WAV or AIFF file is its own; an S-760/S-770 patch's is its partial's at the key
+ * (keys 21 to 108), a partial's its first layer naming a sample; an AKAI program's the first velocity zone's sample
+ * of the first keygroup holding the key; an S-550 patch's the tone of its first key map; a board's wave's its split's.
+ * Velocity, a second key map, the layers after the first and each one's tuning are left to the host. */
+size_t samplerfs_sample_at(samplerfs *fs, size_t i, int key);
+
 /* Entry i's wave decoded to 16-bit signed values in the host's byte order, the channels of a frame side by side: up to
  * frames frames from frame first (counted as samplerfs_sample's points are) into out, which holds frames × channels
  * values.  The count read is returned: short at the wave's end, where the image ends or a chain breaks, or where the

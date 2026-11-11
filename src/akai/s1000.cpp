@@ -287,6 +287,33 @@ std::vector<size_t> S1000::refs(size_t i) const
 	return out;
 }
 
+// A program's key: the first keygroup whose keys (lowest at +3, highest at +4) hold it, and its first velocity
+// zone's sample found in the volume
+size_t S1000::sample_at(size_t i, int key) const
+{
+	const samplerfs_entry &e = entries[i];
+	if (e.kind != SAMPLERFS_PROGRAM)
+		return Medium::sample_at(i, key);
+	size_t block = e.format == SAMPLERFS_AKAI_S1000 ? S1000_HEADER : S3000_HEADER;
+	auto pr = read_file(i, block * 100);
+	if (pr.size() < block || pr[0] != 1)
+		return SAMPLERFS_NONE;
+	for (size_t k = 0; k < pr[42] && (k + 2) * block <= pr.size(); k++) {
+		const uint8_t *kg = &pr[(k + 1) * block];
+		if (kg[0] != 2)
+			break;
+		if (key < kg[3] || key > kg[4])
+			continue;
+		for (int z = 0; z < 4; z++) {
+			std::string name = trimmed(name_of(kg + 34 + 24 * z));
+			size_t s = name.empty() ? SAMPLERFS_NONE : in_volume(e.parent, SAMPLERFS_SAMPLE, name);
+			if (s != SAMPLERFS_NONE)
+				return s;
+		}
+	}
+	return SAMPLERFS_NONE;
+}
+
 // a sample's header: 3 at +0, the key at +2, the loops in use at +0x10, the loop mode at +0x13, the frames, start and
 // end at +0x1A, +0x1E, +0x22, eight loops of 12 bytes from +0x26 (the point a loop ends at, then its length at +6),
 // the rate at +0x8A

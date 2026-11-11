@@ -38,6 +38,10 @@ if (samplerfs_sample_info(fs, i, &s))
 	}
 ```
 
+What an entry sounds at a key, `samplerfs_sample_at`, is the sample (an entry `samplerfs_sample_info` and
+`samplerfs_sample_read` answer for) a patch, partial, program or board's wave plays there, so a host can preview a
+sound at middle C: that sample played at its rate × 2^((60 − key) / 12), key its original key.
+
 A blank image is made an empty volume through the host's writer (`samplerfs_write_io`: n bytes written at an
 offset): `samplerfs_format_dos_floppy` (720 KB and 1.44 MB FAT12) and `samplerfs_format_fat_disk` (an MBR and one
 FAT16 or FAT32 partition), each with an optional label; `samplerfs_format_s760_disk` and `samplerfs_format_s770_disk`

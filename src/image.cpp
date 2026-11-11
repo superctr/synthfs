@@ -100,6 +100,13 @@ size_t read_words(const Image &im, uint64_t offset, int16_t *out, size_t n)
 	return done;
 }
 
+size_t Medium::sample_at(size_t i, int) const
+{
+	samplerfs_kind k = entries[i].kind;
+	samplerfs_sample s = blank_sample();
+	return (k == SAMPLERFS_SAMPLE || k == SAMPLERFS_TONE || k == SAMPLERFS_FILE) && sample(i, s) ? i : SAMPLERFS_NONE;
+}
+
 samplerfs_sample blank_sample()
 {
 	samplerfs_sample s {};

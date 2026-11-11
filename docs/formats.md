@@ -64,8 +64,14 @@ Record *n* of a list is at *n* times its size from the list's first record secto
 
 - a volume: its performances, 64 halfwords at +32;
 - a performance: its parts' patches, 32 halfwords at +0x100;
-- a patch: for each of the 88 keys whose byte at +32 + key is not 255, its partial, a halfword at +0x100 + 2 × key;
+- a patch: for each of the 88 keys (21 to 108, *k* from 0) whose byte at +32 + *k* is not 255, its partial, a
+  halfword at +0x100 + 2*k*;
 - a partial: its four layers' samples, signed halfwords at +16, +32, +48, +64 (-1 none).
+
+A patch's sample at a key is its key's partial's; a partial's is its first layer naming a sample.  A layer's other
+fields follow its sample number (pitch key follow +2, level +3, pan +4, coarse tune +5, fine tune +6, its velocity
+range's lower +7 and upper +9 with their fade widths +8 and +10), and +47 switches the layers by velocity; none of
+them is read, so a host wanting velocity layers reads the record itself.
 
 A number outside its list, or naming an empty slot, uses nothing.
 
@@ -168,7 +174,9 @@ blank name (spaces) is an empty slot.
 
 **A patch**: the name (12 characters), the key mode at +0x0F, the first key map at +0x1A and the second at +0x87
 (109 bytes each, a tone number a key: 0 to 31, anything above none; 0xDF on the discs **[seen]**); the second
-map is used where the key mode is 1 to 3.
+map is used where the key mode is 1 to 3.  A map's first byte is key 21: so read, the drum kits' one-key tones play
+at their own original keys and the median of every mapped key's tone's original key less the key is zero on L-CD1
+**[seen]**.  A patch's sample at a key is the tone its first map gives.
 
 **A tone**: the name (8 characters), +0x0B 0 for 30 kHz else 15 kHz, +0x0C the original key, +0x0D the wave bank,
 +0x0E the first segment in it, +0x0F the segments, then the start (+0x10), the end (+0x13, the last word played)
@@ -223,9 +231,10 @@ code.
 
 **A program**: a header (1 at +0, the name at +3, the keygroups' count at +42), then its keygroups, each 2 at +0;
 header and keygroups are 150 bytes on an S1000, 192 on an S3000, so the file's size is (count + 1) × that **[seen]**.
-A keygroup's four velocity zones name their samples at +34, +58, +82 and +106, blank for none; a name is a sample
-of the same volume **[seen]**: 97 % of the programs here find all of theirs, the rest name samples of other volumes
-or none (copyright notes).
+A keygroup's keys run from its lowest at +3 to its highest at +4, and its four velocity zones name their samples at
++34, +58, +82 and +106, blank for none; a name is a sample of the same volume **[seen]**: 97 % of the programs here find all of theirs, the rest name samples of other volumes
+or none (copyright notes).  A program's sample at a key is the first velocity zone's found, of the first keygroup
+holding the key; the zones' velocity ranges and the keygroups' tuning are not read.
 
 **A multi** (4096 bytes): its name at +3, then from +0x400 16 parts of 0xC0 bytes, each naming its program at +3,
 blank for none.  Of the 2491 parts naming one here, 2375 name a program of the same volume; the rest name
@@ -391,6 +400,7 @@ the end at +0x1C, the start at +0x20 and the loop's length at +0x24 (longs), the
 **A program** (`P`): a 0x26-byte header with the keygroups' count at +0x17, then the keygroups, 70 bytes each: the
 highest key at +0, the lowest at +1, and two sample names at +0x18 and +0x2E (the second for loud notes; often an
 unused default such as "SAMPLE 2") **[seen]**: the first name is a sample of the disk in 96 % of the keygroups here.
+A program's sample at a key is the first found of the first keygroup holding it.
 
 ## ISO 9660
 

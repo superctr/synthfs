@@ -129,6 +129,29 @@ std::vector<size_t> S700Floppy::refs(size_t i) const
 	return out;
 }
 
+// A patch's key: its partial (keys 21 to 108), and that partial's first layer naming a sample
+size_t S700Floppy::sample_at(size_t i, int key) const
+{
+	const samplerfs_entry &e = entries[i];
+	if (e.kind == SAMPLERFS_PATCH) {
+		if (key < 21 || key > 108)
+			return SAMPLERFS_NONE;
+		auto rec = image.read(where[i], lists[1].size);
+		uint8_t n = rec.empty() ? 0xFF : rec[0x20 + key - 21];
+		return n < numbered_[2].size() && numbered_[2][n] != SAMPLERFS_NONE ? sample_at(numbered_[2][n], key) : SAMPLERFS_NONE;
+	}
+	if (e.kind == SAMPLERFS_PARTIAL) {
+		auto rec = image.read(where[i], lists[2].size);
+		for (int k = 0; k < 4 && !rec.empty(); k++) {
+			int16_t n = int16_t(le16(&rec[16 + 16 * k]));
+			if (n >= 0 && size_t(n) < numbered_[3].size() && numbered_[3][n] != SAMPLERFS_NONE)
+				return numbered_[3][n];
+		}
+		return SAMPLERFS_NONE;
+	}
+	return Medium::sample_at(i, key);
+}
+
 bool S700Floppy::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)

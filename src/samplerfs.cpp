@@ -306,6 +306,17 @@ int samplerfs_sample_info(samplerfs *fs, size_t i, samplerfs_sample *out)
 	}
 }
 
+size_t samplerfs_sample_at(samplerfs *fs, size_t i, int key)
+{
+	if (i >= fs->medium->entries.size() || key < 0 || key > 127)
+		return SAMPLERFS_NONE;
+	try {
+		return fs->medium->sample_at(i, key);
+	} catch (...) {
+		return SAMPLERFS_NONE;
+	}
+}
+
 size_t samplerfs_sample_read(samplerfs *fs, size_t i, uint64_t first, int16_t *out, size_t frames)
 {
 	if (i >= fs->medium->entries.size() || !out || !frames)

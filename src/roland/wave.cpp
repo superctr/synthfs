@@ -184,6 +184,26 @@ void WaveRom::split(size_t wave, uint32_t number, uint8_t below, uint8_t top, ui
 	splits_[wave].emplace_back(top, c);
 }
 
+// the first split whose top key is at or above key, else the last
+size_t WaveRom::sample_at(size_t i, int key) const
+{
+	auto it = splits_.find(i);
+	if (entries[i].kind != SAMPLERFS_WAVE)
+		return Medium::sample_at(i, key);
+	if (it == splits_.end() || it->second.empty())
+		return SAMPLERFS_NONE;
+	for (const auto &[top, c] : it->second)
+		if (key <= top)
+			return c;
+	return it->second.back().second;
+}
+
+size_t WaveRom::at_middle_c(size_t i) const
+{
+	size_t c = sample_at(i, 60);
+	return c != SAMPLERFS_NONE ? c : nearest(i, 60);
+}
+
 size_t WaveRom::nearest(size_t wave, int key) const
 {
 	auto it = splits_.find(wave);
@@ -349,7 +369,7 @@ std::vector<size_t> WaveRom::refs(size_t i) const
 bool WaveRom::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind == SAMPLERFS_WAVE)
-		i = nearest(i, 60);
+		i = at_middle_c(i);
 	if (i == SAMPLERFS_NONE || entries[i].kind != SAMPLERFS_SAMPLE || !socket_)
 		return false;
 	Record r;
@@ -377,7 +397,7 @@ bool WaveRom::sample(size_t i, samplerfs_sample &out) const
 size_t WaveRom::wave(size_t i, const samplerfs_sample &, uint64_t first, int16_t *out, size_t frames) const
 {
 	if (entries[i].kind == SAMPLERFS_WAVE)
-		i = nearest(i, 60);
+		i = at_middle_c(i);
 	if (i == SAMPLERFS_NONE)
 		return 0;
 	if (decoded_ != i) {

@@ -56,6 +56,8 @@ public:
 	// frames of entry i's wave from frame first, its header s, decoded to 16 bits; the count read.  frames is within
 	// s.frames
 	virtual size_t wave(size_t, const samplerfs_sample &, uint64_t, int16_t *, size_t) const { return 0; }
+	// the sample entry i sounds at key (0 to 127), or SAMPLERFS_NONE; here a sample, tone or file with a header itself
+	virtual size_t sample_at(size_t i, int key) const;
 
 	const Image image;
 	const samplerfs_format format;

@@ -36,6 +36,7 @@ public:
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	size_t sample_at(size_t i, int key) const override;
 
 private:
 	// an entry's index by its list and number
@@ -54,6 +55,7 @@ public:
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	size_t sample_at(size_t i, int key) const override;
 
 private:
 	size_t volume_ = SAMPLERFS_NONE;
@@ -67,6 +69,7 @@ public:
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	size_t sample_at(size_t i, int key) const override;
 
 protected:
 	// an area's patches and tones, from its parameters at start
@@ -111,6 +114,7 @@ public:
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, samplerfs_sample &out) const override;
 	size_t wave(size_t i, const samplerfs_sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	size_t sample_at(size_t i, int key) const override;
 
 private:
 	void list_srjv80();
@@ -121,6 +125,8 @@ private:
 	void split(size_t wave, uint32_t number, uint8_t below, uint8_t top, uint64_t record);
 	// the sample entry of the split that sounds nearest key
 	size_t nearest(size_t wave, int key) const;
+	// what a wave reads as: its sample at key 60, else its split's that sounds nearest
+	size_t at_middle_c(size_t i) const;
 	uint32_t banks_ = 0;
 	std::unique_ptr<Socket> socket_;
 	// each wave's splits: their top keys and sample entries (SAMPLERFS_NONE where silent)

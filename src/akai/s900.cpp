@@ -81,6 +81,26 @@ std::vector<size_t> S900::refs(size_t i) const
 	return out;
 }
 
+// A program's key: the first keygroup whose keys (highest at +0, lowest at +1) hold it, and its first sample found
+size_t S900::sample_at(size_t i, int key) const
+{
+	if (entries[i].kind != SAMPLERFS_PROGRAM)
+		return Medium::sample_at(i, key);
+	auto p = read_file(i, PROGRAM_HEADER + 255 * KEYGROUP);
+	for (size_t k = 0; p.size() >= PROGRAM_HEADER && k < p[0x17] && PROGRAM_HEADER + (k + 1) * KEYGROUP <= p.size(); k++) {
+		const uint8_t *kg = &p[PROGRAM_HEADER + k * KEYGROUP];
+		if (key < kg[1] || key > kg[0])
+			continue;
+		for (size_t at : { 0x18, 0x2E }) {
+			std::string name = name_of(kg + at);
+			size_t s = name.empty() ? SAMPLERFS_NONE : named(SAMPLERFS_SAMPLE, name);
+			if (s != SAMPLERFS_NONE)
+				return s;
+		}
+	}
+	return SAMPLERFS_NONE;
+}
+
 // a sample's header (60 bytes, its 12-bit wave packed after it): the frames at +0x10, the rate at +0x14, the pitch in
 // sixteenths of a semitone at +0x16, the loop mode at +0x1A (O one shot, L loop, A alternating), the end at +0x1C, the
 // start at +0x20, the loop's length at +0x24, the loop ending at the end

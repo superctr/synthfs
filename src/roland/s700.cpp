@@ -174,6 +174,31 @@ std::vector<size_t> S700Disk::refs(size_t i) const
 	return out;
 }
 
+// A patch's key: its partial (keys 21 to 108), and that partial's first layer naming a sample
+size_t S700Disk::sample_at(size_t i, int key) const
+{
+	const samplerfs_entry &e = entries[i];
+	if (e.kind == SAMPLERFS_PATCH) {
+		if (key < 21 || key > 108)
+			return SAMPLERFS_NONE;
+		auto rec = image.read(where[i], lists[2].size);
+		if (rec.empty() || rec[32 + key - 21] == 255)
+			return SAMPLERFS_NONE;
+		uint16_t n = le16(&rec[0x100 + 2 * (key - 21)]);
+		return n < numbered_[3].size() && numbered_[3][n] != SAMPLERFS_NONE ? sample_at(numbered_[3][n], key) : SAMPLERFS_NONE;
+	}
+	if (e.kind == SAMPLERFS_PARTIAL) {
+		auto rec = image.read(where[i], lists[3].size);
+		for (int k = 0; k < 4 && !rec.empty(); k++) {
+			int16_t n = int16_t(le16(&rec[16 + 16 * k]));
+			if (n >= 0 && size_t(n) < numbered_[4].size() && numbered_[4][n] != SAMPLERFS_NONE)
+				return numbered_[4][n];
+		}
+		return SAMPLERFS_NONE;
+	}
+	return Medium::sample_at(i, key);
+}
+
 bool S700Disk::sample(size_t i, samplerfs_sample &out) const
 {
 	if (entries[i].kind != SAMPLERFS_SAMPLE)
