@@ -272,7 +272,7 @@ address of their records at 0x80 + 4*n*:
 |---|---|---|---|---|
 | 0 | 2 | samples | 18 bytes (below) | |
 | 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) | |
-| 3 | 2 | patches, the JV-880's shape | 362 bytes, the name first | JV-880 Patches |
+| 3 | 2 | patches, the JV-880's shape (the JV-80's format, the JV-880 its rack version) | 362 bytes, the name first | JV-880 Patches |
 | 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters **[seen]** | JD-990 Patches |
 | 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up | JV-1080 Patches |
 | 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed: keys 36 to 96, 44 bytes each | JV-880 Rhythm Sets |
