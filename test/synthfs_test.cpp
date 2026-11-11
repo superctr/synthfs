@@ -2584,6 +2584,104 @@ static void test_fat_written()
 	}
 }
 
+// ---- an S-700 disk's entries taken into another: a volume with all it uses, what is there already not made again
+static void test_s700_taken()
+{
+	char err[128];
+	Bytes src = s700_image(" SYS-772 HardDisk Sys Ver. 2.25");
+	syfs_io from_io = io_of(src);
+	syfs_image *from = syfs_open(&from_io, nullptr, 0);
+	CHECK(from != nullptr);
+	for (syfs_key format : { SYFS_FORMAT_S760, SYFS_FORMAT_S770 }) {
+		Sparse disk(16 << 20);
+		syfs_io rw { &disk, sparse_read, sparse_write, disk.size };
+		CHECK(syfs_create(&rw, format, SYFS_MEDIUM_DISK, nullptr, err, sizeof err));
+		syfs_image *to = syfs_open(&rw, nullptr, 0);
+		CHECK(to && count_of(to) == 0);
+		// the patch first: with it its partials and their samples
+		const syfs_node patch = syfs_transfer(to, SYFS_ROOT, from, syfs_node(find(from, "STR:Strings") + 1));
+		CHECK(patch != SYFS_NO_NODE && !*syfs_error(to));
+		listed.erase(to);
+		CHECK((names(to, SYFS_TYPE_PATCH) == std::vector<std::string> { "STR:Strings" }));
+		CHECK((names(to, SYFS_TYPE_PARTIAL) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
+		CHECK((names(to, SYFS_TYPE_SAMPLE) == std::vector<std::string> { "SMP:High", "SMP:Low" }));
+		CHECK(names(to, SYFS_TYPE_VOLUME).empty() && names(to, SYFS_TYPE_PERFORMANCE).empty());
+		// then the volume: its performance is made, the patch and what it uses are the ones there
+		const syfs_node volume = syfs_transfer(to, SYFS_ROOT, from, syfs_node(find(from, "VOL:One") + 1));
+		CHECK(volume != SYFS_NO_NODE);
+		listed.erase(to);
+		CHECK(count_of(to) == 7 && find(to, "STR:Strings") + 1 == patch);
+		// and either again makes nothing
+		CHECK(syfs_transfer(to, SYFS_ROOT, from, syfs_node(find(from, "VOL:One") + 1)) == volume);
+		CHECK(syfs_transfer(to, SYFS_ROOT, from, syfs_node(find(from, "SMP:Low") + 1)) == syfs_node(find(to, "SMP:Low") + 1));
+		listed.erase(to);
+		CHECK(count_of(to) == 7);
+		// each uses here what it uses there, and each sample's wave and header are the other's
+		for (const char *name : { "VOL:One", "PRF:One", "STR:Strings", "PRT:Low", "PRT:High" })
+			CHECK(used(to, find(to, name)) == used(from, find(from, name)));
+		for (const char *name : { "SMP:Low", "SMP:High" }) {
+			syfs::Sample a, b;
+			CHECK(sample_info(from, find(from, name), &a) && sample_info(to, find(to, name), &b));
+			CHECK(a.rate == b.rate && a.frames == b.frames && a.key == b.key && a.loop_start == b.loop_start && a.mode == b.mode);
+			CHECK(wave(to, find(to, name), 0, size_t(b.frames)) == wave(from, find(from, name), 0, size_t(a.frames)));
+		}
+		for (int key : { 21, 22, 60, 108 }) {
+			const size_t a = sample_at(from, find(from, "STR:Strings"), key), b = sample_at(to, find(to, "STR:Strings"), key);
+			CHECK((a == NONE) == (b == NONE) && (a == NONE || !strcmp(entry_at(from, a)->name, entry_at(to, b)->name)));
+		}
+		// nothing is held under an entry, and an image opened without a writer takes nothing
+		CHECK(syfs_transfer(to, patch, from, syfs_node(find(from, "SMP:Low") + 1)) == SYFS_NO_NODE && *syfs_error(to));
+		syfs_prop prop;
+		CHECK(syfs_prop_at(to, patch, 0, &prop) && prop.key == SYFS_PROP_NAME && !prop.writable);
+		close_image(to);
+
+		// on the disk: each list one chain from slot 0 in the order made, each entry its list's type, its place and
+		// the segments it sounds; the samples' segments chained in the table and counted off the free ones
+		syfs_io io = io_of(disk);
+		syfs::Image im(io);
+		uint8_t s0[512], e[32], table[512];
+		im.read(0, s0, sizeof s0);
+		const uint16_t expect[5] = { 1, 1, 1, 2, 2 };
+		const uint32_t dirs[5] = { 0x504, 0x50C, 0x52C, 0x56C, 0x66C };
+		const uint16_t sizes[5][2] = { { 3, 0 }, { 3, 0 }, { 3, 0 }, { 1, 2 }, { 1, 2 } };
+		for (int l = 0; l < 5; l++) {
+			CHECK(s0[0x114 + 2 * l] == expect[l] && !s0[0x115 + 2 * l]);
+			for (uint16_t n = 0; n < expect[l]; n++) {
+				im.read(uint64_t(dirs[l]) * 512 + n * 32, e, sizeof e);
+				const uint16_t next = uint16_t(e[18] | e[19] << 8), prev = uint16_t(e[20] | e[21] << 8);
+				CHECK(e[16] == 0x40 + l && !e[17] && e[22] == n && !e[23] && (e[30] | e[31] << 8) == sizes[l][n]);
+				CHECK(next == (n + 1 < expect[l] ? 0x8000 | (n + 1) : 0xFFFF) && prev == (n ? 0x8000 | (n - 1) : 0xFFFF));
+			}
+		}
+		im.read(0x404 * 512, table, sizeof table);
+		const uint32_t first = format == SYFS_FORMAT_S760 ? 2 + 114 : 2;
+		auto entry = [&](uint32_t n) { return uint32_t(table[2 * n] | table[2 * n + 1] << 8); };
+		CHECK(entry(first) == 0xFFF8 && entry(first + 1) == first + 2 && entry(first + 2) == 0xFFF8 && entry(first + 3) == 0);
+		im.read(uint64_t(0x66C) * 512, e, sizeof e);
+		CHECK((e[28] | e[29] << 8) == int(first));
+		syfs_image *again = syfs_open(&io, nullptr, 0);
+		CHECK(again && count_of(again) == 7 && format_of(again) == format);
+		close_image(again);
+	}
+	// an S-700 disk takes only another's entries: a file is refused, and a FAT volume takes none of its entries
+	{
+		Sparse disk(16 << 20), fat(4 << 20);
+		syfs_io rw { &disk, sparse_read, sparse_write, disk.size }, rf { &fat, sparse_read, sparse_write, fat.size };
+		CHECK(syfs_create(&rw, SYFS_FORMAT_S770, SYFS_MEDIUM_DISK, nullptr, err, sizeof err));
+		Sparse flop(1440 * 1024);
+		rf = { &flop, sparse_read, sparse_write, flop.size };
+		CHECK(syfs_create(&rf, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, nullptr, err, sizeof err));
+		syfs_image *to = syfs_open(&rw, nullptr, 0), *files = syfs_open(&rf, nullptr, 0);
+		Bytes b = bytes_of(100, 1);
+		const syfs_node file = put_file(files, SYFS_ROOT, "A.BIN", b);
+		CHECK(syfs_transfer(to, SYFS_ROOT, files, file) == SYFS_NO_NODE && *syfs_error(to));
+		CHECK(put_file(to, SYFS_ROOT, "A.BIN", b) == SYFS_NO_NODE && *syfs_error(to));
+		CHECK(syfs_transfer(files, SYFS_ROOT, from, syfs_node(find(from, "STR:Strings") + 1)) == SYFS_NO_NODE && *syfs_error(files));
+		syfs_close(to), syfs_close(files);
+	}
+	close_image(from);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2620,6 +2718,7 @@ int main()
 	test_format_fat();
 	test_format_s700();
 	test_fat_written();
+	test_s700_taken();
 	test_smartmedia();
 	test_vhd();
 	test_vhd_written();

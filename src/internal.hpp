@@ -128,6 +128,18 @@ public:
 	virtual bool remove(size_t, std::string &why) { return why = "the format is not written", false; }
 	//! Gives entry i another name.
 	virtual bool rename(size_t, std::string_view, std::string &why) { return why = "the format is not written", false; }
+	//! Whether its entries are named anew.
+	virtual bool names() const { return writes(); }
+	//! Copies entry i of another image in, where this format takes that image's entries whole, with what they use.
+	/*!
+	 * taken is set false where it does not: the entry is then copied as files are, if it can be.
+	 * \return The entry it now is here, one made or one already there that is the same; syfs::NONE with why.
+	 */
+	virtual size_t adopt(const Medium &, size_t, size_t, std::string &, bool &taken)
+	{
+		taken = false;
+		return NONE;
+	}
 	//! Gives entry i another parent (syfs::NONE: the top).
 	virtual bool move(size_t, size_t, std::string &why) { return why = "the format is not written", false; }
 	//! The sample entry i sounds at key (0 to 127), or syfs::NONE; here a sample, tone or file with a header itself.

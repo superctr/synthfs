@@ -6,7 +6,8 @@
 //   synthfs-edit IMAGE mv PATH NEW             named anew, moved to another directory, or both
 //   synthfs-edit IMAGE from OTHER PATH [DIR]   a node of another image copied in, with what it holds
 //   synthfs-edit IMAGE get PATH FILE [wav]     a node written out: its own bytes, or its wave as a WAV file
-// A PATH is names from the top with '/' between; "/" or "" is the top.
+// A PATH is names from the top with '/' between; "/" or "" is the top.  A name may be TYPE=NAME, where nodes of
+// different types share one ("patch=STR:Strings").
 #include <synthfs/synthfs.h>
 
 #include <cstdio>
@@ -44,13 +45,20 @@ syfs_node at_path(syfs_image *im, std::string path)
 		size_t to = path.find('/', from);
 		if (to == std::string::npos)
 			to = path.size();
-		const std::string name = path.substr(from, to - from);
+		// a name, or TYPE=NAME where two of different types have one name ("patch=STR:Strings")
+		std::string name = path.substr(from, to - from);
+		syfs_key type = SYFS_NONE;
+		const size_t eq = name.find('=');
+		if (eq != std::string::npos && syfs_name(syfs_key_of(name.substr(0, eq).c_str()))) {
+			type = syfs_key_of(name.substr(0, eq).c_str());
+			name = name.substr(eq + 1);
+		}
 		std::vector<syfs_node> kids(syfs_list(im, n, SYFS_REL_CHILDREN, nullptr, 0));
 		syfs_list(im, n, SYFS_REL_CHILDREN, kids.data(), kids.size());
 		syfs_node found = SYFS_NO_NODE;
 		for (syfs_node k : kids) {
 			syfs_info info;
-			if (found == SYFS_NO_NODE && syfs_node_info(im, k, &info) && name == info.name)
+			if (found == SYFS_NO_NODE && syfs_node_info(im, k, &info) && name == info.name && (!type || type == info.type))
 				found = k;
 		}
 		if (found == SYFS_NO_NODE)

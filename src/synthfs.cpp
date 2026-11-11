@@ -594,7 +594,7 @@ int syfs_prop_at(syfs_image *im, syfs_node n, size_t i, syfs_prop *out)
 		for (size_t k = 0; k < count; k++) {
 			Value v = im->value(n, keys[k]);
 			if (v.kind != SYFS_NONE && !i--) {
-				*out = { keys[k], v.kind, n && keys[k] == SYFS_PROP_NAME && im->writable && im->medium->writes() };
+				*out = { keys[k], v.kind, n && keys[k] == SYFS_PROP_NAME && im->writable && im->medium->names() };
 				return true;
 			}
 		}
@@ -777,6 +777,22 @@ syfs_node syfs_transfer(syfs_image *to, syfs_node parent, syfs_image *from, syfs
 	}
 	if (!to->changes())
 		return SYFS_NO_NODE;
+	try {
+		// a format that takes the other image's entries whole, with what they use, does; any other copies files
+		std::string why;
+		bool taken = false;
+		from->list();
+		const size_t i = to->medium->adopt(*from->medium, n - 1, parent ? parent - 1 : NONE, why, taken);
+		if (taken) {
+			to->error = i == NONE ? why : "";
+			to->relate();
+			return i == NONE ? SYFS_NO_NODE : syfs_node(i + 1);
+		}
+	} catch (...) {
+		to->error = "the image could not be written";
+		to->relate();
+		return SYFS_NO_NODE;
+	}
 	return transfer(to, parent, from, n, 0);
 }
 

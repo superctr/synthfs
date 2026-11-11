@@ -40,6 +40,10 @@ public:
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 	size_t sample_at(size_t i, int key) const override;
+	//! Written by taking another S-700 disk's entries in, each with what it uses (docs/formats.md).
+	bool writes() const override { return true; }
+	bool names() const override { return false; }
+	size_t adopt(const Medium &from, size_t i, size_t parent, std::string &why, bool &taken) override;
 
 private:
 	//! An entry's index by its list and number.

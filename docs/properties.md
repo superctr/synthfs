@@ -103,3 +103,7 @@ writable, and nodes are made (`syfs_import`: a file of the host's bytes, an empt
 (`syfs_remove`, with what they hold), given another parent (`syfs_move`) and copied in from another image
 (`syfs_transfer`: a file as its `raw` bytes, a directory or volume as a directory with what it holds).  A node
 keeps its number through every change; a removed one's is not used again.
+
+An S-760's or S-770's disk takes another's entries by `syfs_transfer`: a volume, performance, patch, partial or
+sample with all it uses, what is already on the disk used and not made again.  Nothing else of such a disk is
+changed yet, and its names are not writable.

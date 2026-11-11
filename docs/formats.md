@@ -62,9 +62,25 @@ program where one was installed (zero on a disc without); nothing here reads the
 A directory is 32-byte entries, sixteen to a sector; a list is the first *count* of them, and an entry whose
 first byte is not printable (32 to 126) is an empty slot.  An entry: the name (16 characters; its first three a
 category code where it is one of `---`, `BEL`, `BRS`, `BS `, `BTS`, `CMB`, `CYM`, `DRM`, `FLT`, `GTR`, `HAT`, `HIT`,
-`KEY`, `KIK`, `KIT`, `MLT`, `ORC`, `ORG`, `PAD`, `PNO`, `PRC`, `SAX`, `SFX`, `SNR`, `STR`, `TOM`, `VOX`, `WND`), a
-flag byte at +16 (bit 6 set on every listed entry **[seen]**), and a sample's segment top at +28 and segment count
-at +30.  Slots past the count may hold names left behind (one disc here has seven) and are not listed.
+`KEY`, `KIK`, `KIT`, `MLT`, `ORC`, `ORG`, `PAD`, `PNO`, `PRC`, `SAX`, `SFX`, `SNR`, `STR`, `TOM`, `VOX`, `WND`), then,
+on every disc here **[seen]**:
+
+| At | |
+|---|---|
+| +16 | the list's type: 0x40 a volume, 0x41 a performance, 0x42 a patch, 0x43 a partial, 0x44 a sample; +17 zero |
+| +18 | the entry after it in the list's order, its number with 0x8000 set; 0xFFFF on the last |
+| +20 | the entry before it, likewise; 0xFFFF on the first |
+| +22 | its place in that order, from 0 |
+| +24 | four bytes, zero but on some performances (the last 1) and one volume |
+| +28 | a sample's first segment; zero on the others |
+| +30 | the segments it sounds: a sample's own count, and for the others the sum over the samples they reach, each once |
+
+Each list is one chain: slot 0 is the first (nothing before it), and following +18 reaches every entry of the
+list once, each naming the one before it at +20.  The order is mostly the slots' own, and mostly +22 counts along
+it; on two of the five discs a list's places have fallen behind its order, and thirteen of some seventeen thousand
+sizes are not their samples' sum, so a machine leaves both as they were when entries are changed.  No disc has an
+empty slot below its list's count.  Slots past the count may hold names left behind (one disc here has seven) and
+are not listed.
 
 Record *n* of a list is at *n* times its size from the list's first record sector.  What each uses:
 
@@ -103,6 +119,27 @@ end it).  The table's entry 0 is 0xFFFA and entry 1 the count of free segments; 
 disk's end 0xFFFF.  A sample's frames are its segments' whole, the last padded past the wave's end.  On the library's
 discs the waves run smoothly across their segments' joins and an instrument disc's sustain loops meet without a step
 **[seen]**.
+
+**Taken in from another S-700 disk** (`syfs_transfer`, a hard disk's image taking an entry of a CD-ROM's or another
+disk's): the entry and, list by list down to the samples, what it and they name.  From the samples up, each is
+either one already on the disk, with the same sixteen bytes of name and the same record (and, a sample, the same
+segments of wave), or made in the slot after its list's last, its count one more.  A record made is the other
+disk's with the numbers it names set to theirs here; a number that named no listed entry there is set to 0xFFFF,
+so that it names none here.  A patch's bytes at +32 are left as they are: they are not the partials' numbers (two
+discs here have them otherwise) and only tell a key in use.  A sample's wave goes into the lowest free segments,
+each naming the next in the table and the last 0xFFF8, and the table's free count goes down by them.  A directory
+entry made is the other's with its type, 0xFFFF after it, the list's last before it (which then names it), its
+place the count of entries before, a sample's first segment and the segments it sounds; so each list stays one
+chain in the order its entries were made.  On an S-760's disk a partial's extended record is the other disk's
+where that is an S-760's too, else 0xFF throughout, as formatting leaves it.  Waves and records are written
+first, then the directory's entries, then the table and the counts.
+
+Checked: the lists' chains, places and sizes and the table's account on disks so made, by a reading of them apart
+from the library's and the same reading of the five discs here; the waves and what each entry uses against the
+disc they came from.  Not yet loaded on a machine.
+
+Not written: a floppy's volume into a disk (its records are of another shape), entries removed or named anew, a
+new sample from a WAV file.
 
 **The S-760's extended records**: a disc formatted on an S-760 reserves segments 2 to 58 (0xFFFE in the segment
 table, left as they were) and 59 to 115 (0xFFFD), and marks the table's entry 0xFFFE with 0xFFFE (0xFFFF on an

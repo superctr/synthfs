@@ -66,7 +66,9 @@ loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM
 A FAT volume, in a raw image or a VHD, is written: `syfs_import` makes a file of the host's bytes or an empty
 directory, `syfs_remove` removes a node with what it holds, `syfs_move` gives it another parent, setting
 `SYFS_PROP_NAME` names it anew, and `syfs_transfer` copies a node of another image in, a file as its own bytes and
-a directory or volume with what it holds.  Nodes keep their numbers through every change.
+a directory or volume with what it holds.  Nodes keep their numbers through every change.  An S-760's or S-770's
+hard disk takes another S-700 disk's entries the same way: `syfs_transfer` of a patch on a CD-ROM brings its
+partials and their samples' waves, leaving out what the disk already has.
 
 What a node sounds at a key, `syfs_at_key`, is the sample (a node with a wave) a patch, partial, program or board's
 wave plays there, so a host can preview a sound at middle C: that sample played at its rate × 2^((60 − key) / 12),
