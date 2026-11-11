@@ -53,6 +53,8 @@ public:
 	static syfs_key medium_of(const Image &im);
 	void list() override;
 	bool sample(size_t i, syfs::Sample &out) const override;
+	uint64_t raw_size(size_t i) const override { return entries[i].kind == SYFS_TYPE_FILE ? entries[i].bytes : 0; }
+	bool raw(size_t i, uint64_t offset, void *buf, size_t n) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 
 private:

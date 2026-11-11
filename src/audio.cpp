@@ -290,4 +290,58 @@ size_t audio_wave(const FileRead &read, uint64_t bytes, uint64_t first, int16_t 
 	return done;
 }
 
+static void put_le(std::vector<uint8_t> &b, uint32_t v, int n)
+{
+	for (int k = 0; k < n; k++)
+		b.push_back(uint8_t(v >> 8 * k));
+}
+
+bool wav_around(const syfs::Sample &s, std::vector<uint8_t> &before, std::vector<uint8_t> &after)
+{
+	const uint64_t bytes = s.frames * s.channels * 2;
+	before.clear();
+	after.clear();
+	if (bytes > 0xFFFFFF00u || !s.channels)
+		return false;
+	auto tag = [](std::vector<uint8_t> &b, const char *t) { b.insert(b.end(), t, t + 4); };
+	if (bytes & 1)
+		after.push_back(0);
+	const bool loop = s.loop != SYFS_NONE;
+	if (s.key >= 0 || loop) {
+		tag(after, "smpl");
+		put_le(after, 36 + (loop ? 24 : 0), 4);
+		put_le(after, 0, 4);
+		put_le(after, 0, 4);
+		put_le(after, s.rate ? uint32_t(1000000000.0 / s.rate + 0.5) : 0, 4);
+		put_le(after, s.key >= 0 ? uint32_t(s.key) : 60, 4);
+		put_le(after, 0, 4);
+		put_le(after, 0, 4);
+		put_le(after, 0, 4);
+		put_le(after, loop ? 1 : 0, 4);
+		put_le(after, 0, 4);
+		if (loop) {
+			put_le(after, 0, 4);
+			put_le(after, s.loop == SYFS_LOOP_ALTERNATE ? 1 : 0, 4);
+			put_le(after, uint32_t(s.loop_start), 4);
+			put_le(after, uint32_t(s.loop_end - 1), 4);
+			put_le(after, 0, 4);
+			put_le(after, 0, 4);
+		}
+	}
+	tag(before, "RIFF");
+	put_le(before, uint32_t(4 + 24 + 8 + bytes + after.size()), 4);
+	tag(before, "WAVE");
+	tag(before, "fmt ");
+	put_le(before, 16, 4);
+	put_le(before, 1, 2);
+	put_le(before, s.channels, 2);
+	put_le(before, s.rate, 4);
+	put_le(before, s.rate * s.channels * 2, 4);
+	put_le(before, s.channels * 2, 2);
+	put_le(before, 16, 2);
+	tag(before, "data");
+	put_le(before, uint32_t(bytes), 4);
+	return true;
+}
+
 }

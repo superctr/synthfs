@@ -189,10 +189,9 @@ syfs_node syfs_at_key(syfs_image *im, syfs_node n, int key);
 /*!
  * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL, and what
  * tells a board or card apart (SYFS_PROP_MODEL, _TITLE, _NUMBER, _ID, _DATE), none of which reads the image's lists.
- * Every other node has
- * SYFS_PROP_NAME, _TYPE, _NUMBER, _SIZE and _FORMAT (the format of the volume it is in: one disk may mix two), and
- * _TAG where the image gives it a code of its own; a node with a wave has SYFS_PROP_RATE down to _MODE
- * (docs/properties.md).
+ * Every other node has SYFS_PROP_NAME, _TYPE, _NUMBER, _SIZE and _FORMAT (the format of the volume it is in: one
+ * disk may mix two), _TAG where the image gives it a code of its own, and _EXPORTS where its contents can be read; a
+ * node with a wave has SYFS_PROP_RATE down to _MODE (docs/properties.md).
  */
 typedef struct syfs_prop {
 	syfs_key key;        //!< SYFS_PROP_.
@@ -232,6 +231,13 @@ int syfs_set_str(syfs_image *im, syfs_node n, syfs_key key, const char *value);
 
 //! Reads node n's contents in a conversion: up to size bytes from byte at.
 /*!
+ * SYFS_PROP_EXPORTS names the conversions a node has ("raw wav s16").  With buf NULL nothing is read and the bytes
+ * there are from at are returned: the whole, with at 0.
+ *
+ * - SYFS_AS_RAW: the bytes of a file as its volume keeps it: a FAT's or CD-ROM's file, an AKAI program's, sample's
+ *   or multi's.
+ * - SYFS_AS_WAV: a wave as a WAV file of 16-bit values, the original key and the loop in a smpl chunk where the
+ *   sample has them; where the wave is cut short in the image, zeros.
  * - SYFS_AS_S16: a wave decoded to 16-bit signed values in the host's byte order, the channels of a frame side by
  *   side, SYFS_PROP_FRAMES frames in all; at and size are whole frames'.  12-bit and 8-bit values come scaled to 16,
  *   wider ones cut to their top 16 bits, floating point rounded and clipped, a board's samples decoded from the tone

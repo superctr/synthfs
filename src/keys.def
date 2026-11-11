@@ -77,9 +77,12 @@ prop LOOP_START    loop-start
 prop LOOP_END      loop-end
 prop REVERSE       reverse
 prop MODE          mode
+prop EXPORTS       exports
 
 rel CHILDREN       children
 rel USES           uses
 rel ALL            all
 
 as S16             s16
+as WAV             wav         "WAV"
+as RAW             raw

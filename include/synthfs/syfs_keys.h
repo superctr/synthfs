@@ -89,12 +89,15 @@ enum syfs_keys {
 	SYFS_PROP_LOOP_END = 0x0a2e84ff,          //!< "loop-end"
 	SYFS_PROP_REVERSE = 0x21506c05,           //!< "reverse"
 	SYFS_PROP_MODE = 0x6c6ee012,              //!< "mode"
+	SYFS_PROP_EXPORTS = 0x6dac1240,           //!< "exports"
 
 	SYFS_REL_CHILDREN = 0x67a9c9d2,           //!< "children"
 	SYFS_REL_USES = 0x61786085,               //!< "uses"
 	SYFS_REL_ALL = 0x13254bc4,                //!< "all"
 
 	SYFS_AS_S16 = 0x17a6396d,                 //!< "s16"
+	SYFS_AS_WAV = 0x13e2bd39,                 //!< "wav"
+	SYFS_AS_RAW = 0x43ff12f1,                 //!< "raw"
 };
 
 //! Every key once: X(constant, class, name, title).
@@ -169,9 +172,12 @@ enum syfs_keys {
 	X(SYFS_PROP_LOOP_END, "prop", "loop-end", "loop-end") \
 	X(SYFS_PROP_REVERSE, "prop", "reverse", "reverse") \
 	X(SYFS_PROP_MODE, "prop", "mode", "mode") \
+	X(SYFS_PROP_EXPORTS, "prop", "exports", "exports") \
 	X(SYFS_REL_CHILDREN, "rel", "children", "children") \
 	X(SYFS_REL_USES, "rel", "uses", "uses") \
 	X(SYFS_REL_ALL, "rel", "all", "all") \
-	X(SYFS_AS_S16, "as", "s16", "s16")
+	X(SYFS_AS_S16, "as", "s16", "s16") \
+	X(SYFS_AS_WAV, "as", "wav", "WAV") \
+	X(SYFS_AS_RAW, "as", "raw", "raw")
 
 #endif

@@ -31,6 +31,14 @@ struct AudioLayout {
  */
 bool audio_sample(const FileRead &read, uint64_t bytes, syfs::Sample &out, AudioLayout *layout = nullptr);
 
+//! A 16-bit WAV file's bytes around its frames, for a sample's header: what goes before them and what after.
+/*!
+ * Before: the RIFF header, the format and the data chunk's head.  After: a pad byte where the frames are an odd
+ * count of bytes, then a smpl chunk with the original key and the loop, where the sample has either.
+ * \return false where the frames are more than a WAV file holds.
+ */
+bool wav_around(const syfs::Sample &s, std::vector<uint8_t> &before, std::vector<uint8_t> &after);
+
 //! Up to frames frames from frame first, decoded to 16 bits, the channels side by side; the count read.
 size_t audio_wave(const FileRead &read, uint64_t bytes, uint64_t first, int16_t *out, size_t frames);
 

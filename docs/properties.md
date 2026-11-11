@@ -66,6 +66,7 @@ patches may use one partial, two partials one sample.
 | `size` | int | its bytes in the image: a sample's or tone's wave room, a file's length; 0 where unknown |
 | `format` | key | the format of the volume or area it is in (an AKAI disk mixes S1000 and S3000) |
 | `tag` | string | the image's own code, where it has one: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type letter (p, s, x, d, q, t, m, c; an `other`'s type in hex), an S-550 area's category number, a bank's record shape (an SR-JV80's type, 2 to 5; an SRX's class and type, "4:6"), a wave's split's keys ("60-64", the lowest and the highest it plays) |
+| `exports` | string | the conversions its contents are read in (`syfs_read`), a name each with a blank between; none where there are none |
 
 A node with a wave (a sample, a tone, a WAV or AIFF file, a board's wave, which answers as the split it plays at key
 60) has these too.  Points are frames from the first frame stored, the ends exclusive.
@@ -82,5 +83,17 @@ A node with a wave (a sample, a tone, a WAV or AIFF file, a board's wave, which 
 | `loop-start`, `loop-end` | int | equal where `loop` is `none` |
 | `reverse` | int | 1 where it is played from the end down to the start (and the loop, where one, run there) |
 | `mode` | int | the format's own loop mode code: its finer behaviour (an S-760/S-770 release loop, an AKAI sample's other seven loops) is left to it |
+
+## Conversions
+
+What `syfs_read` gives of a node, by the names `exports` lists.
+
+| name | of | |
+|---|---|---|
+| `raw` | a FAT's or CD-ROM's file; an AKAI program, sample, multi or file of another type | the file's bytes as its volume keeps them, as far as its chain reads |
+| `wav` | a node with a wave | a WAV file of 16-bit values, the channels as stored, with a `smpl` chunk for the original key and the loop where the sample has either; zeros where the wave is cut short in the image |
+| `s16` | a node with a wave | the values alone, in the host's byte order |
+
+Not yet: an S-760/S-770 or S-550 record's bytes, a board's patch, and anything as system exclusive.
 
 No property is writable yet.

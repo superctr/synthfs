@@ -59,6 +59,10 @@ if (syfs_get_int(im, n, SYFS_PROP_FRAMES, &frames) && syfs_get_int(im, n, SYFS_P
 	}
 ```
 
+A node's `exports` property names what else it reads as: `SYFS_AS_WAV`, the same wave as a WAV file with its key and
+loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample).
+`syfs_read` with no buffer gives the size.
+
 What a node sounds at a key, `syfs_at_key`, is the sample (a node with a wave) a patch, partial, program or board's
 wave plays there, so a host can preview a sound at middle C: that sample played at its rate × 2^((60 − key) / 12),
 key its original key.

@@ -19,6 +19,8 @@ public:
 	size_t sample_at(size_t i, int key) const override;
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	uint64_t raw_size(size_t i) const override;
+	bool raw(size_t i, uint64_t offset, void *buf, size_t n) const override;
 
 protected:
 	//! Where a volume's blocks are: a partition's, or a floppy's; its FAT, a halfword a block.
@@ -65,6 +67,8 @@ public:
 	size_t sample_at(size_t i, int key) const override;
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	uint64_t raw_size(size_t i) const override;
+	bool raw(size_t i, uint64_t offset, void *buf, size_t n) const override;
 
 private:
 	std::vector<uint8_t> read_file(size_t i, uint64_t max) const;

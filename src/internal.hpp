@@ -103,6 +103,10 @@ public:
 	 * The count asked for is within s.frames.
 	 */
 	virtual size_t wave(size_t, const syfs::Sample &, uint64_t, int16_t *, size_t) const { return 0; }
+	//! The bytes entry i is kept as, where it is a file of its volume's; 0 where it is none.
+	virtual uint64_t raw_size(size_t) const { return 0; }
+	//! Reads n bytes of entry i's file from offset; false where any is missing.
+	virtual bool raw(size_t, uint64_t, void *, size_t) const { return false; }
 	//! The sample entry i sounds at key (0 to 127), or syfs::NONE; here a sample, tone or file with a header itself.
 	virtual size_t sample_at(size_t i, int key) const;
 

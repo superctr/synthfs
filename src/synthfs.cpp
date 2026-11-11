@@ -3,6 +3,7 @@
 #include "akai/akai.hpp"
 #include "emu/emu.hpp"
 #include "fat.hpp"
+#include "audio.hpp"
 #include "iso9660.hpp"
 #include "roland/roland.hpp"
 
@@ -90,7 +91,7 @@ Value key(syfs_key v) { return { SYFS_KIND_KEY, v, {} }; }
 
 constexpr syfs_key root_props[] = { SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL };
 constexpr syfs_key node_props[] = { SYFS_PROP_NAME, SYFS_PROP_TYPE, SYFS_PROP_NUMBER, SYFS_PROP_SIZE, SYFS_PROP_FORMAT,
-	SYFS_PROP_TAG };
+	SYFS_PROP_TAG, SYFS_PROP_EXPORTS };
 constexpr syfs_key wave_props[] = { SYFS_PROP_RATE, SYFS_PROP_CHANNELS, SYFS_PROP_BITS, SYFS_PROP_KEY, SYFS_PROP_FRAMES,
 	SYFS_PROP_START, SYFS_PROP_END, SYFS_PROP_LOOP, SYFS_PROP_LOOP_START, SYFS_PROP_LOOP_END, SYFS_PROP_REVERSE,
 	SYFS_PROP_MODE };
@@ -183,6 +184,21 @@ struct syfs_image {
 		return sample_ok ? &sample : nullptr;
 	}
 
+	// the bytes entry i's contents are in a conversion; 0 where it has none
+	uint64_t exported(size_t i, syfs_key as)
+	{
+		if (as == SYFS_AS_RAW)
+			return medium->raw_size(i);
+		const Sample *s = header(i);
+		if (!s || !s->channels || !s->frames)
+			return 0;
+		const uint64_t data = s->frames * s->channels * 2;
+		if (as == SYFS_AS_S16)
+			return data;
+		std::vector<uint8_t> before, after;
+		return as == SYFS_AS_WAV && wav_around(*s, before, after) ? before.size() + data + after.size() : 0;
+	}
+
 	// node n's property of a key; kind SYFS_NONE where it has none
 	Value value(syfs_node n, syfs_key k)
 	{
@@ -214,6 +230,14 @@ struct syfs_image {
 		case SYFS_PROP_SIZE: return integer(int64_t(e->bytes));
 		case SYFS_PROP_FORMAT: return key(e->format);
 		case SYFS_PROP_TAG: return e->tag[0] ? string(e->tag) : Value {};
+		case SYFS_PROP_EXPORTS: {
+			// the conversions its contents are read in, a name each
+			std::string names;
+			for (syfs_key as : { SYFS_AS_RAW, SYFS_AS_WAV, SYFS_AS_S16 })
+				if (exported(n - 1, as))
+					names += (names.empty() ? "" : " ") + std::string(syfs_name(as));
+			return names.empty() ? Value {} : string(names);
+		}
 		default: break;
 		}
 		const Sample *s = header(n - 1);
@@ -604,20 +628,65 @@ int syfs_set_str(syfs_image *im, syfs_node, syfs_key, const char *)
 
 size_t syfs_read(syfs_image *im, syfs_node n, syfs_key as, uint64_t at, void *buf, size_t size)
 {
-	if (!im || !buf || as != SYFS_AS_S16 || !im->entry(n))
+	if (!im || !im->entry(n))
 		return 0;
-	const Sample *s = im->header(n - 1);
-	if (!s || !s->channels)
-		return 0;
-	size_t frame = s->channels * sizeof(int16_t);
-	uint64_t first = at / frame;
-	size_t frames = size / frame;
-	if (at % frame || first >= s->frames || !frames)
-		return 0;
+	const size_t i = n - 1;
 	try {
-		Sample header = *s;
-		return frame * im->medium->wave(n - 1, header, first, static_cast<int16_t *>(buf),
-			size_t(std::min<uint64_t>(frames, header.frames - first)));
+		const uint64_t total = im->exported(i, as);
+		if (at >= total)
+			return 0;
+		const uint64_t left = total - at;
+		if (!buf)
+			return size_t(std::min<uint64_t>(left, SIZE_MAX));
+		size = size_t(std::min<uint64_t>(size, left));
+		if (as == SYFS_AS_RAW) {
+			if (im->medium->raw(i, at, buf, size))
+				return size;
+			// a file whose chain breaks or that the image ends in: as far as it reads, a sector at a time
+			size_t done = 0;
+			for (size_t k; done < size; done += k)
+				if (!im->medium->raw(i, at + done, static_cast<uint8_t *>(buf) + done, k = std::min<size_t>(512, size - done)))
+					break;
+			return done;
+		}
+		const Sample header = *im->header(i);
+		const size_t frame = header.channels * sizeof(int16_t);
+		if (as == SYFS_AS_S16) {
+			if (at % frame || size < frame)
+				return 0;
+			return frame * im->medium->wave(i, header, at / frame, static_cast<int16_t *>(buf), size / frame);
+		}
+		// a WAV file: what goes before the frames, the frames as little-endian values, what goes after
+		std::vector<uint8_t> before, after;
+		wav_around(header, before, after);
+		const uint64_t data = header.frames * frame;
+		auto *out = static_cast<uint8_t *>(buf);
+		for (size_t done = 0; done < size;) {
+			const uint64_t p = at + done;
+			size_t k;
+			if (p < before.size()) {
+				k = size_t(std::min<uint64_t>(size - done, before.size() - p));
+				memcpy(out + done, &before[size_t(p)], k);
+			} else if (p < before.size() + data) {
+				// whole frames around the bytes asked for; where the wave is cut short, zeros
+				const uint64_t in = p - before.size(), first = in / frame;
+				k = size_t(std::min<uint64_t>(size - done, std::min<uint64_t>(data - in, 65536)));
+				const size_t frames = size_t((in + k + frame - 1) / frame - first);
+				std::vector<int16_t> pcm(frames * header.channels, 0);
+				im->medium->wave(i, header, first, pcm.data(), frames);
+				const size_t skip = size_t(in - first * frame);
+				for (size_t b = 0; b < k; b++) {
+					const uint16_t v = uint16_t(pcm[(skip + b) / 2]);
+					out[done + b] = uint8_t((skip + b) & 1 ? v >> 8 : v);
+				}
+			} else {
+				const uint64_t in = p - before.size() - data;
+				k = size_t(std::min<uint64_t>(size - done, after.size() - in));
+				memcpy(out + done, &after[size_t(in)], k);
+			}
+			done += k;
+		}
+		return size;
 	} catch (...) {
 		return 0;
 	}

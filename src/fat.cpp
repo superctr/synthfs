@@ -348,6 +348,14 @@ bool Fat::sample(size_t i, syfs::Sample &out) const
 		bytes, out);
 }
 
+bool Fat::raw(size_t i, uint64_t offset, void *buf, size_t n) const
+{
+	const uint64_t bytes = raw_size(i);
+	if (offset > bytes || n > bytes - offset)
+		return false;
+	return read_file(chain(first_[i], (bytes + g_.cluster - 1) / g_.cluster), offset, buf, n);
+}
+
 size_t Fat::wave(size_t i, const syfs::Sample &, uint64_t first, int16_t *out, size_t frames) const
 {
 	uint64_t bytes = entries[i].bytes;

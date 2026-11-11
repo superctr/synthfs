@@ -111,6 +111,40 @@ static const std::vector<syfs::Entry> &entries_of(syfs_image *fs)
 			CHECK(!prop.writable && !syfs_set_int(fs, syfs_node(n), prop.key, 0) && *syfs_error(fs));
 		}
 		CHECK(keys.size() >= (n ? 5u : 3u) && keys[0] == (n ? SYFS_PROP_NAME : SYFS_PROP_FORMAT));
+		// each conversion its exports name reads whole, the same in one piece as in several; none it does not name
+		char exports[64] = "";
+		syfs_get_str(fs, syfs_node(n), SYFS_PROP_EXPORTS, exports, sizeof exports);
+		for (syfs_key as : { SYFS_AS_RAW, SYFS_AS_WAV, SYFS_AS_S16 }) {
+			const bool named = n && (" " + std::string(exports) + " ").find(" " + std::string(syfs_name(as)) + " ") != std::string::npos;
+			const size_t total = syfs_read(fs, syfs_node(n), as, 0, nullptr, 0);
+			CHECK(named == (total != 0));
+			if (!total || total > (8u << 20))
+				continue;
+			std::vector<uint8_t> whole(total + 16, 0xEE), parts(total, 0);
+			const size_t got = syfs_read(fs, syfs_node(n), as, 0, whole.data(), whole.size());
+			// a wave cut short in the image reads short as values, as does a file whose chain breaks; a WAV file is
+			// whole whatever the wave
+			CHECK(as == SYFS_AS_WAV ? got == total : got <= total);
+			CHECK(whole[total] == 0xEE && !syfs_read(fs, syfs_node(n), as, total, whole.data(), 16));
+			const size_t step = as == SYFS_AS_S16 ? 2 * size_t(num(fs, syfs_node(n), SYFS_PROP_CHANNELS, 1)) * 37 : 1001;
+			size_t at = 0;
+			for (size_t k; at < got && (k = syfs_read(fs, syfs_node(n), as, at, &parts[at], std::min(step, got - at))); at += k)
+				;
+			CHECK(at == got && !memcmp(parts.data(), whole.data(), got));
+			if (as == SYFS_AS_WAV) {
+				const uint32_t riff = uint32_t(whole[4] | whole[5] << 8 | whole[6] << 16 | uint32_t(whole[7]) << 24);
+				const uint32_t data = uint32_t(whole[40] | whole[41] << 8 | whole[42] << 16 | uint32_t(whole[43]) << 24);
+				CHECK(!memcmp(whole.data(), "RIFF", 4) && riff == total - 8 && !memcmp(&whole[36], "data", 4));
+				CHECK(data == uint64_t(num(fs, syfs_node(n), SYFS_PROP_FRAMES)) * uint64_t(num(fs, syfs_node(n), SYFS_PROP_CHANNELS)) * 2);
+				// its frames are the values read
+				std::vector<int16_t> pcm(data / 2);
+				const size_t values = syfs_read(fs, syfs_node(n), SYFS_AS_S16, 0, pcm.data(), data) / 2;
+				bool same = true;
+				for (size_t v = 0; v < values; v++)
+					same = same && int16_t(whole[44 + 2 * v] | whole[45 + 2 * v] << 8) == pcm[v];
+				CHECK(same);
+			}
+		}
 		CHECK(!syfs_get_int(fs, syfs_node(n), syfs_key_of("no such property"), nullptr));
 	}
 	// each node is among its parent's children, in order, and nowhere else

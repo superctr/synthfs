@@ -226,6 +226,19 @@ size_t S1000::read_at(size_t i, uint64_t offset, uint8_t *buf, size_t n) const
 }
 
 // file i's first max bytes
+// a volume's files: its programs, samples, multis and the files of other types
+uint64_t S1000::raw_size(size_t i) const
+{
+	const syfs_key k = entries[i].kind;
+	return k == SYFS_TYPE_PROGRAM || k == SYFS_TYPE_SAMPLE || k == SYFS_TYPE_MULTI || k == SYFS_TYPE_OTHER ? entries[i].bytes : 0;
+}
+
+bool S1000::raw(size_t i, uint64_t offset, void *buf, size_t n) const
+{
+	const uint64_t bytes = raw_size(i);
+	return offset <= bytes && n <= bytes - offset && read_at(i, offset, static_cast<uint8_t *>(buf), n) == n;
+}
+
 std::vector<uint8_t> S1000::read_file(size_t i, uint64_t max) const
 {
 	std::vector<uint8_t> out(size_t(std::min(max, entries[i].bytes)));

@@ -35,6 +35,24 @@ void S900::list()
 }
 
 // file i's first max bytes along the FAT: a halfword a block, 0x8000 and above the end
+uint64_t S900::raw_size(size_t i) const
+{
+	const syfs_key k = entries[i].kind;
+	return k == SYFS_TYPE_PROGRAM || k == SYFS_TYPE_SAMPLE || k == SYFS_TYPE_OTHER ? entries[i].bytes : 0;
+}
+
+bool S900::raw(size_t i, uint64_t offset, void *buf, size_t n) const
+{
+	const uint64_t bytes = raw_size(i);
+	if (offset > bytes || n > bytes - offset)
+		return false;
+	auto f = read_file(i, offset + n);
+	if (f.size() < offset + n)
+		return false;
+	memcpy(buf, f.data() + offset, n);
+	return true;
+}
+
 std::vector<uint8_t> S900::read_file(size_t i, uint64_t max) const
 {
 	uint64_t blocks = (image.size() + BLOCK - 1) / BLOCK, left = std::min(max, entries[i].bytes), b = where[i] / BLOCK;
