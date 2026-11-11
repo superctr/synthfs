@@ -30,6 +30,10 @@ public:
 	 *         it, or the host's write failed.
 	 */
 	virtual bool write(uint64_t, const void *, size_t) const { return false; }
+	//! Takes or lets go the image for this store alone, where others may write it; true where it is taken.
+	virtual bool hold(bool) const { return true; }
+	//! The bytes it holds now, asked anew where others may have added to the image.
+	virtual uint64_t length() const { return size(); }
 };
 
 //! The image as the host gives it.
@@ -40,6 +44,8 @@ public:
 	bool read(uint64_t offset, void *buf, size_t n) const override;
 	//! Writes anywhere: a write past the end makes the image longer.
 	bool write(uint64_t offset, const void *buf, size_t n) const override;
+	bool hold(bool on) const override { return !io_.hold || io_.hold(io_.user, on); }
+	uint64_t length() const override;
 
 private:
 	syfs_io io_;
@@ -79,6 +85,8 @@ private:
 	uint8_t footer_[512] {};     //!< The footer, to follow the blocks as they are added.
 	mutable uint64_t end_ = 0;   //!< Where the footer at the file's end starts: where the next block goes.
 	mutable std::vector<uint32_t> bat_;  //!< Each block's first sector in the file, 0xFFFFFFFF none.
+	//! A block's sector in the file, its entry read anew where it was none: another host may have added the block.
+	uint32_t sector_of(size_t block) const;
 };
 
 //! A store's bytes, each complemented.

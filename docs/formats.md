@@ -509,6 +509,13 @@ is written), then the footer again, and last its entry in the table, so that a w
 it read before.  Zeros written to a block not in the file add nothing.  A block once added stays, whatever is
 written to it after; `syfs_convert` to a raw image and back makes the file small again.
 
+**Several hosts on one file** (two machines on one disk; the io's `length` and `hold`): what a host holds of a
+dynamic disk in memory, the table and the file's end, grows old as another adds blocks.  So a block's table entry
+is read from the file again whenever it was last seen as absent, before a read gives zeros for it or a write adds
+it; and a block is added with the file held, its end asked of the host and the entry read once more, since the
+other may have added blocks, or this very one, meanwhile.  The entry being written last, a reader never follows
+one to a block not yet whole.  Writes into blocks that are there go where they go on a raw image, held by no one.
+
 Not read: differencing disks, the 511-byte footer of the oldest files, VHDX.
 
 ## SmartMedia cards

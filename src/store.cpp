@@ -8,6 +8,9 @@ namespace syfs {
 
 bool HostStore::read(uint64_t offset, void *buf, size_t n) const
 {
+	// what is past the end as last counted may have been added by another host
+	if (io_.length && (offset > size_ || n > size_ - offset))
+		length();
 	if (!io_.read || offset > size_ || n > size_ - offset)
 		return false;
 	return io_.read(io_.user, offset, buf, n) == n;
@@ -19,6 +22,13 @@ bool HostStore::write(uint64_t offset, const void *buf, size_t n) const
 		return false;
 	size_ = std::max(size_, offset + n);
 	return true;
+}
+
+uint64_t HostStore::length() const
+{
+	if (io_.length)
+		size_ = io_.length(io_.user);
+	return size_;
 }
 
 static const uint8_t sync[12] = { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };

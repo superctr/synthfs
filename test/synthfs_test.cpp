@@ -2198,6 +2198,75 @@ static void test_vhd_written()
 	syfs_close(fs);
 }
 
+// ---- a VHD two hosts have open at once: what one writes the other reads, and both may add blocks
+static int held = 0, holds = 0;
+
+static uint64_t sparse_length(void *user)
+{
+	return static_cast<Sparse *>(user)->size;
+}
+
+static int counted_hold(void *, int on)
+{
+	held += on ? 1 : -1;
+	holds += on;
+	return held == (on ? 1 : 0);
+}
+
+static void test_vhd_shared()
+{
+	const uint64_t MB = 1 << 20, SIZE = 24 * MB;
+	char err[128] = "";
+	Sparse file(0), plain(SIZE);
+	syfs_io zeros { nullptr, zeros_read, nullptr, SIZE }, make { &file, sparse_read, growing_write, 0 };
+	CHECK(syfs_convert(&zeros, &make, SYFS_CONTAINER_VHD, err, sizeof err));
+	// two hosts, each with its own io on the one file, and a third that only reads
+	syfs_io shared { &file, sparse_read, growing_write, file.size, sparse_length, counted_hold };
+	syfs_io reader { &file, sparse_read, nullptr, file.size, sparse_length, nullptr };
+	syfs_image *a = syfs_open(&shared, nullptr, 0), *b = syfs_open(&shared, nullptr, 0), *c = syfs_open(&reader, nullptr, 0);
+	syfs_io da {}, db {}, dc {};
+	CHECK(a && b && c && syfs_image_io(a, &da) && syfs_image_io(b, &db) && syfs_image_io(c, &dc) && !dc.write);
+	uint8_t buf[4096], got[4096];
+	auto fill = [&](uint8_t seed) {
+		for (size_t i = 0; i < sizeof buf; i++)
+			buf[i] = uint8_t(i * 3 + seed);
+	};
+	auto same = [&](const syfs_io &d, uint64_t at) {
+		plain.get(at, buf, sizeof buf);
+		return d.read(d.user, at, got, sizeof got) == sizeof got && !memcmp(got, buf, sizeof buf);
+	};
+	// every host has read the blocks as absent before any is written
+	for (const syfs_io *d : { &da, &db, &dc })
+		for (uint64_t at : { 3 * MB, 9 * MB, 15 * MB })
+			CHECK(same(*d, at));
+	// one adds a block: the others read it, and write into it without adding it again
+	fill(1);
+	CHECK(da.write(da.user, 3 * MB, buf, sizeof buf) == sizeof buf);
+	plain.put(3 * MB, buf, sizeof buf);
+	CHECK(same(db, 3 * MB) && same(dc, 3 * MB));
+	const uint64_t one = file.size;
+	fill(2);
+	CHECK(db.write(db.user, 3 * MB + 5000, buf, sizeof buf) == sizeof buf);
+	plain.put(3 * MB + 5000, buf, sizeof buf);
+	CHECK(file.size == one && same(da, 3 * MB + 5000) && same(da, 3 * MB));
+	// the other adds one, after the first's: neither is written over
+	fill(3);
+	CHECK(db.write(db.user, 9 * MB, buf, sizeof buf) == sizeof buf);
+	plain.put(9 * MB, buf, sizeof buf);
+	fill(4);
+	CHECK(da.write(da.user, 15 * MB, buf, sizeof buf) == sizeof buf);
+	plain.put(15 * MB, buf, sizeof buf);
+	CHECK(file.size == one + 2 * (512 + 2 * MB) && holds == 3 && held == 0);
+	for (const syfs_io *d : { &da, &db, &dc })
+		for (uint64_t at : { 3 * MB, 3 * MB + 5000, 9 * MB, 15 * MB, 20 * MB })
+			CHECK(same(*d, at));
+	syfs_close(a), syfs_close(b), syfs_close(c);
+	// and the file is a VHD of the disk both wrote
+	Sparse out(SIZE);
+	syfs_io again = io_of(file), to = writer_of(out);
+	CHECK(syfs_convert(&again, &to, SYFS_CONTAINER_RAW, err, sizeof err) == SIZE && out.pages == plain.pages);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2236,6 +2305,7 @@ int main()
 	test_smartmedia();
 	test_vhd();
 	test_vhd_written();
+	test_vhd_shared();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);

@@ -49,12 +49,19 @@ syfs_key syfs_format_at(size_t i);
 /*!
  * read and write move n bytes at offset into or from buf and return the count done (short at the end or on an
  * error).  The io is copied; user must stay valid until syfs_close.
+ *
+ * An image that several hosts have open at once, one or more of them writing (two machines on one disk), is given
+ * length and hold: a dynamic VHD grows as it is written, so each asks the image's length where its own count may
+ * be old, and holds the image while it adds to it.  hold returns 0 where the image cannot be taken; a host holds
+ * with a lock on the file that every one of them honours.  Left NULL, the image is taken to be this io's alone.
  */
 typedef struct syfs_io {
 	void *user;                                                               //!< Passed to read and write.
 	size_t (*read)(void *user, uint64_t offset, void *buf, size_t n);         //!< Reads n bytes at offset.
 	size_t (*write)(void *user, uint64_t offset, const void *buf, size_t n);  //!< Writes them; NULL where only read.
 	uint64_t size;                                                            //!< The image's bytes.
+	uint64_t (*length)(void *user);     //!< The image's bytes now, where others may write it too; else NULL.
+	int (*hold)(void *user, int on);    //!< Takes (1) or lets go (0) the image for this io alone; else NULL.
 } syfs_io;
 
 //! An opened image.
@@ -92,7 +99,9 @@ const char *syfs_error(const syfs_image *im);
  * A VHD's sectors (a card's own image, of one kept in a VHD), else the image's bytes as they lie.  A write to a
  * dynamic VHD adds the blocks it needs to the file, through the io the image was opened with; out->write is NULL
  * where that had none.  A write of whole bytes inside the image is done whole or fails: nothing is written short.
- * The io stays good until syfs_close.  What was read of the image's lists is not read anew after a write.
+ * The io stays good until syfs_close.  What was read of the image's lists is not read anew after a write.  Where the
+ * image was opened with length and hold, what another host writes to it is read here, and a dynamic VHD may be
+ * written by several at once.
  *
  * \return 0 where there is no image.
  */
