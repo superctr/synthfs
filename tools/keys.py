@@ -31,22 +31,28 @@ for n, line in enumerate((root / "src/keys.def").read_text().splitlines(), 1):
     rows.append((cls, f"SYFS_{cls.upper()}_{ident}", name, title, k))
 
 out = [
-    "/* Made by tools/keys.py from src/keys.def: not edited by hand.",
+    "// Made by tools/keys.py from src/keys.def: not edited by hand.",
+    "",
+    "//! \\file syfs_keys.h",
+    "//! Every key the library knows, by its constant.",
+    "/*!",
     " * A key is the low 31 bits of its name's 32-bit FNV-1a hash, so a name's key never changes and a host may hash a",
-    " * name itself (syfs_key_of does).  Names of two classes that read the same share their key. */",
+    " * name itself (syfs_key_of does).  Names of two classes that read the same share their key.",
+    " */",
     "#ifndef SYFS_KEYS_H",
     "#define SYFS_KEYS_H",
     "",
+    "//! The keys: SYFS_<CLASS>_<NAME>, each with its string.",
     "enum syfs_keys {",
-    "\tSYFS_NONE = 0,",
+    "\tSYFS_NONE = 0,                            //!< None or unknown.",
 ]
 cls = None
 for c, ident, name, title, k in rows:
     if c != cls:
         out.append("")
         cls = c
-    out.append(f"\t{ident} = 0x{k:08x},{' ' * max(1, 28 - len(ident))}/* \"{name}\" */")
-out += ["};", "", "/* every key once: X(constant, class, name, title) */", "#define SYFS_KEYS(X) \\"]
+    out.append(f"\t{ident} = 0x{k:08x},{' ' * max(1, 28 - len(ident))}//!< \"{name}\"")
+out += ["};", "", "//! Every key once: X(constant, class, name, title).", "#define SYFS_KEYS(X) \\"]
 out += [f'\tX({ident}, "{c}", "{name}", "{title}") \\' for c, ident, name, title, k in rows]
 out[-1] = out[-1][:-2]
 out += ["", "#endif", ""]

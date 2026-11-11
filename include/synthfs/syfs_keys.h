@@ -1,88 +1,94 @@
-/* Made by tools/keys.py from src/keys.def: not edited by hand.
+// Made by tools/keys.py from src/keys.def: not edited by hand.
+
+//! \file syfs_keys.h
+//! Every key the library knows, by its constant.
+/*!
  * A key is the low 31 bits of its name's 32-bit FNV-1a hash, so a name's key never changes and a host may hash a
- * name itself (syfs_key_of does).  Names of two classes that read the same share their key. */
+ * name itself (syfs_key_of does).  Names of two classes that read the same share their key.
+ */
 #ifndef SYFS_KEYS_H
 #define SYFS_KEYS_H
 
+//! The keys: SYFS_<CLASS>_<NAME>, each with its string.
 enum syfs_keys {
-	SYFS_NONE = 0,
+	SYFS_NONE = 0,                            //!< None or unknown.
 
-	SYFS_FORMAT_S550 = 0x30dc8af0,            /* "s550" */
-	SYFS_FORMAT_S760 = 0x6cbd8f31,            /* "s760" */
-	SYFS_FORMAT_S770 = 0x66bb4728,            /* "s770" */
-	SYFS_FORMAT_AKAI_S1000 = 0x7e7466be,      /* "akai-s1000" */
-	SYFS_FORMAT_AKAI_S3000 = 0x38189f9c,      /* "akai-s3000" */
-	SYFS_FORMAT_ISO9660 = 0x15604137,         /* "iso9660" */
-	SYFS_FORMAT_EMU3 = 0x6042a98f,            /* "emu3" */
-	SYFS_FORMAT_EMAX2 = 0x46abb994,           /* "emax2" */
-	SYFS_FORMAT_S330 = 0x2329cc80,            /* "s330" */
-	SYFS_FORMAT_W30 = 0x6918543d,             /* "w30" */
-	SYFS_FORMAT_S50 = 0x09afe73f,             /* "s50" */
-	SYFS_FORMAT_DJ70 = 0x1e6c7adc,            /* "dj70" */
-	SYFS_FORMAT_SRJV80 = 0x06723c80,          /* "srjv80" */
-	SYFS_FORMAT_SRX = 0x483cd078,             /* "srx" */
-	SYFS_FORMAT_AKAI_S900 = 0x76a6c4c2,       /* "akai-s900" */
-	SYFS_FORMAT_FAT = 0x3ef81d14,             /* "fat" */
+	SYFS_FORMAT_S550 = 0x30dc8af0,            //!< "s550"
+	SYFS_FORMAT_S760 = 0x6cbd8f31,            //!< "s760"
+	SYFS_FORMAT_S770 = 0x66bb4728,            //!< "s770"
+	SYFS_FORMAT_AKAI_S1000 = 0x7e7466be,      //!< "akai-s1000"
+	SYFS_FORMAT_AKAI_S3000 = 0x38189f9c,      //!< "akai-s3000"
+	SYFS_FORMAT_ISO9660 = 0x15604137,         //!< "iso9660"
+	SYFS_FORMAT_EMU3 = 0x6042a98f,            //!< "emu3"
+	SYFS_FORMAT_EMAX2 = 0x46abb994,           //!< "emax2"
+	SYFS_FORMAT_S330 = 0x2329cc80,            //!< "s330"
+	SYFS_FORMAT_W30 = 0x6918543d,             //!< "w30"
+	SYFS_FORMAT_S50 = 0x09afe73f,             //!< "s50"
+	SYFS_FORMAT_DJ70 = 0x1e6c7adc,            //!< "dj70"
+	SYFS_FORMAT_SRJV80 = 0x06723c80,          //!< "srjv80"
+	SYFS_FORMAT_SRX = 0x483cd078,             //!< "srx"
+	SYFS_FORMAT_AKAI_S900 = 0x76a6c4c2,       //!< "akai-s900"
+	SYFS_FORMAT_FAT = 0x3ef81d14,             //!< "fat"
 
-	SYFS_MEDIUM_DISK = 0x456040a4,            /* "disk" */
-	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          /* "floppy" */
-	SYFS_MEDIUM_CARD = 0x0827595f,            /* "card" */
-	SYFS_MEDIUM_BOARD = 0x6f92fe2b,           /* "board" */
+	SYFS_MEDIUM_DISK = 0x456040a4,            //!< "disk"
+	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
+	SYFS_MEDIUM_CARD = 0x0827595f,            //!< "card"
+	SYFS_MEDIUM_BOARD = 0x6f92fe2b,           //!< "board"
 
-	SYFS_TYPE_IMAGE = 0x335135fa,             /* "image" */
-	SYFS_TYPE_PARTITION = 0x59095409,         /* "partition" */
-	SYFS_TYPE_VOLUME = 0x2ee0698f,            /* "volume" */
-	SYFS_TYPE_PERFORMANCE = 0x2ece8ca5,       /* "performance" */
-	SYFS_TYPE_PATCH = 0x79100aa9,             /* "patch" */
-	SYFS_TYPE_PARTIAL = 0x454d769a,           /* "partial" */
-	SYFS_TYPE_SAMPLE = 0x16e382a7,            /* "sample" */
-	SYFS_TYPE_PROGRAM = 0x3d8466cb,           /* "program" */
-	SYFS_TYPE_OTHER = 0x487d8df5,             /* "other" */
-	SYFS_TYPE_DIRECTORY = 0x11913588,         /* "directory" */
-	SYFS_TYPE_FILE = 0x2aea5743,              /* "file" */
-	SYFS_TYPE_AREA = 0x1b0f2144,              /* "area" */
-	SYFS_TYPE_TONE = 0x5c714e81,              /* "tone" */
-	SYFS_TYPE_MULTI = 0x43d67fb2,             /* "multi" */
-	SYFS_TYPE_BANK = 0x3b952e97,              /* "bank" */
-	SYFS_TYPE_RHYTHM_SET = 0x34ce407c,        /* "rhythm-set" */
-	SYFS_TYPE_WAVE = 0x29f017d4,              /* "wave" */
+	SYFS_TYPE_IMAGE = 0x335135fa,             //!< "image"
+	SYFS_TYPE_PARTITION = 0x59095409,         //!< "partition"
+	SYFS_TYPE_VOLUME = 0x2ee0698f,            //!< "volume"
+	SYFS_TYPE_PERFORMANCE = 0x2ece8ca5,       //!< "performance"
+	SYFS_TYPE_PATCH = 0x79100aa9,             //!< "patch"
+	SYFS_TYPE_PARTIAL = 0x454d769a,           //!< "partial"
+	SYFS_TYPE_SAMPLE = 0x16e382a7,            //!< "sample"
+	SYFS_TYPE_PROGRAM = 0x3d8466cb,           //!< "program"
+	SYFS_TYPE_OTHER = 0x487d8df5,             //!< "other"
+	SYFS_TYPE_DIRECTORY = 0x11913588,         //!< "directory"
+	SYFS_TYPE_FILE = 0x2aea5743,              //!< "file"
+	SYFS_TYPE_AREA = 0x1b0f2144,              //!< "area"
+	SYFS_TYPE_TONE = 0x5c714e81,              //!< "tone"
+	SYFS_TYPE_MULTI = 0x43d67fb2,             //!< "multi"
+	SYFS_TYPE_BANK = 0x3b952e97,              //!< "bank"
+	SYFS_TYPE_RHYTHM_SET = 0x34ce407c,        //!< "rhythm-set"
+	SYFS_TYPE_WAVE = 0x29f017d4,              //!< "wave"
 
-	SYFS_LOOP_FORWARD = 0x345fa81a,           /* "forward" */
-	SYFS_LOOP_ALTERNATE = 0x43f6e25d,         /* "alternate" */
+	SYFS_LOOP_FORWARD = 0x345fa81a,           //!< "forward"
+	SYFS_LOOP_ALTERNATE = 0x43f6e25d,         //!< "alternate"
 
-	SYFS_KIND_INT = 0x15e97e5e,               /* "int" */
-	SYFS_KIND_STRING = 0x17c16538,            /* "string" */
-	SYFS_KIND_KEY = 0x6815c86c,               /* "key" */
+	SYFS_KIND_INT = 0x15e97e5e,               //!< "int"
+	SYFS_KIND_STRING = 0x17c16538,            //!< "string"
+	SYFS_KIND_KEY = 0x6815c86c,               //!< "key"
 
-	SYFS_PROP_FORMAT = 0x399d8552,            /* "format" */
-	SYFS_PROP_MEDIUM = 0x35afd776,            /* "medium" */
-	SYFS_PROP_LABEL = 0x769717fd,             /* "label" */
-	SYFS_PROP_NAME = 0x0d39bde6,              /* "name" */
-	SYFS_PROP_TYPE = 0x5127f14d,              /* "type" */
-	SYFS_PROP_NUMBER = 0x1bd670a0,            /* "number" */
-	SYFS_PROP_SIZE = 0x23a0d95c,              /* "size" */
-	SYFS_PROP_TAG = 0x15f72993,               /* "tag" */
-	SYFS_PROP_RATE = 0x2e839c67,              /* "rate" */
-	SYFS_PROP_CHANNELS = 0x7be86875,          /* "channels" */
-	SYFS_PROP_BITS = 0x22622f79,              /* "bits" */
-	SYFS_PROP_KEY = 0x6815c86c,               /* "key" */
-	SYFS_PROP_FRAMES = 0x7b71324f,            /* "frames" */
-	SYFS_PROP_START = 0x652b04df,             /* "start" */
-	SYFS_PROP_END = 0x6a8e75aa,               /* "end" */
-	SYFS_PROP_LOOP = 0x5def486b,              /* "loop" */
-	SYFS_PROP_LOOP_START = 0x6a5d16aa,        /* "loop-start" */
-	SYFS_PROP_LOOP_END = 0x0a2e84ff,          /* "loop-end" */
-	SYFS_PROP_REVERSE = 0x21506c05,           /* "reverse" */
-	SYFS_PROP_MODE = 0x6c6ee012,              /* "mode" */
+	SYFS_PROP_FORMAT = 0x399d8552,            //!< "format"
+	SYFS_PROP_MEDIUM = 0x35afd776,            //!< "medium"
+	SYFS_PROP_LABEL = 0x769717fd,             //!< "label"
+	SYFS_PROP_NAME = 0x0d39bde6,              //!< "name"
+	SYFS_PROP_TYPE = 0x5127f14d,              //!< "type"
+	SYFS_PROP_NUMBER = 0x1bd670a0,            //!< "number"
+	SYFS_PROP_SIZE = 0x23a0d95c,              //!< "size"
+	SYFS_PROP_TAG = 0x15f72993,               //!< "tag"
+	SYFS_PROP_RATE = 0x2e839c67,              //!< "rate"
+	SYFS_PROP_CHANNELS = 0x7be86875,          //!< "channels"
+	SYFS_PROP_BITS = 0x22622f79,              //!< "bits"
+	SYFS_PROP_KEY = 0x6815c86c,               //!< "key"
+	SYFS_PROP_FRAMES = 0x7b71324f,            //!< "frames"
+	SYFS_PROP_START = 0x652b04df,             //!< "start"
+	SYFS_PROP_END = 0x6a8e75aa,               //!< "end"
+	SYFS_PROP_LOOP = 0x5def486b,              //!< "loop"
+	SYFS_PROP_LOOP_START = 0x6a5d16aa,        //!< "loop-start"
+	SYFS_PROP_LOOP_END = 0x0a2e84ff,          //!< "loop-end"
+	SYFS_PROP_REVERSE = 0x21506c05,           //!< "reverse"
+	SYFS_PROP_MODE = 0x6c6ee012,              //!< "mode"
 
-	SYFS_REL_CHILDREN = 0x67a9c9d2,           /* "children" */
-	SYFS_REL_USES = 0x61786085,               /* "uses" */
-	SYFS_REL_ALL = 0x13254bc4,                /* "all" */
+	SYFS_REL_CHILDREN = 0x67a9c9d2,           //!< "children"
+	SYFS_REL_USES = 0x61786085,               //!< "uses"
+	SYFS_REL_ALL = 0x13254bc4,                //!< "all"
 
-	SYFS_AS_S16 = 0x17a6396d,                 /* "s16" */
+	SYFS_AS_S16 = 0x17a6396d,                 //!< "s16"
 };
 
-/* every key once: X(constant, class, name, title) */
+//! Every key once: X(constant, class, name, title).
 #define SYFS_KEYS(X) \
 	X(SYFS_FORMAT_S550, "format", "s550", "S-550") \
 	X(SYFS_FORMAT_S760, "format", "s760", "S-760") \
