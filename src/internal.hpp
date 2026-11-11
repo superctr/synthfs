@@ -3,6 +3,8 @@
 
 #include <synthfs/synthfs.h>
 
+#include "store.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -61,14 +63,13 @@ public:
 	//! Reads n bytes at offset of the user data; false where any is missing.
 	bool read(uint64_t offset, void *buf, size_t n) const;
 	std::vector<uint8_t> read(uint64_t offset, size_t n) const;
-	uint64_t size() const { return size_; }
-	bool raw() const { return raw_; }
+	uint64_t size() const { return stores_.top->size(); }
+	bool raw() const { return stores_.raw; }
+	//! Whether the image is a SmartMedia card's, read through its logical sectors.
+	bool card() const { return stores_.card; }
 
 private:
-	syfs_io io_;
-	bool raw_ = false;
-	unsigned data_at_ = 0;
-	uint64_t size_ = 0;
+	Stores stores_;
 };
 
 //! An opened image: its label and entries.
@@ -82,6 +83,11 @@ public:
 	Medium(const Medium &) = delete;
 	Medium &operator=(const Medium &) = delete;
 
+	//! What tells the image apart, read cheaply: its properties, and its label where that needs no listing.
+	/*!
+	 * Called once, before list.  A reader that sets the label here sets label_known.
+	 */
+	virtual void identify() {}
 	//! The label and the entries read from the image.
 	virtual void list() {}
 	//! The entries entry i uses, by index, each once in the order first used.
@@ -100,7 +106,17 @@ public:
 	const syfs_key format;
 	syfs_key medium = SYFS_NONE;
 	std::string label;
+	bool label_known = false;  //!< The label is identify's, not list's.
 	std::vector<syfs::Entry> entries;
+
+	//! A property of the image's own beside its format, medium and label.
+	struct Prop {
+		syfs_key key;
+		bool text;       //!< A string, else an integer.
+		int64_t number;
+		std::string string;
+	};
+	std::vector<Prop> props;
 
 protected:
 	//! Where each entry's record or data starts in the image, beside entries.
@@ -109,6 +125,9 @@ protected:
 	size_t add(syfs_key kind, syfs_key format, uint32_t number, size_t parent, std::string_view name,
 		uint64_t bytes, uint64_t at);
 	void tag(size_t i, std::string_view t);
+	//! Sets a property of the image's.
+	void set(syfs_key key, int64_t value) { props.push_back({ key, false, value, {} }); }
+	void set(syfs_key key, std::string_view value) { props.push_back({ key, true, 0, std::string(value) }); }
 	//! The entry of a kind with the number under parent, or syfs::NONE.
 	size_t child(size_t parent, syfs_key kind, uint32_t number) const;
 };

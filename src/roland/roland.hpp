@@ -113,6 +113,8 @@ public:
 	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	//! A card or a board, by its size and name.
 	static syfs_key medium_of(const Image &im);
+	//! The board's name, and what it was sold as where it is one of Roland's.
+	void identify() override;
 	void list() override;
 	std::vector<size_t> refs(size_t i) const override;
 	bool sample(size_t i, syfs::Sample &out) const override;

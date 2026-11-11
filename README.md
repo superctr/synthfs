@@ -16,7 +16,8 @@ property, a relation) is a key, the hash of its string, with a constant in `syfs
 
 The image is read through the host's callback (`syfs_io`: n bytes at an offset), so a file, a buffer or a stream all
 work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read; a
-board or card is read as dumped.  Opening tells the format only, which is cheap; the lists are read when first asked
+SmartMedia card's image is read through its logical sectors; a board or card is read as dumped, and one of Roland's
+tells what it was sold as (`SYFS_PROP_MODEL`, `SYFS_PROP_TITLE`).  Opening tells the format only, which is cheap; the lists are read when first asked
 for.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).
 
 ```c
@@ -61,7 +62,8 @@ key its original key.
 A blank image is made an empty volume through the host's writer (`syfs_io`'s `write`) by `syfs_create`, with the
 format and the medium: FAT (a 720 KB or 1.44 MB FAT12 floppy; a disk with an MBR and one FAT16 or FAT32 partition),
 with an optional label, and the S-760's and the S-770's (a hard disk or MO as the machine formats it, or its
-formatted 2DD or 2HD floppy, what a sound volume is saved to).  What each writes is in
+formatted 2DD or 2HD floppy, what a sound volume is saved to).  A blank SmartMedia card is made with no format and the
+medium `SYFS_MEDIUM_SMARTMEDIA`.  What each writes is in
 [docs/formats.md](docs/formats.md).
 
 ```c

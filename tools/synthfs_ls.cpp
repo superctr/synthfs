@@ -68,7 +68,13 @@ int main(int argc, char **argv)
 			syfs_title(syfs_key(num(im, SYFS_ROOT, SYFS_PROP_MEDIUM))));
 		for (size_t i = 0; syfs_key t = syfs_type_at(im, i); i++)
 			printf(" %zu %s", counts[t], counts[t] > 1 ? plural(t).c_str() : syfs_title(t));
-		printf("  %s%s%s\n", base(argv[a]), *label ? "  " : "", label);
+		printf("  %s%s%s", base(argv[a]), *label ? "  " : "", label);
+		// what a board or card was sold as
+		char model[64], title[64];
+		if (syfs_get_str(im, SYFS_ROOT, SYFS_PROP_MODEL, model, sizeof model))
+			printf("  (%s%s%s)", model, syfs_get_str(im, SYFS_ROOT, SYFS_PROP_TITLE, title, sizeof title) ? " " : "",
+				syfs_get_str(im, SYFS_ROOT, SYFS_PROP_TITLE, title, sizeof title) ? title : "");
+		printf("\n");
 		if (list) {
 			std::map<syfs_node, int> depth;
 			for (syfs_node n : nodes) {

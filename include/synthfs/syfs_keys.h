@@ -34,6 +34,7 @@ enum syfs_keys {
 	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
 	SYFS_MEDIUM_CARD = 0x0827595f,            //!< "card"
 	SYFS_MEDIUM_BOARD = 0x6f92fe2b,           //!< "board"
+	SYFS_MEDIUM_SMARTMEDIA = 0x4e2c2132,      //!< "smartmedia"
 
 	SYFS_TYPE_IMAGE = 0x335135fa,             //!< "image"
 	SYFS_TYPE_PARTITION = 0x59095409,         //!< "partition"
@@ -63,6 +64,10 @@ enum syfs_keys {
 	SYFS_PROP_FORMAT = 0x399d8552,            //!< "format"
 	SYFS_PROP_MEDIUM = 0x35afd776,            //!< "medium"
 	SYFS_PROP_LABEL = 0x769717fd,             //!< "label"
+	SYFS_PROP_MODEL = 0x308b665a,             //!< "model"
+	SYFS_PROP_TITLE = 0x1865b509,             //!< "title"
+	SYFS_PROP_ID = 0x37386ae0,                //!< "id"
+	SYFS_PROP_DATE = 0x5472dc59,              //!< "date"
 	SYFS_PROP_NAME = 0x0d39bde6,              //!< "name"
 	SYFS_PROP_TYPE = 0x5127f14d,              //!< "type"
 	SYFS_PROP_NUMBER = 0x1bd670a0,            //!< "number"
@@ -110,6 +115,7 @@ enum syfs_keys {
 	X(SYFS_MEDIUM_FLOPPY, "medium", "floppy", "floppy") \
 	X(SYFS_MEDIUM_CARD, "medium", "card", "card") \
 	X(SYFS_MEDIUM_BOARD, "medium", "board", "board") \
+	X(SYFS_MEDIUM_SMARTMEDIA, "medium", "smartmedia", "SmartMedia") \
 	X(SYFS_TYPE_IMAGE, "type", "image", "image") \
 	X(SYFS_TYPE_PARTITION, "type", "partition", "partition") \
 	X(SYFS_TYPE_VOLUME, "type", "volume", "volume") \
@@ -135,6 +141,10 @@ enum syfs_keys {
 	X(SYFS_PROP_FORMAT, "prop", "format", "format") \
 	X(SYFS_PROP_MEDIUM, "prop", "medium", "medium") \
 	X(SYFS_PROP_LABEL, "prop", "label", "label") \
+	X(SYFS_PROP_MODEL, "prop", "model", "model") \
+	X(SYFS_PROP_TITLE, "prop", "title", "title") \
+	X(SYFS_PROP_ID, "prop", "id", "id") \
+	X(SYFS_PROP_DATE, "prop", "date", "date") \
 	X(SYFS_PROP_NAME, "prop", "name", "name") \
 	X(SYFS_PROP_TYPE, "prop", "type", "type") \
 	X(SYFS_PROP_NUMBER, "prop", "number", "number") \

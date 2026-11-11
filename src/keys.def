@@ -22,6 +22,7 @@ medium DISK        disk
 medium FLOPPY      floppy
 medium CARD        card
 medium BOARD       board
+medium SMARTMEDIA  smartmedia  "SmartMedia"
 
 type IMAGE         image
 type PARTITION     partition
@@ -51,6 +52,10 @@ kind KEY           key
 prop FORMAT        format
 prop MEDIUM        medium
 prop LABEL         label
+prop MODEL         model
+prop TITLE         title
+prop ID            id
+prop DATE          date
 prop NAME          name
 prop TYPE          type
 prop NUMBER        number

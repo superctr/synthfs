@@ -100,7 +100,7 @@ constexpr syfs_key wave_props[] = { SYFS_PROP_RATE, SYFS_PROP_CHANNELS, SYFS_PRO
 struct syfs_image {
 	FILE *file = nullptr;
 	std::unique_ptr<Medium> medium;
-	bool listed = false;
+	bool identified = false, listed = false;
 	std::string error;
 	// each node's children, the root's first; the types met, in the image's order
 	std::vector<std::vector<syfs_node>> kids;
@@ -117,11 +117,25 @@ struct syfs_image {
 			fclose(file);
 	}
 
+	// what tells the image apart read, once
+	void identify()
+	{
+		if (identified)
+			return;
+		identified = true;
+		try {
+			medium->identify();
+		} catch (...) {
+			medium->props.clear();
+		}
+	}
+
 	// the lists read, once
 	void list()
 	{
 		if (listed)
 			return;
+		identify();
 		listed = true;
 		try {
 			medium->list();
@@ -175,8 +189,17 @@ struct syfs_image {
 			switch (k) {
 			case SYFS_PROP_FORMAT: return key(medium->format);
 			case SYFS_PROP_MEDIUM: return key(medium->medium);
-			case SYFS_PROP_LABEL: return list(), string(medium->label);
-			default: return {};
+			case SYFS_PROP_LABEL:
+				identify();
+				if (!medium->label_known)
+					list();
+				return string(medium->label);
+			default:
+				identify();
+				for (const Medium::Prop &p : medium->props)
+					if (p.key == k)
+						return p.text ? string(p.string) : integer(p.number);
+				return {};
 			}
 		}
 		const Entry *e = entry(n);
@@ -257,6 +280,8 @@ syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size)
 		im->medium = r ? r->open(*io, format) : std::make_unique<Medium>(*io, SYFS_NONE);
 		if (r)
 			im->medium->medium = r->medium(image);
+		if (image.card())
+			im->medium->medium = SYFS_MEDIUM_SMARTMEDIA;
 		return im.release();
 	} catch (const std::bad_alloc &) {
 		return say(err, err_size, "out of memory"), nullptr;
@@ -315,6 +340,12 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 		return say(err, err_size, "no writer given"), 0;
 	if (medium == SYFS_NONE)
 		medium = io->size == 720 * 1024 || io->size == 1440 * 1024 ? SYFS_MEDIUM_FLOPPY : SYFS_MEDIUM_DISK;
+	if (medium == SYFS_MEDIUM_SMARTMEDIA && format == SYFS_NONE) {
+		std::string why;
+		if (SmartMedia::blank(*io, why))
+			return 1;
+		return say(err, err_size, why.c_str()), 0;
+	}
 	bool is_floppy = medium == SYFS_MEDIUM_FLOPPY;
 	if (!is_floppy && medium != SYFS_MEDIUM_DISK)
 		return say(err, err_size, "a medium that cannot be made"), 0;
@@ -444,8 +475,16 @@ int syfs_prop_at(syfs_image *im, syfs_node n, size_t i, syfs_prop *out)
 		}
 		return false;
 	};
-	if (!n)
-		return take(root_props, std::size(root_props));
+	if (!n) {
+		if (take(root_props, std::size(root_props)))
+			return 1;
+		im->identify();
+		if (i >= im->medium->props.size())
+			return 0;
+		const Medium::Prop &p = im->medium->props[i];
+		*out = { p.key, syfs_key(p.text ? SYFS_KIND_STRING : SYFS_KIND_INT), 0 };
+		return 1;
+	}
 	return take(node_props, std::size(node_props)) || take(wave_props, std::size(wave_props));
 }
 

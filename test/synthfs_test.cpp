@@ -110,7 +110,7 @@ static const std::vector<syfs::Entry> &entries_of(syfs_image *fs)
 			CHECK(syfs_get_str(fs, syfs_node(n), prop.key, text, sizeof text) == (prop.kind != SYFS_KIND_INT));
 			CHECK(!prop.writable && !syfs_set_int(fs, syfs_node(n), prop.key, 0) && *syfs_error(fs));
 		}
-		CHECK(keys.size() >= (n ? 5u : 3u));
+		CHECK(keys.size() >= (n ? 5u : 3u) && keys[0] == (n ? SYFS_PROP_NAME : SYFS_PROP_FORMAT));
 		CHECK(!syfs_get_int(fs, syfs_node(n), syfs_key_of("no such property"), nullptr));
 	}
 	// each node is among its parent's children, in order, and nowhere else
@@ -138,6 +138,14 @@ static const char *label_of(syfs_image *fs)
 	char label[256] = "";
 	CHECK(syfs_get_str(fs, SYFS_ROOT, SYFS_PROP_LABEL, label, sizeof label));
 	return (labels[fs] = label).c_str();
+}
+
+// a string property of the image's, "" where it has none
+static std::string text_of(syfs_image *fs, syfs_key key)
+{
+	char text[256] = "";
+	syfs_get_str(fs, SYFS_ROOT, key, text, sizeof text);
+	return text;
 }
 
 static syfs_key format_of(syfs_image *fs) { return syfs_key(num(fs, SYFS_ROOT, SYFS_PROP_FORMAT)); }
@@ -1660,12 +1668,16 @@ static void test_boards()
 	srx.put(0x108010, 4), srx.put(0x108011, uint8_t(-4));
 	srx.be(patches, 1, 2), srx.be(patches + 4, 0x0E, 4), srx.be(patches + 8, 574, 4);
 	srx.packed(patches + 0x0E, "Test Patch", true);
+	srx.be(0x40, 7, 2);
 	syfs_io io = io_of(srx.b);
 	syfs_key medium;
 	CHECK(probe(&io, &medium) == SYFS_FORMAT_SRX && medium == SYFS_MEDIUM_BOARD);
 	syfs_image *fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (fs) {
+		// what the board was sold as, by its number
+		CHECK(num(fs, SYFS_ROOT, SYFS_PROP_NUMBER) == 7 && text_of(fs, SYFS_PROP_MODEL) == "SRX-07"
+			&& text_of(fs, SYFS_PROP_TITLE) == "Ultimate Keys" && text_of(fs, SYFS_PROP_ID) == "");
 		CHECK(!strcmp(label_of(fs), "SRX-99 Test"));
 		CHECK((names(fs, SYFS_TYPE_WAVE) == std::vector<std::string> { "Kick 1", "Snare 1" }));
 		CHECK((names(fs, SYFS_TYPE_PATCH) == std::vector<std::string> { "Test Patch" }));
@@ -1722,11 +1734,15 @@ static void test_boards()
 	card.put(0x800F, 1), card.put(0x8010, 1), card.put(0x8011, uint8_t(-1));
 	card.text(0xF1000, "Card Piano");
 	card.packed(0xF2000, "Card Drums", false);
+	card.text(0x20, "CRD05100"), card.text(0x30, "1992-11-10");
 	io = io_of(card.b);
 	CHECK(probe(&io, &medium) == SYFS_FORMAT_SRJV80 && medium == SYFS_MEDIUM_CARD);
 	fs = syfs_open(&io, nullptr, 0);
 	CHECK(fs);
 	if (fs) {
+		// two cards share an identity: the date tells which
+		CHECK(text_of(fs, SYFS_PROP_ID) == "CRD05100" && text_of(fs, SYFS_PROP_DATE) == "1992-11-10"
+			&& text_of(fs, SYFS_PROP_MODEL) == "SO-PCM1-05" && text_of(fs, SYFS_PROP_TITLE) == "Accordion");
 		CHECK(!strcmp(label_of(fs), "Card09   Ver1.00"));
 		CHECK((names(fs, SYFS_TYPE_WAVE) == std::vector<std::string> { "Piano A", "Piano B" }));
 		CHECK((names(fs, SYFS_TYPE_PATCH) == std::vector<std::string> { "Card Piano" }));
@@ -1893,6 +1909,81 @@ static void test_s900()
 	CHECK(probe(&io, nullptr) == SYFS_NONE);
 }
 
+// ---- a SmartMedia card: a FAT disk in its logical blocks, the physical ones in another order
+static void test_smartmedia()
+{
+	const uint32_t PAGE = 512, PER_BLOCK = 16, PHYSICAL = 1024, LOGICAL = 1000, ROW = PAGE + 16;
+	char err[128];
+	Sparse disk(uint64_t(LOGICAL) * PER_BLOCK * PAGE);
+	syfs_io w = writer_of(disk);
+	CHECK(make(SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, &w, "CARD", err, sizeof err));
+	Bytes card(1024 + size_t(PHYSICAL) * PER_BLOCK * ROW, 0xFF);
+	memset(&card[0], 0, 1024);
+	card[0] = 0xEC, card[1] = 0xE6, card[2] = 0xA5;
+	// logical block l in physical block (7 l + 3) mod 1024, but for the last, left unclaimed
+	std::vector<bool> used(PHYSICAL, false);
+	auto row_of = [&](uint32_t block) { return 1024 + size_t(block) * PER_BLOCK * ROW; };
+	for (uint32_t l = 0; l + 1 < LOGICAL; l++) {
+		uint32_t block = (7 * l + 3) % PHYSICAL;
+		used[block] = true;
+		for (uint32_t p = 0; p < PER_BLOCK; p++)
+			disk.get(uint64_t(l * PER_BLOCK + p) * PAGE, &card[row_of(block) + p * ROW], PAGE);
+		uint16_t field = uint16_t(0x1000 | l << 1);
+		card[row_of(block) + PAGE + 6] = uint8_t(field >> 8), card[row_of(block) + PAGE + 7] = uint8_t(field);
+	}
+	// block 5's number claimed again by a later, erased block: the first has it
+	for (uint32_t block = 7 * 5 + 3 + 1; block < PHYSICAL; block++)
+		if (!used[block]) {
+			card[row_of(block) + PAGE + 6] = 0x10, card[row_of(block) + PAGE + 7] = 5 << 1;
+			break;
+		}
+	syfs_io io = io_of(card);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_FAT && medium == SYFS_MEDIUM_SMARTMEDIA);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && count_of(fs) == 0 && !strcmp(label_of(fs), "CARD"));
+	close_image(fs);
+	{
+		syfs::Image im(io);
+		uint8_t a[4096], b[4096];
+		CHECK(im.card() && !im.raw() && im.size() == disk.size);
+		for (uint64_t at : { uint64_t(0), uint64_t(63 * 512 - 100), uint64_t(5 * 8192 - 7) }) {
+			disk.get(at, b, sizeof b);
+			CHECK(im.read(at, a, sizeof a) && !memcmp(a, b, sizeof a));
+		}
+		// the block no physical block claims reads as erased; nothing past the last
+		CHECK(im.read(disk.size - 8192, a, 4096) && std::all_of(a, a + 4096, [](uint8_t v) { return v == 0xFF; }));
+		CHECK(!im.read(disk.size - 100, a, 200));
+	}
+	// another device's code for the size, or a size no card has, is no card
+	card[1] = 0x73;
+	CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_NONE);
+	card[1] = 0xE6;
+	card.resize(card.size() - 528);
+	io = io_of(card);
+	CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_NONE);
+
+	// a blank card made: its header, every page erased, told as a card not formatted
+	for (unsigned mb : { 2u, 8u, 64u }) {
+		Sparse blank(1024 + uint64_t(mb) * 1048576 / 32 * 33);
+		w = writer_of(blank);
+		CHECK(syfs_create(&w, SYFS_NONE, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err));
+		uint8_t head[1024 + 4];
+		blank.get(0, head, sizeof head);
+		CHECK(head[0] == 0xEC && head[1] == (mb == 2 ? 0xEA : mb == 8 ? 0xE6 : 0x76) && head[2] == 0xA5 && !head[3]
+			&& !head[1023] && head[1024] == 0xFF);
+		blank.get(blank.size - 4, head, 4);
+		CHECK(head[0] == 0xFF && head[3] == 0xFF);
+		io = io_of(blank);
+		CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_MEDIUM_SMARTMEDIA);
+	}
+	Sparse odd(5 << 20);
+	w = writer_of(odd);
+	err[0] = 0;
+	CHECK(!syfs_create(&w, SYFS_NONE, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err) && err[0]);
+	CHECK(!syfs_create(&w, SYFS_FORMAT_S760, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err));
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -1928,6 +2019,7 @@ int main()
 	test_fat();
 	test_format_fat();
 	test_format_s700();
+	test_smartmedia();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);

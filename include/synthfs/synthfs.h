@@ -53,7 +53,7 @@ syfs_key syfs_format_at(size_t i);
 typedef struct syfs_io {
 	void *user;                                                               //!< Passed to read and write.
 	size_t (*read)(void *user, uint64_t offset, void *buf, size_t n);         //!< Reads n bytes at offset.
-	size_t (*write)(void *user, uint64_t offset, const void *buf, size_t n);  //!< Writes them; NULL for an image only read.
+	size_t (*write)(void *user, uint64_t offset, const void *buf, size_t n);  //!< Writes them; NULL where only read.
 	uint64_t size;                                                            //!< The image's bytes.
 } syfs_io;
 
@@ -63,8 +63,9 @@ typedef struct syfs_image syfs_image;
 //! Opens an image through the host's io.
 /*!
  * The format and the medium are told from the first sectors, which is cheap (a scan of many images asks for no
- * more); what the image holds is read when a node, or the label, is first asked for.  An image of no format the
- * library tells opens with format SYFS_NONE and no nodes.
+ * more); what the image holds is read when a node, or a disk's label, is first asked for.  A raw CD-ROM image's
+ * sectors and a SmartMedia card's pages are read through (the medium SYFS_MEDIUM_SMARTMEDIA).  An image of no
+ * format the library tells opens with format SYFS_NONE and no nodes.
  *
  * \return NULL with why in err where it cannot be read.
  */
@@ -90,6 +91,8 @@ const char *syfs_error(const syfs_image *im);
  * The volume is as the machine's own format leaves it; only its structures are written.  The formats made:
  * SYFS_FORMAT_FAT, SYFS_FORMAT_S760, SYFS_FORMAT_S770 (docs/formats.md, "Formatting").
  *
+ * \param format SYFS_NONE with SYFS_MEDIUM_SMARTMEDIA for a blank card, not formatted: an image of a 2 to 128 MB
+ *               card's size.
  * \param medium SYFS_MEDIUM_DISK or SYFS_MEDIUM_FLOPPY, or SYFS_NONE for a floppy where the size is one's (720 KB,
  *               1.44 MB) and a disk otherwise.
  * \param label  NULL or "" for none; only SYFS_FORMAT_FAT holds one (a DOS short name's 11 characters).
@@ -151,7 +154,8 @@ syfs_node syfs_at_key(syfs_image *im, syfs_node n, int key);
 
 //! A property: a value of a node's by its key (SYFS_PROP_).
 /*!
- * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_LABEL.  Every other node has
+ * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_LABEL, and what tells a board or card
+ * apart (SYFS_PROP_MODEL, _TITLE, _NUMBER, _ID, _DATE), none of which reads the image's lists.  Every other node has
  * SYFS_PROP_NAME, _TYPE, _NUMBER, _SIZE and _FORMAT (the format of the volume it is in: one disk may mix two), and
  * _TAG where the image gives it a code of its own; a node with a wave has SYFS_PROP_RATE down to _MODE
  * (docs/properties.md).

@@ -220,13 +220,105 @@ size_t WaveRom::nearest(size_t wave, int key) const
 	return best;
 }
 
-void WaveRom::list()
+namespace {
+
+// Roland's boards and cards as sold (docs/formats.md, "Roland wave expansion boards and cards"): an SR-JV80 board by
+// the name in its header, a PCM card by the identity and the date it carries, an SRX board by its number
+struct Sold {
+	const char *key, *date, *model, *title;
+};
+
+constexpr Sold SRJV80_BOARDS[] = {
+	{ "POP Exp  Ver1.00", nullptr, "SR-JV80-01", "Pop" },
+	{ "ORC Exp  Ver1.00", nullptr, "SR-JV80-02", "Orchestral" },
+	{ "Pno Exp  Ver1.00", nullptr, "SR-JV80-03", "Piano" },
+	{ "SR-JV80-04 Synth", nullptr, "SR-JV80-04", "Vintage Synth" },
+	{ "SR-JV80-05 World", nullptr, "SR-JV80-05", "World" },
+	{ "SR-JV80-06 Dance", nullptr, "SR-JV80-06", "Dance" },
+	{ "SR-JV80-07 Super", nullptr, "SR-JV80-07", "Super Sound Set" },
+	{ "SR-JV80-08 60&70", nullptr, "SR-JV80-08", "Keyboards of the 60s and 70s" },
+	{ "SR-JV80-09 Sessn", nullptr, "SR-JV80-09", "Session" },
+	{ "SR-JV80-10 BS&DR", nullptr, "SR-JV80-10", "Bass & Drum" },
+	{ "SR-JV80-11 Tekno", nullptr, "SR-JV80-11", "Techno" },
+	{ "SR-JV80-12 Hphop", nullptr, "SR-JV80-12", "HipHop" },
+	{ "SR-JV80-13 Vocal", nullptr, "SR-JV80-13", "Vocal" },
+	{ "SR-JV80-14 Asia", nullptr, "SR-JV80-14", "Asia" },
+	{ "SR-JV80-15 SFX", nullptr, "SR-JV80-15", "Special FX" },
+	{ "SR-JV80-16 Orch2", nullptr, "SR-JV80-16", "Orchestral II" },
+	{ "SR-JV80-17 Cntry", nullptr, "SR-JV80-17", "Country" },
+	{ "SR-JV80-18 Latin", nullptr, "SR-JV80-18", "Latin" },
+	{ "SR-JV80-19 House", nullptr, "SR-JV80-19", "House" },
+	{ "SR-JV80-97 EXPr3", nullptr, "SR-JV80-97", "Experience III" },
+	{ "SR-JV80-98 EXPr2", nullptr, "SR-JV80-98", "Experience II" },
+	{ "SR-JV80-99 EXPrn", nullptr, "SR-JV80-99", "Experience I" },
+};
+
+constexpr Sold PCM_CARDS[] = {
+	{ "CRD01010", "1991-11-12", "SO-PCM1-01", "Piano" },
+	{ "CRD02008", "1991-11-13", "SO-PCM1-02", "Guitar" },
+	{ "CRD05100", "1992-03-26", "SO-PCM1-03", "Rock" },
+	{ "CRD04100", "1992-04-16", "SO-PCM1-04", "Grand" },
+	{ "CRD05100", "1992-11-10", "SO-PCM1-05", "Accordion" },
+	{ "CRD06100", "1992-12-29", "SO-PCM1-06", "Baroque" },
+	{ "OFX100", "1993-04-09", "SO-PCM1-07", nullptr },
+	{ "CTR100", "1993-05-19", "SO-PCM1-08", nullptr },
+};
+
+constexpr const char *SRX_TITLES[] = { "Dynamic Drum Kits", "Concert Piano", "Studio SRX", "Symphonique Strings",
+	"Supreme Dance", "Complete Orchestra", "Ultimate Keys", "Platinum Trax", "World Collection", "Big Brass Ensemble",
+	"Complete Piano", "Classic EPs" };
+
+// a header's text up to its first zero byte
+std::string text(const uint8_t *p, size_t n)
+{
+	return std::string(reinterpret_cast<const char *>(p), strnlen(reinterpret_cast<const char *>(p), n));
+}
+
+}
+
+void WaveRom::identify()
 {
 	uint8_t h[32];
 	if (!image.read(0, h, sizeof h))
 		return;
 	label = trimmed(plain(h + 0x10, 16));
+	label_known = true;
 	socket_ = std::make_unique<Socket>(image, format == SYFS_FORMAT_SRX);
+	const Sold *sold = nullptr;
+	if (format == SYFS_FORMAT_SRX) {
+		uint32_t number = socket_->be(0x40, 2);
+		set(SYFS_PROP_NUMBER, int64_t(number));
+		if (number >= 1 && number <= std::size(SRX_TITLES)) {
+			char model[16];
+			snprintf(model, sizeof model, "SRX-%02u", unsigned(number));
+			set(SYFS_PROP_MODEL, model);
+			set(SYFS_PROP_TITLE, SRX_TITLES[number - 1]);
+		}
+	} else if (medium == SYFS_MEDIUM_CARD) {
+		uint8_t id[32] = {};
+		socket_->read(0x20, id, sizeof id);
+		std::string name = text(id, 16), date = text(id + 16, 10);
+		set(SYFS_PROP_ID, name);
+		set(SYFS_PROP_DATE, date);
+		for (const Sold &c : PCM_CARDS)
+			if (name == c.key && date == c.date)
+				sold = &c;
+	} else {
+		for (const Sold &b : SRJV80_BOARDS)
+			if (label == b.key)
+				sold = &b;
+	}
+	if (sold) {
+		set(SYFS_PROP_MODEL, sold->model);
+		if (sold->title)
+			set(SYFS_PROP_TITLE, sold->title);
+	}
+}
+
+void WaveRom::list()
+{
+	if (!socket_)
+		return;
 	if (format == SYFS_FORMAT_SRX)
 		list_srx();
 	else

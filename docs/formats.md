@@ -28,6 +28,9 @@ Tried in this order:
 An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
 
+A SmartMedia card's image is read through its logical sectors (below, "SmartMedia cards"), and what they hold is
+told as any disk's is; its medium is `smartmedia` whatever the format, `none` for a card not formatted.
+
 Each entry carries the format of the volume or area it is in, since an AKAI disc may hold S1000 and S3000
 volumes side by side.
 
@@ -469,6 +472,39 @@ sample header.
 
 Not read: the second FAT (the first is trusted), timestamps and attributes, FAT32's FSInfo, exFAT, short names in
 code pages other than ASCII.
+
+## SmartMedia cards
+
+The image is the one emulators keep of a card (MAME's second card format): a 1024-byte header, then every page
+followed by its spare area.  The header's first byte is the maker's code (not 0x00 or 0xFF), its second the
+device's, which tells the card:
+
+| Device | Card | Page | Pages a block |
+|---|---|---|---|
+| 0xEA, 0x64 | 2 MB | 256 | 16 |
+| 0xE3, 0xE5, 0x6B | 4 MB | 512 | 16 |
+| 0xE6 | 8 MB | 512 | 16 |
+| 0x73 | 16 MB | 512 | 32 |
+| 0x75 | 32 MB | 512 | 32 |
+| 0x76 | 64 MB | 512 | 32 |
+| 0x79 | 128 MB | 512 | 32 |
+
+A page's spare area is a thirty-second of it (8 bytes, or 16), so the image is 1024 + megabytes × 1 048 576 ÷ 32 ×
+33 bytes; an image of another size, or of another device code, is no card's.
+
+**Logical sectors**: the card is zones of 1024 physical blocks, each holding 1000 logical ones (a card of fewer
+than 1024 blocks, 1000 in every 1024 of them).  A block's logical number is the 16-bit big-endian field at +6 of
+its first page's spare area: its top five bits `00010`, then ten bits of number within the zone, then a parity bit.
+The first physical block claiming a number has it; a logical block no physical block claims reads as erased (0xFF).
+The logical blocks end to end, 512-byte sectors, are what a format is told from: on the cards seen, an MBR and a
+FAT volume.  **[seen]**
+
+Not read: the second address field (+11), the parity bit, the ECC bytes and the CIS block, which no logical number
+is asked of.
+
+**A blank card** (`syfs_create` with no format and the medium `smartmedia`): the header zero but for the maker's
+code 0xEC, the device's (the first of the table for the size) and 0xA5 at byte 2, then every page and spare area
+erased.
 
 ## WAV and AIFF files
 
