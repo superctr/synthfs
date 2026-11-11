@@ -113,7 +113,8 @@ int syfs_image_io(syfs_image *im, syfs_io *out);
  * SYFS_FORMAT_FAT, SYFS_FORMAT_S760, SYFS_FORMAT_S770 (docs/formats.md, "Formatting").
  *
  * \param format SYFS_NONE with SYFS_MEDIUM_SMARTMEDIA for a blank card, not formatted: an image of a 2 to 128 MB
- *               card's size.
+ *               card's size.  SYFS_FORMAT_FAT with SYFS_MEDIUM_SMARTMEDIA for a card as an XV-5080 formats one, a FAT
+ *               volume with the label and the directory ROLAND: an image of an 8 to 128 MB card's size.
  * \param medium SYFS_MEDIUM_DISK or SYFS_MEDIUM_FLOPPY, or SYFS_NONE for a floppy where the size is one's (720 KB,
  *               1.44 MB) and a disk otherwise.
  * \param label  The volume's name, NULL or "" for none: a FAT volume's label (a DOS short name's 11 characters), an

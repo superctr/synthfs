@@ -420,10 +420,16 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 		return say(err, err_size, "no writer given"), 0;
 	if (medium == SYFS_NONE)
 		medium = io->size == 720 * 1024 || io->size == 1440 * 1024 ? SYFS_MEDIUM_FLOPPY : SYFS_MEDIUM_DISK;
-	if (medium == SYFS_MEDIUM_SMARTMEDIA && format == SYFS_NONE) {
+	if (medium == SYFS_MEDIUM_SMARTMEDIA && (format == SYFS_NONE || format == SYFS_FORMAT_FAT)) {
 		std::string why;
-		if (SmartMedia::blank(*io, why))
-			return 1;
+		try {
+			if (format == SYFS_NONE && label && *label)
+				why = "a card not formatted holds no name";
+			else if (format == SYFS_NONE ? SmartMedia::blank(*io, why) : SmartMedia::format(*io, label, why))
+				return 1;
+		} catch (...) {
+			why = "the image could not be written";
+		}
 		return say(err, err_size, why.c_str()), 0;
 	}
 	bool is_floppy = medium == SYFS_MEDIUM_FLOPPY;

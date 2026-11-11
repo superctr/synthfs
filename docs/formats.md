@@ -623,6 +623,38 @@ room of what was written to it; read back, the image is the card's own, byte for
 a VHD of a card's raw image, in 64 KB blocks (a card in use is written here and there, and a block holds what a 16 KB
 card block does four times over), and the raw image of such a VHD.
 
+**A page's spare area** (512-byte pages; sixteen bytes), on a card a machine has written **[seen]**: six of 0xFF;
+the block's address at +6 and again at +11; three bytes at +8 guarding the page's second 256 bytes and three at
++13 guarding its first.  The address is 0x1000, the logical number shifted up one, and a low bit that makes its
+ones even; the first block's is zero.  A guard is the parity of the half's bits taken three ways by each bit's
+place in its byte (six parities, in the third byte's upper six bits, its lower two set) and eight ways by each bit
+of its byte's place among the 256 (sixteen parities, a pair a bit, in the first two bytes), all inverted: 256 zeros
+are guarded by three 0xFF.
+
+**The first block** holds the card information structure, 110 bytes then zeros, twice in its first page; its other
+pages are erased.  The logical blocks follow from the second.
+
+**A formatted card** (`syfs_create` with the format FAT and the medium `smartmedia`; 8, 16, 32, 64 and 128 MB): as
+an XV-5080 formats one, whichever of Full and Quick, which leave the same card.  Its volume, in the card's first
+logical blocks:
+
+| Card | Sectors | Heads, a track | Partition from | Type | Its ends | A cluster | A FAT | FAT |
+|---|---|---|---|---|---|---|---|---|
+| 8 MB | 16 000 | 4, 16 | 25 | 01 | `01 0A 00`, `03 10 F9` | 16 | 3 | 12 |
+| 16 MB | 32 000 | 4, 16 | 41 | 01 | `02 0A 00`, `03 10 F3` | 32 | 3 | 12 |
+| 32 MB | 64 000 | 8, 16 | 35 | 01 | `02 04 00`, `07 10 F3` | 32 | 6 | 12 |
+| 64 MB | 128 000 | 8, 32 | 55 | 01 | `01 18 00`, `07 20 F3` | 32 | 12 | 12 |
+| 128 MB | 256 000 | 16, 32 | 47 | 06 | `0F 20 F3` after `01 10 00` | 32 | 32 | 16 |
+
+Sector 0 is zeros but for one active partition's entry and 0x55 0xAA.  The boot sector: `E9 00 00`, `RJA2.00 `, one
+reserved sector, two FATs, 256 root entries, the media byte 0xF8, the drive 0, 0x29, a serial of two bytes of the
+clock and two zeros, the label ending in zeros, `FAT12   ` or `FAT16   `, 0x55 0xAA.  Each FAT has the media byte
+and ones, and cluster 2 as its chain's end; the root holds the label and the directory `ROLAND`, which is cluster
+2: `.` and `..`.  Every entry's time is 15:20 on 1 April 2003.  The blocks up to that cluster's are written, each
+page with its spare area; the rest of the card is erased.  A card so made is the machine's own byte for byte, the
+serial and the three bytes guarding it aside.  The machine formats cards of 2 and 4 MB too, writing every block;
+those are not made here.
+
 **A blank card** (`syfs_create` with no format and the medium `smartmedia`): the header zero but for the maker's
 code 0xEC, the device's (the first of the table for the size) and 0xA5 at byte 2, then every page and spare area
 erased.

@@ -2070,6 +2070,68 @@ static void test_smartmedia()
 		io = io_of(vhd);
 		CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_MEDIUM_SMARTMEDIA);
 	}
+	// a card formatted: its information block, and in its first logical blocks a FAT volume with its label and the
+	// directory ROLAND, every page written with its block's address and the guards of its halves
+	for (unsigned mb : { 8u, 16u, 32u, 64u, 128u }) {
+		Sparse made(1024 + uint64_t(mb) * 1048576 / 32 * 33);
+		w = writer_of(made);
+		CHECK(syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_SMARTMEDIA, "xv-5080", err, sizeof err));
+		io = io_of(made);
+		CHECK(probe(&io, &medium) == SYFS_FORMAT_FAT && medium == SYFS_MEDIUM_SMARTMEDIA);
+		fs = syfs_open(&io, nullptr, 0);
+		CHECK(fs && !strcmp(label_of(fs), "XV-5080") && (names(fs, SYFS_TYPE_DIRECTORY) == std::vector<std::string> { "ROLAND" })
+			&& count_of(fs) == 1);
+		close_image(fs);
+		const uint32_t per_block = mb == 8 ? 16 : 32, blocks = mb == 8 ? 4 : mb == 128 ? 5 : mb == 64 ? 4 : 3;
+		uint8_t page[528], cis[4];
+		made.get(1024, page, sizeof page);
+		memcpy(cis, page, 4);
+		// block 0: the information twice in its first page, no address, both halves' guards the same
+		CHECK(cis[0] == 0x01 && cis[1] == 0x03 && cis[2] == 0xD9 && !memcmp(page, page + 256, 256) && !page[518] && !page[519]);
+		CHECK(page[520] == 0x0C && page[521] == 0xCC && page[522] == 0xC3 && !memcmp(page + 520, page + 525, 3));
+		made.get(1024 + 528, page, sizeof page);
+		CHECK(std::all_of(page, page + 528, [](uint8_t v) { return v == 0xFF; }));
+		// logical block n in block n + 1; the address 00010, the number and a bit making its ones even, twice
+		for (uint32_t b = 1; b <= blocks + 1; b++)
+			for (uint32_t p : { 0u, per_block - 1 }) {
+				made.get(1024 + (uint64_t(b) * per_block + p) * 528, page, sizeof page);
+				uint32_t address = 0x1000 | (b - 1) << 1, ones = 0;
+				for (int k = 0; k < 16; k++)
+					ones += address >> k & 1;
+				address |= ones & 1;
+				if (b > blocks)
+					CHECK(std::all_of(page, page + 528, [](uint8_t v) { return v == 0xFF; }));
+				else
+					CHECK(page[518] == (address >> 8) && page[519] == (address & 0xFF) && page[523] == page[518] && page[524] == page[519]
+						&& std::all_of(page + 512, page + 518, [](uint8_t v) { return v == 0xFF; }));
+			}
+		// a half of zeros is guarded by ones; the partition's sector's second half, which holds its entry, is not
+		made.get(1024 + uint64_t(per_block) * 528, page, sizeof page);
+		CHECK(page[525] == 0xFF && page[526] == 0xFF && page[527] == 0xFF && !(page[520] == 0xFF && page[521] == 0xFF));
+		// the volume's own account: one cluster in use, the directory's
+		Bytes volume(size_t(blocks) * per_block * 512);
+		for (size_t s = 0; s < volume.size() / 512; s++)
+			made.get(1024 + (uint64_t(per_block) + s) * 528, &volume[s * 512], 512);
+		const uint32_t start = uint32_t(volume[454] | volume[455] << 8);
+		const uint8_t *boot = &volume[size_t(start) * 512];
+		CHECK(volume[510] == 0x55 && !memcmp(boot + 3, "RJA2.00 ", 8) && boot[13] == per_block && boot[16] == 2
+			&& !memcmp(boot + 54, mb == 128 ? "FAT16   " : "FAT12   ", 8) && start + (boot[19] | boot[20] << 8 | boot[32] | boot[33] << 8 | boot[34] << 16) == mb * 2000u);
+	}
+	// without a label the root holds the directory alone; a size or a label it cannot have makes nothing
+	{
+		Sparse made(1024 + uint64_t(32) * 1048576 / 32 * 33), small(1024 + uint64_t(4) * 1048576 / 32 * 33);
+		w = writer_of(made);
+		CHECK(syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err));
+		io = io_of(made);
+		fs = syfs_open(&io, nullptr, 0);
+		CHECK(fs && !*label_of(fs) && count_of(fs) == 1);
+		close_image(fs);
+		err[0] = 0;
+		CHECK(!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_SMARTMEDIA, "TWELVE CHARS", err, sizeof err) && err[0]);
+		CHECK(!syfs_create(&w, SYFS_NONE, SYFS_MEDIUM_SMARTMEDIA, "NAME", err, sizeof err));
+		w = writer_of(small);
+		CHECK(!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err));
+	}
 	Sparse odd(5 << 20);
 	w = writer_of(odd);
 	err[0] = 0;

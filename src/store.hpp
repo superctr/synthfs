@@ -137,6 +137,12 @@ public:
 	 * \return false with why where the size is no card's or a write failed.
 	 */
 	static bool blank(const syfs_io &io, std::string &why);
+	//! Writes a card formatted over an image of a card's size: its information block, and a FAT volume with a label
+	//! and the directory ROLAND, as an XV-5080 formats a card of 8 to 128 MB.
+	/*!
+	 * \return false with why where the size is none of those, the label is none a DOS name holds, or a write failed.
+	 */
+	static bool format(const syfs_io &io, const char *label, std::string &why);
 	//! Whether a store is a card's image: a card's size, and a header with the device code of that size.
 	static bool is_card(const Store &s);
 	//! Whether a store is a card's image complemented, as a VHD holds one.
