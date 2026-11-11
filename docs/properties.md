@@ -96,4 +96,10 @@ What `syfs_read` gives of a node, by the names `exports` lists.
 
 Not yet: an S-760/S-770 or S-550 record's bytes, a board's patch, and anything as system exclusive.
 
-No property is writable yet.
+## Changes
+
+Where the image was opened with a writer and its format is one written (FAT, in a raw image or a VHD), `name` is
+writable, and nodes are made (`syfs_import`: a file of the host's bytes, an empty directory), removed
+(`syfs_remove`, with what they hold), given another parent (`syfs_move`) and copied in from another image
+(`syfs_transfer`: a file as its `raw` bytes, a directory or volume as a directory with what it holds).  A node
+keeps its number through every change; a removed one's is not used again.

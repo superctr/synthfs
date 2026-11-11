@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -65,6 +66,8 @@ public:
 	std::vector<uint8_t> read(uint64_t offset, size_t n) const;
 	uint64_t size() const { return stores_.top->size(); }
 	bool raw() const { return stores_.raw; }
+	//! Writes n bytes at offset of the user data; false where the image is not written or any byte is outside it.
+	bool write(uint64_t offset, const void *buf, size_t n) const { return stores_.top->write(offset, buf, n); }
 	//! The image out of its container: what a host that reads and writes the medium itself is given.
 	const Store &plain() const { return *stores_.plain; }
 	//! Whether the image is in a VHD, read through its sectors.
@@ -107,6 +110,26 @@ public:
 	virtual uint64_t raw_size(size_t) const { return 0; }
 	//! Reads n bytes of entry i's file from offset; false where any is missing.
 	virtual bool raw(size_t, uint64_t, void *, size_t) const { return false; }
+	//! The bytes a new entry is made of: n at offset read into buf; false where any is missing.
+	using Source = std::function<bool(uint64_t offset, void *buf, size_t n)>;
+	//! Whether the format's volumes are written at all: its entries made, removed, named and moved.
+	virtual bool writes() const { return false; }
+	//! Makes an entry of a type under parent (syfs::NONE: at the top) from bytes of the source; the new entry.
+	/*!
+	 * The entry is added at the end of entries, the others keeping their places.
+	 * \return syfs::NONE with why where it cannot be made.
+	 */
+	virtual size_t create(size_t, syfs_key, std::string_view, uint64_t, const Source &, std::string &why)
+	{
+		why = "the format is not written";
+		return NONE;
+	}
+	//! Removes entry i from the image, and first what it holds; its place in entries stays, marked dead.
+	virtual bool remove(size_t, std::string &why) { return why = "the format is not written", false; }
+	//! Gives entry i another name.
+	virtual bool rename(size_t, std::string_view, std::string &why) { return why = "the format is not written", false; }
+	//! Gives entry i another parent (syfs::NONE: the top).
+	virtual bool move(size_t, size_t, std::string &why) { return why = "the format is not written", false; }
 	//! The sample entry i sounds at key (0 to 127), or syfs::NONE; here a sample, tone or file with a header itself.
 	virtual size_t sample_at(size_t i, int key) const;
 
@@ -116,6 +139,10 @@ public:
 	std::string label;
 	bool label_known = false;  //!< The label is identify's, not list's.
 	std::vector<syfs::Entry> entries;
+	std::vector<bool> dead;    //!< The entries removed since the image was listed, where any were.
+
+	//! Whether entry i has been removed.
+	bool gone(size_t i) const { return i < dead.size() && dead[i]; }
 
 	//! A property of the image's own beside its format, medium and label.
 	struct Prop {

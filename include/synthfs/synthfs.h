@@ -223,11 +223,46 @@ int syfs_get_str(syfs_image *im, syfs_node n, syfs_key key, char *buf, size_t si
  */
 int syfs_set_int(syfs_image *im, syfs_node n, syfs_key key, int64_t value);
 
-//! Writes a string property.
+//! Writes a string property: SYFS_PROP_NAME, which names the node anew, where syfs_prop says it is writable.
 /*!
  * \return 0 with why in syfs_error where it is not writable or the value cannot be held.
  */
 int syfs_set_str(syfs_image *im, syfs_node n, syfs_key key, const char *value);
+
+//! Makes a node under parent, of the host's bytes.
+/*!
+ * The image must have been opened with a writer, and its format be one that is written: SYFS_FORMAT_FAT, where the
+ * image is the volume's own bytes or a VHD (not a SmartMedia card's pages, nor raw CD-ROM sectors).  Nodes keep
+ * their numbers through every change; the new one's is returned.
+ *
+ * \param type SYFS_TYPE_FILE, or SYFS_TYPE_DIRECTORY, which is made empty: from is then NULL.
+ * \param as   SYFS_AS_RAW: the bytes are the file's own.
+ * \param from The bytes, from->size of them, read through from->read.
+ * \return SYFS_NO_NODE with why in syfs_error: a parent that holds no nodes, a name it has already or cannot
+ *         hold, a volume that is full.
+ */
+syfs_node syfs_import(syfs_image *im, syfs_node parent, syfs_key type, syfs_key as, const char *name, const syfs_io *from);
+
+//! Removes node n from the image, with what it holds.
+/*!
+ * \return 0 with why in syfs_error.
+ */
+int syfs_remove(syfs_image *im, syfs_node n);
+
+//! Gives node n another parent: SYFS_ROOT, or a node that holds nodes of its type.
+/*!
+ * \return 0 with why in syfs_error: a name the parent has already, a node moved into itself.
+ */
+int syfs_move(syfs_image *im, syfs_node n, syfs_node parent);
+
+//! Copies node n of another image under parent in this one, with what it holds.
+/*!
+ * A file is copied as its own bytes (SYFS_AS_RAW), a directory, volume or other holder of files as a directory of
+ * the same name with what it holds: so from a CD-ROM, a FAT volume or an AKAI volume into a FAT volume.
+ *
+ * \return The new node, or SYFS_NO_NODE with why in to's syfs_error; what was copied before it failed stays.
+ */
+syfs_node syfs_transfer(syfs_image *to, syfs_node parent, syfs_image *from, syfs_node n);
 
 //! Reads node n's contents in a conversion: up to size bytes from byte at.
 /*!

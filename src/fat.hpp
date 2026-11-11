@@ -56,10 +56,21 @@ public:
 	uint64_t raw_size(size_t i) const override { return entries[i].kind == SYFS_TYPE_FILE ? entries[i].bytes : 0; }
 	bool raw(size_t i, uint64_t offset, void *buf, size_t n) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
+	//! Written where the image is: files and directories made, removed, named and moved (docs/formats.md, "FAT").
+	bool writes() const override { return true; }
+	size_t create(size_t parent, syfs_key type, std::string_view name, uint64_t bytes, const Source &from,
+		std::string &why) override;
+	bool remove(size_t i, std::string &why) override;
+	bool rename(size_t i, std::string_view name, std::string &why) override;
+	bool move(size_t i, size_t parent, std::string &why) override;
 
 private:
 	fat::Geometry g_;
 	std::vector<uint32_t> first_;  //!< Each entry's first cluster, beside entries.
+	//! Each entry's directory slots, bytes from the volume's start: its long name's, then its own.
+	std::vector<std::vector<uint64_t>> slots_;
+	uint32_t hint_ = 2;            //!< Where the search for a free cluster starts.
+	bool fsinfo_stale_ = false;    //!< FAT32's free count has been marked unknown.
 	mutable std::map<uint64_t, std::vector<uint8_t>> fat_cache_;
 	std::vector<uint32_t> visited_;
 
@@ -68,7 +79,25 @@ private:
 	//! A chain from first, at most max clusters, stopping at its end, a cluster out of the volume or one seen before.
 	std::vector<uint32_t> chain(uint32_t first, uint64_t max) const;
 	bool read_file(const std::vector<uint32_t> &clusters, uint64_t offset, void *buf, size_t n) const;
-	void walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool root);
+	//! A directory's entries; clusters is its chain, null for the fixed root of FAT12 and FAT16.
+	void walk(const std::vector<uint8_t> &dir, const std::vector<uint32_t> *clusters, size_t parent, int depth);
+
+	bool put(uint64_t at, const void *buf, size_t n) const { return image.write(g_.base + at, buf, n); }
+	uint64_t cluster_at(uint32_t c) const { return g_.data_at + uint64_t(c - 2) * g_.cluster; }
+	//! Sets a cluster's entry in every copy of the FAT.
+	bool link(uint32_t c, uint32_t value);
+	//! A chain of n free clusters, linked and ended; empty where the volume has not that many.
+	std::vector<uint32_t> take(uint64_t n);
+	bool release(uint32_t first);
+	//! The slots of a directory in order, bytes from the volume's start; parent syfs::NONE is the root.
+	std::vector<uint64_t> slots_of(size_t parent) const;
+	//! A run of n free slots in a directory, its chain made longer where it is full; empty where it cannot be.
+	std::vector<uint64_t> room(size_t parent, size_t n, std::string &why);
+	//! Writes the slots of a name and its entry into a directory; the slots, empty with why where it cannot.
+	std::vector<uint64_t> enter(size_t parent, std::string_view name, const uint8_t *entry, std::string &why);
+	bool vacate(const std::vector<uint64_t> &slots);
+	bool taken(size_t parent, std::string_view name, size_t but) const;
+	bool under(size_t i, size_t maybe_ancestor) const;
 };
 
 }

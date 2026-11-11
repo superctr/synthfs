@@ -2314,6 +2314,276 @@ static void test_vhd_shared()
 	CHECK(syfs_convert(&again, &to, SYFS_CONTAINER_RAW, err, sizeof err) == SIZE && out.pages == plain.pages);
 }
 
+// ---- a FAT volume written: files and directories made, named, moved and removed, and read back from the image
+static Bytes bytes_of(size_t n, uint8_t seed)
+{
+	Bytes b(n);
+	for (size_t i = 0; i < n; i++)
+		b[i] = uint8_t(i * 13 + seed + (i >> 8));
+	return b;
+}
+
+// a node by its path from the top, names parted by '/'
+static syfs_node at_path(syfs_image *fs, const std::string &path)
+{
+	syfs_node n = SYFS_ROOT;
+	for (size_t from = 0; from < path.size();) {
+		size_t to = path.find('/', from);
+		if (to == std::string::npos)
+			to = path.size();
+		const std::string name = path.substr(from, to - from);
+		std::vector<syfs_node> kids(syfs_list(fs, n, SYFS_REL_CHILDREN, nullptr, 0));
+		syfs_list(fs, n, SYFS_REL_CHILDREN, kids.data(), kids.size());
+		syfs_node found = SYFS_NO_NODE;
+		for (syfs_node k : kids) {
+			syfs_info info;
+			if (syfs_node_info(fs, k, &info) && name == info.name)
+				found = k;
+		}
+		if (found == SYFS_NO_NODE)
+			return found;
+		n = found;
+		from = to + 1;
+	}
+	return n;
+}
+
+static Bytes contents(syfs_image *fs, syfs_node n)
+{
+	Bytes b(syfs_read(fs, n, SYFS_AS_RAW, 0, nullptr, 0));
+	b.resize(syfs_read(fs, n, SYFS_AS_RAW, 0, b.data(), b.size()));
+	return b;
+}
+
+// every path of the image with its size, a directory's ending in '/', in order of name
+static std::vector<std::string> tree(syfs_image *fs, syfs_node n = SYFS_ROOT, const std::string &prefix = "")
+{
+	std::vector<std::string> out;
+	std::vector<syfs_node> kids(syfs_list(fs, n, SYFS_REL_CHILDREN, nullptr, 0));
+	syfs_list(fs, n, SYFS_REL_CHILDREN, kids.data(), kids.size());
+	for (syfs_node k : kids) {
+		syfs_info info;
+		syfs_node_info(fs, k, &info);
+		if (info.type == SYFS_TYPE_DIRECTORY) {
+			out.push_back(prefix + info.name + "/");
+			auto sub = tree(fs, k, prefix + info.name + "/");
+			out.insert(out.end(), sub.begin(), sub.end());
+		} else
+			out.push_back(prefix + info.name + " " + std::to_string(info.size));
+	}
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+static syfs_node put_file(syfs_image *fs, syfs_node parent, const char *name, Bytes &b)
+{
+	syfs_io from = io_of(b);
+	return syfs_import(fs, parent, SYFS_TYPE_FILE, SYFS_AS_RAW, name, &from);
+}
+
+// the FAT's own account checked against the directories': every cluster of a chain marked in use once, no other
+static void check_fat_whole(Sparse &img, uint64_t base)
+{
+	syfs_io io = io_of(img);
+	syfs::Image im(io);
+	uint8_t bs[512];
+	im.read(base, bs, sizeof bs);
+	auto g = syfs::fat::geometry(bs, base, im.size());
+	CHECK(g.has_value());
+	if (!g)
+		return;
+	auto entry = [&](uint64_t fat, uint32_t c) -> uint32_t {
+		uint8_t b[4] = {};
+		const uint64_t at = base + g->fat_at + fat * g->fat_bytes;
+		if (g->bits == 12) {
+			im.read(at + c + c / 2, b, 2);
+			const uint32_t v = b[0] | b[1] << 8;
+			return c & 1 ? v >> 4 : v & 0xFFF;
+		}
+		im.read(at + uint64_t(c) * (g->bits / 8), b, g->bits / 8);
+		return (b[0] | b[1] << 8 | b[2] << 16 | uint32_t(b[3]) << 24) & 0x0FFFFFFF;
+	};
+	const uint64_t fats = (g->root_at - g->fat_at) / g->fat_bytes;
+	const uint32_t end = g->bits == 12 ? 0xFF8 : g->bits == 16 ? 0xFFF8 : 0x0FFFFFF8;
+	std::vector<uint8_t> used(g->clusters + 2, 0);
+	bool ok = true;
+	// a directory's entries, each chain followed to its end; a file's is as long as its size asks
+	std::function<void(uint32_t, bool, int)> walk = [&](uint32_t first, bool fixed, int depth) {
+		Bytes dir;
+		if (fixed) {
+			dir.resize(size_t(g->root_entries) * 32);
+			im.read(base + g->root_at, dir.data(), dir.size());
+		} else
+			for (uint32_t c = first; c >= 2 && c < end && dir.size() < (1u << 22); c = entry(0, c)) {
+				dir.resize(dir.size() + g->cluster);
+				im.read(base + g->data_at + uint64_t(c - 2) * g->cluster, &dir[dir.size() - g->cluster], g->cluster);
+			}
+		for (size_t at = 0; at + 32 <= dir.size() && dir[at]; at += 32) {
+			const uint8_t *e = &dir[at];
+			if (e[0] == 0xE5 || (e[11] & 0x3F) == 0x0F || (e[11] & 0x08) || e[0] == '.')
+				continue;
+			const uint32_t start = e[26] | e[27] << 8 | (g->bits == 32 ? uint32_t(e[20] | e[21] << 8) << 16 : 0);
+			const uint32_t size = e[28] | e[29] << 8 | e[30] << 16 | uint32_t(e[31]) << 24;
+			uint64_t count = 0;
+			for (uint32_t c = start; c >= 2 && c < end; c = entry(0, c)) {
+				ok = ok && c < g->clusters + 2 && !used[c]++;
+				if (!ok)
+					return;
+				count++;
+			}
+			if (e[11] & 0x10) {
+				ok = ok && count >= 1 && depth < 16;
+				if (ok)
+					walk(start, false, depth + 1);
+			} else
+				ok = ok && count == (uint64_t(size) + g->cluster - 1) / g->cluster;
+		}
+	};
+	if (g->bits == 32) {
+		for (uint32_t c = g->root_cluster; c >= 2 && c < end; c = entry(0, c))
+			used[c]++;
+		walk(g->root_cluster, false, 0);
+	} else
+		walk(0, true, 0);
+	CHECK(ok);
+	// and every copy of the FAT says the same, in use exactly where a chain goes
+	uint32_t wrong = 0;
+	for (uint32_t c = 2; c < g->clusters + 2; c++) {
+		wrong += (entry(0, c) != 0) != (used[c] == 1);
+		for (uint64_t f = 1; f < fats; f++)
+			wrong += entry(f, c) != entry(0, c);
+	}
+	CHECK(wrong == 0);
+}
+
+static void test_fat_written()
+{
+	const uint64_t MB = 1 << 20;
+	char err[128];
+	struct Volume { uint64_t bytes; syfs_key medium; uint64_t base; };
+	for (Volume v : { Volume { 1440 * 1024, SYFS_MEDIUM_FLOPPY, 0 }, Volume { 40 * MB, SYFS_MEDIUM_DISK, 63 * 512 },
+		     Volume { 600 * MB, SYFS_MEDIUM_DISK, 63 * 512 } }) {
+		Sparse img(v.bytes);
+		syfs_io rw { &img, sparse_read, sparse_write, img.size };
+		CHECK(syfs_create(&rw, SYFS_FORMAT_FAT, v.medium, "WRITTEN", err, sizeof err));
+		syfs_image *fs = syfs_open(&rw, nullptr, 0);
+		CHECK(fs && count_of(fs) == 0);
+		// files: a short name as it stands, a long one, one that is not ASCII, an empty one, one of many clusters
+		Bytes a = bytes_of(700, 1), b = bytes_of(100000, 2), c = bytes_of(5000, 3), none;
+		const syfs_node fa = put_file(fs, SYFS_ROOT, "SHORT.BIN", a);
+		const syfs_node fb = put_file(fs, SYFS_ROOT, "A longer name, with a comma.wav", b);
+		const syfs_node fc = put_file(fs, SYFS_ROOT, "Ljud \xC3\xA5\xC3\xA4\xC3\xB6.bin", c);
+		const syfs_node fe = put_file(fs, SYFS_ROOT, "empty", none);
+		CHECK(fa != SYFS_NO_NODE && fb != SYFS_NO_NODE && fc != SYFS_NO_NODE && fe != SYFS_NO_NODE && !*syfs_error(fs));
+		CHECK(contents(fs, fa) == a && contents(fs, fb) == b && contents(fs, fc) == c && contents(fs, fe).empty());
+		// what the volume cannot take: a name twice (whatever its case), a name of no characters or of ones it
+		// cannot hold, a parent that is a file
+		CHECK(put_file(fs, SYFS_ROOT, "short.bin", a) == SYFS_NO_NODE && *syfs_error(fs));
+		CHECK(put_file(fs, SYFS_ROOT, "", a) == SYFS_NO_NODE && put_file(fs, SYFS_ROOT, "a/b", a) == SYFS_NO_NODE);
+		CHECK(put_file(fs, fa, "IN.BIN", a) == SYFS_NO_NODE && *syfs_error(fs));
+		// directories, one in another, and files in them: enough in one that it needs more than a cluster
+		const syfs_node d1 = syfs_import(fs, SYFS_ROOT, SYFS_TYPE_DIRECTORY, SYFS_AS_RAW, "ROLAND", nullptr);
+		const syfs_node d2 = syfs_import(fs, d1, SYFS_TYPE_DIRECTORY, SYFS_AS_RAW, "Sound files", nullptr);
+		CHECK(d1 != SYFS_NO_NODE && d2 != SYFS_NO_NODE);
+		for (int k = 0; k < 150; k++) {
+			Bytes small = bytes_of(size_t(k) * 7, uint8_t(k));
+			const std::string name = "A file with a long name, number " + std::to_string(k) + ".dat";
+			CHECK(put_file(fs, d2, name.c_str(), small) != SYFS_NO_NODE);
+		}
+		CHECK(syfs_list(fs, d2, SYFS_REL_CHILDREN, nullptr, 0) == 150 && syfs_list(fs, d1, SYFS_REL_ALL, nullptr, 0) == 151);
+		// named anew, moved, removed: the nodes keep their numbers
+		CHECK(syfs_set_str(fs, fb, SYFS_PROP_NAME, "RENAMED.WAV") && syfs_set_str(fs, fa, SYFS_PROP_NAME, "Now a long name.bin"));
+		CHECK(!syfs_set_str(fs, fc, SYFS_PROP_NAME, "renamed.wav") && *syfs_error(fs));
+		CHECK(syfs_move(fs, fc, d1) && syfs_move(fs, fb, d2) && !syfs_move(fs, d1, d2) && *syfs_error(fs));
+		CHECK(syfs_move(fs, d2, SYFS_ROOT) && at_path(fs, "Sound files/RENAMED.WAV") == fb);
+		CHECK(at_path(fs, "ROLAND/Ljud \xC3\xA5\xC3\xA4\xC3\xB6.bin") == fc && contents(fs, fc) == c && contents(fs, fb) == b);
+		for (int k = 0; k < 150; k += 2)
+			CHECK(syfs_remove(fs, at_path(fs, "Sound files/A file with a long name, number " + std::to_string(k) + ".dat")));
+		syfs_info gone;
+		CHECK(syfs_remove(fs, fe) && !syfs_node_info(fs, fe, &gone) && !syfs_remove(fs, fe));
+		// a removed file's room is used again
+		Bytes big = bytes_of(300000, 9);
+		const syfs_node fg = put_file(fs, d1, "BIG.BIN", big);
+		CHECK(fg != SYFS_NO_NODE && contents(fs, fg) == big && contents(fs, fa) == a);
+		const auto before = tree(fs);
+		syfs_close(fs);
+
+		// read from the image again it is the same tree, the files' bytes theirs, the FAT whole
+		check_fat_whole(img, v.base);
+		syfs_io io = io_of(img);
+		fs = syfs_open(&io, nullptr, 0);
+		CHECK(fs && tree(fs) == before);
+		CHECK(before.size() == 6 + 75);
+		CHECK(!strcmp(label_of(fs), "WRITTEN"));
+		CHECK(contents(fs, at_path(fs, "Now a long name.bin")) == a && contents(fs, at_path(fs, "Sound files/RENAMED.WAV")) == b);
+		CHECK(contents(fs, at_path(fs, "ROLAND/BIG.BIN")) == big);
+		CHECK(contents(fs, at_path(fs, "Sound files/A file with a long name, number 149.dat")) == bytes_of(149 * 7, 149));
+		// opened without a writer nothing is changed
+		CHECK(!syfs_remove(fs, at_path(fs, "ROLAND")) && *syfs_error(fs) && put_file(fs, SYFS_ROOT, "NO.BIN", a) == SYFS_NO_NODE);
+		close_image(fs);
+
+		// a directory removed goes with all it holds, and a volume emptied has every cluster free again
+		fs = syfs_open(&rw, nullptr, 0);
+		CHECK(syfs_remove(fs, at_path(fs, "Sound files")) && syfs_remove(fs, at_path(fs, "ROLAND"))
+			&& syfs_remove(fs, at_path(fs, "Now a long name.bin")) && tree(fs).empty());
+		syfs_close(fs);
+		check_fat_whole(img, v.base);
+
+		// a volume filled refuses the file that does not fit, and is left whole
+		fs = syfs_open(&rw, nullptr, 0);
+		Bytes chunk = bytes_of(size_t(v.bytes > 2 * MB ? 16 * MB : 600 * 1024), 5);
+		int fitted = 0;
+		if (v.bytes <= 40 * MB)
+			for (; fitted < 10 && put_file(fs, SYFS_ROOT, ("FILL" + std::to_string(fitted) + ".BIN").c_str(), chunk) != SYFS_NO_NODE; fitted++)
+				;
+		CHECK(v.bytes > 40 * MB || (fitted == 2 && *syfs_error(fs) && contents(fs, at_path(fs, "FILL1.BIN")) == chunk));
+		syfs_close(fs);
+		check_fat_whole(img, v.base);
+	}
+
+	// a FAT12 volume's root is of a fixed size: when it is full, it is full
+	{
+		Sparse img(1440 * 1024);
+		syfs_io rw { &img, sparse_read, sparse_write, img.size };
+		CHECK(syfs_create(&rw, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, nullptr, err, sizeof err));
+		syfs_image *fs = syfs_open(&rw, nullptr, 0);
+		Bytes one = bytes_of(1, 1);
+		int made = 0;
+		while (made < 400 && put_file(fs, SYFS_ROOT, ("F" + std::to_string(made) + ".X").c_str(), one) != SYFS_NO_NODE)
+			made++;
+		CHECK(made == 224 && *syfs_error(fs));
+		syfs_close(fs);
+		check_fat_whole(img, 0);
+	}
+
+	// from one image into another: a directory with what it holds, a file; from a CD-ROM as from a FAT volume
+	{
+		Sparse src(4 * MB), dst(40 * MB);
+		syfs_io rs { &src, sparse_read, sparse_write, src.size }, rd { &dst, sparse_read, sparse_write, dst.size };
+		CHECK(syfs_create(&rs, SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, nullptr, err, sizeof err) == 0);
+		Sparse flop(1440 * 1024);
+		rs = { &flop, sparse_read, sparse_write, flop.size };
+		CHECK(syfs_create(&rs, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, nullptr, err, sizeof err));
+		CHECK(syfs_create(&rd, SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, nullptr, err, sizeof err));
+		syfs_image *from = syfs_open(&rs, nullptr, 0), *to = syfs_open(&rd, nullptr, 0);
+		Bytes a = bytes_of(9000, 4), b = bytes_of(123, 6);
+		const syfs_node dir = syfs_import(from, SYFS_ROOT, SYFS_TYPE_DIRECTORY, SYFS_AS_RAW, "Set", nullptr);
+		const syfs_node sub = syfs_import(from, dir, SYFS_TYPE_DIRECTORY, SYFS_AS_RAW, "Inner", nullptr);
+		put_file(from, dir, "one.bin", a);
+		put_file(from, sub, "two.bin", b);
+		const syfs_node top = put_file(from, SYFS_ROOT, "TOP.BIN", b);
+		const syfs_node copied = syfs_transfer(to, SYFS_ROOT, from, dir);
+		CHECK(copied != SYFS_NO_NODE && syfs_transfer(to, copied, from, top) != SYFS_NO_NODE);
+		CHECK((tree(to) == std::vector<std::string> { "Set/", "Set/Inner/", "Set/Inner/two.bin 123", "Set/TOP.BIN 123", "Set/one.bin 9000" }));
+		CHECK(contents(to, at_path(to, "Set/one.bin")) == a && contents(to, at_path(to, "Set/Inner/two.bin")) == b);
+		// a name already there is not written over, and an image's own node is not transferred into it
+		CHECK(syfs_transfer(to, SYFS_ROOT, from, dir) == SYFS_NO_NODE && *syfs_error(to));
+		CHECK(syfs_transfer(to, SYFS_ROOT, to, copied) == SYFS_NO_NODE);
+		syfs_close(from), syfs_close(to);
+		check_fat_whole(dst, 63 * 512);
+	}
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2349,6 +2619,7 @@ int main()
 	test_fat();
 	test_format_fat();
 	test_format_s700();
+	test_fat_written();
 	test_smartmedia();
 	test_vhd();
 	test_vhd_written();

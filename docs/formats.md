@@ -473,6 +473,33 @@ at most.  A directory whose first cluster is outside the volume, or is one alrea
 itself or an ancestor), is listed but not walked again.  A file whose chain is shorter than its size gives no
 sample header.
 
+**Written**: files and directories made, removed, named anew and moved, on a volume in a raw image or a VHD.
+
+A name is entered as a short name where it is one as it stands: eight characters and three, upper-case letters,
+digits and ``!#$%&'()-@^_`{}~``.  Any other is a long name: UTF-16 in slots of 13 characters, the last part first
+with 0x40 in its order byte, a zero after the name and 0xFFFF to the slot's end, each carrying the short name's
+checksum; under it a short name made for it, its letters upper-cased and the rest left out, six characters of
+the base at most, `~` and the first number from 1 that no entry of the directory has, and three of the extension.
+A name is refused that is empty, `.` or `..`, holds a control character or one of `"*/:<>?\|`, is longer than 63
+bytes of UTF-8, or that the directory has already, whatever the case of its letters.
+
+A file's clusters are taken first, the first free ones from where the last were taken, and linked from the last
+back; then its bytes are written, the last cluster's rest zeros; then its slots, the long name's before its own.
+So a file is in no directory until it is whole, and a write that fails gives its clusters back.  Every FAT is
+written alike.  A directory is one cluster: `.` naming itself and `..` the directory it is in (zero for the
+root), the rest zeros.  The slots go in the first run of free ones (a deleted entry's, or those past the
+directory's end); where there is none, a directory that is a chain is given another cluster of zeros.  The root of
+FAT12 and FAT16 is of a fixed size, and full when it is full; a directory holds 65 536 slots at most.  Times are
+the host's clock; the attribute is 0x20 for a file, 0x10 for a directory.
+
+Removing marks its slots 0xE5, its own first, and frees its chain; a directory's entries are removed before it.
+Naming anew and moving enter the same entry again, under the new name or in the other directory, and then give up
+the old slots; a directory moved has its `..` set to where it now is.  On FAT32 the FSInfo sector's free count and
+next free cluster are set to 0xFFFFFFFF, not known, at the first change.
+
+Not written: a volume on a SmartMedia card (its pages are only read) or in raw CD-ROM sectors, the volume's label,
+attributes other than the two, the dirty bits.
+
 Not read: the second FAT (the first is trusted), timestamps and attributes, FAT32's FSInfo, exFAT, short names in
 code pages other than ASCII.
 

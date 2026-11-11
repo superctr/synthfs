@@ -63,6 +63,11 @@ A node's `exports` property names what else it reads as: `SYFS_AS_WAV`, the same
 loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample).
 `syfs_read` with no buffer gives the size.
 
+A FAT volume, in a raw image or a VHD, is written: `syfs_import` makes a file of the host's bytes or an empty
+directory, `syfs_remove` removes a node with what it holds, `syfs_move` gives it another parent, setting
+`SYFS_PROP_NAME` names it anew, and `syfs_transfer` copies a node of another image in, a file as its own bytes and
+a directory or volume with what it holds.  Nodes keep their numbers through every change.
+
 What a node sounds at a key, `syfs_at_key`, is the sample (a node with a wave) a patch, partial, program or board's
 wave plays there, so a host can preview a sound at middle C: that sample played at its rate × 2^((60 − key) / 12),
 key its original key.
@@ -83,7 +88,7 @@ if (!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, "SAMPLES", err, sizeof
 ## Building
 
 ```sh
-just build          # the library, the tools (synthfs-ls, -wav, -convert) and the tests (CMake 3.23+, C++20)
+just build          # the library, the tools (synthfs-ls, -wav, -convert, -edit) and the tests (CMake 3.23+, C++20)
 just test
 just keys           # syfs_keys.h made again after a change to src/keys.def (Python 3)
 just scan DIR       # every image under DIR, one line each
@@ -96,7 +101,9 @@ where synthfs is the top level (`SYNTHFS_TOOLS`, `SYNTHFS_TESTS`).
 it, `-r` adds what each uses and each sample's header.  `synthfs-wav IMAGE DIR [NODE...]` writes every sample (or
 the nodes given by number) into DIR as 16-bit WAV files, named by number and name, the original key and loop in a
 `smpl` chunk; `synthfs-wav -n IMAGE` lists what it would write.  `synthfs-convert IN OUT.vhd` makes a dynamic VHD of a raw image and
-`synthfs-convert IN.vhd OUT` a raw image of a VHD, never over a file already there.
+`synthfs-convert IN.vhd OUT` a raw image of a VHD, never over a file already there.  `synthfs-edit IMAGE` changes a FAT
+volume: `add FILE [DIR]`, `mkdir PATH`, `rm PATH`, `mv PATH NEW`, `from OTHER PATH [DIR]` (a node of another image
+copied in) and `get PATH FILE [wav]` (a node written out).
 
 ## Layout
 
@@ -106,5 +113,5 @@ a class with a static `probe` and `open`.
 
 ## Later
 
-Writing sounds into an image, and formatting a DJ-70's floppy and an S-760's
+Writing the samplers' own volumes, and formatting a DJ-70's floppy and an S-760's
 Volume Dump FD disk.

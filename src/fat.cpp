@@ -255,8 +255,14 @@ bool Fat::read_file(const std::vector<uint32_t> &clusters, uint64_t offset, void
 }
 
 // a directory's entries: its long names gathered before each short one, its subdirectories walked once each
-void Fat::walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool root)
+void Fat::walk(const std::vector<uint8_t> &dir, const std::vector<uint32_t> *clusters, size_t parent, int depth)
 {
+	const bool root = parent == syfs::NONE;
+	// a slot's place in the volume
+	auto slot = [&](size_t at) {
+		return clusters ? cluster_at((*clusters)[at / g_.cluster]) + at % g_.cluster : g_.root_at + at;
+	};
+	std::vector<uint64_t> run;
 	std::vector<uint16_t> lfn;
 	int expect = 0;
 	uint8_t sum = 0;
@@ -272,6 +278,9 @@ void Fat::walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool r
 		uint8_t attr = e[11];
 		if ((attr & 0x3F) == 0x0F) {
 			int ord = e[0] & 0x1F;
+			if (e[0] & 0x40)
+				run.clear();
+			run.push_back(slot(at));
 			if (e[0] & 0x40) {
 				lfn.assign(size_t(ord) * 13, 0xFFFF);
 				expect = ord;
@@ -304,6 +313,12 @@ void Fat::walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool r
 		size_t i = add(is_dir ? SYFS_TYPE_DIRECTORY : SYFS_TYPE_FILE, SYFS_FORMAT_FAT, number++, parent, name,
 			is_dir ? 0 : le32(e + 28), valid(first) ? g_.base + g_.data_at + uint64_t(first - 2) * g_.cluster : 0);
 		first_.push_back(first);
+		// the slots it is entered in: its long name's where that is its name, and its own
+		if (!named)
+			run.clear();
+		run.push_back(slot(at));
+		slots_.push_back(run);
+		run.clear();
 		if (!is_dir || depth >= DEPTH || !valid(first)
 			|| std::find(visited_.begin(), visited_.end(), first) != visited_.end())
 			continue;
@@ -312,7 +327,7 @@ void Fat::walk(const std::vector<uint8_t> &dir, size_t parent, int depth, bool r
 		std::vector<uint8_t> sub(clusters.size() * g_.cluster);
 		if (!read_file(clusters, 0, sub.data(), sub.size()))
 			sub.clear();
-		walk(sub, i, depth + 1, false);
+		walk(sub, &clusters, i, depth + 1);
 	}
 }
 
@@ -329,9 +344,11 @@ void Fat::list()
 		root.resize(clusters.size() * g_.cluster);
 		if (!read_file(clusters, 0, root.data(), root.size()))
 			root.clear();
-	} else
+		walk(root, &clusters, syfs::NONE, 0);
+	} else {
 		root = image.read(g_.base + g_.root_at, size_t(g_.root_entries) * 32);
-	walk(root, syfs::NONE, 0, true);
+		walk(root, nullptr, syfs::NONE, 0);
+	}
 	if (label.empty() && memcmp(g_.label, "NO NAME    ", 11))
 		label = label_of(g_.label);
 }

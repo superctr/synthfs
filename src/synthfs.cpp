@@ -145,26 +145,47 @@ struct syfs_image {
 			medium->entries.clear();
 			error = "the image could not be read";
 		}
+		relate();
+	}
+
+	// each node's children and the types met, from the entries as they are now: after the lists are read, and
+	// after every change
+	void relate()
+	{
 		const auto &e = medium->entries;
 		kids.assign(e.size() + 1, {});
+		types.clear();
 		for (size_t i = 0; i < e.size(); i++) {
+			if (medium->gone(i))
+				continue;
 			kids[e[i].parent == NONE ? 0 : e[i].parent + 1].push_back(syfs_node(i + 1));
 			if (std::find(types.begin(), types.end(), e[i].kind) == types.end())
 				types.push_back(e[i].kind);
 		}
+		sample_of = NONE;
+	}
+
+	// whether the image's volume can be changed: the host gave a writer and the format is one written
+	bool changes()
+	{
+		list();
+		if (writable && medium->writes())
+			return true;
+		error = writable ? "the format is not written" : "the image was opened without a writer";
+		return false;
 	}
 
 	// node n's entry once the lists are read, or null for the root and for no node
 	const Entry *entry(syfs_node n)
 	{
 		list();
-		return n && n <= medium->entries.size() ? &medium->entries[n - 1] : nullptr;
+		return n && n <= medium->entries.size() && !medium->gone(n - 1) ? &medium->entries[n - 1] : nullptr;
 	}
 
 	bool has(syfs_node n)
 	{
 		list();
-		return n <= medium->entries.size();
+		return n <= medium->entries.size() && !(n && medium->gone(n - 1));
 	}
 
 	// entry i's sample header, or null where it has none
@@ -521,16 +542,21 @@ size_t syfs_list(syfs_image *im, syfs_node n, syfs_key relation, syfs_node *out,
 	case SYFS_REL_ALL:
 		if (!n) {
 			for (size_t i = 0; i < entries.size(); i++)
-				put(syfs_node(i + 1));
-		} else {
-			// an entry comes after the one that holds it
-			std::vector<bool> under(entries.size(), false);
-			under[n - 1] = true;
-			for (size_t i = n; i < entries.size(); i++)
-				if (entries[i].parent != NONE && under[entries[i].parent]) {
-					under[i] = true;
+				if (!im->medium->gone(i))
 					put(syfs_node(i + 1));
+		} else {
+			// those n holds and those they hold, in the image's order; an entry may come before the one that
+			// holds it once it has been moved
+			std::vector<bool> under(entries.size(), false);
+			std::vector<syfs_node> walk { n };
+			for (size_t k = 0; k < walk.size(); k++)
+				for (syfs_node c : im->kids[walk[k]]) {
+					under[c - 1] = true;
+					walk.push_back(c);
 				}
+			for (size_t i = 0; i < entries.size(); i++)
+				if (under[i])
+					put(syfs_node(i + 1));
 		}
 		break;
 	case SYFS_REL_USES:
@@ -568,7 +594,7 @@ int syfs_prop_at(syfs_image *im, syfs_node n, size_t i, syfs_prop *out)
 		for (size_t k = 0; k < count; k++) {
 			Value v = im->value(n, keys[k]);
 			if (v.kind != SYFS_NONE && !i--) {
-				*out = { keys[k], v.kind, 0 };
+				*out = { keys[k], v.kind, n && keys[k] == SYFS_PROP_NAME && im->writable && im->medium->writes() };
 				return true;
 			}
 		}
@@ -619,11 +645,139 @@ int syfs_set_int(syfs_image *im, syfs_node, syfs_key, int64_t)
 	return 0;
 }
 
-int syfs_set_str(syfs_image *im, syfs_node, syfs_key, const char *)
+int syfs_set_str(syfs_image *im, syfs_node n, syfs_key key, const char *value)
 {
-	if (im)
-		im->error = "the property cannot be written";
-	return 0;
+	if (!im)
+		return 0;
+	im->error = "the property cannot be written";
+	if (key != SYFS_PROP_NAME || !value || !im->entry(n) || !im->changes())
+		return 0;
+	try {
+		std::string why;
+		const bool ok = im->medium->rename(n - 1, value, why);
+		im->error = ok ? "" : why;
+		im->relate();
+		return ok;
+	} catch (...) {
+		im->error = "the image could not be written";
+		return 0;
+	}
+}
+
+syfs_node syfs_import(syfs_image *im, syfs_node parent, syfs_key type, syfs_key as, const char *name, const syfs_io *from)
+{
+	if (!im)
+		return SYFS_NO_NODE;
+	if (!name || !im->has(parent) || (as != SYFS_AS_RAW && as != SYFS_NONE) || (from && !from->read)) {
+		im->error = !im->has(parent) ? "no such node to put it in" : "nothing to make it of";
+		return SYFS_NO_NODE;
+	}
+	if (!im->changes())
+		return SYFS_NO_NODE;
+	try {
+		std::string why;
+		Medium::Source source;
+		if (from)
+			source = [from](uint64_t offset, void *buf, size_t n) { return from->read(from->user, offset, buf, n) == n; };
+		const size_t i = im->medium->create(parent ? parent - 1 : NONE, type, name, from ? from->size : 0, source, why);
+		im->error = i == NONE ? why : "";
+		im->relate();
+		return i == NONE ? SYFS_NO_NODE : syfs_node(i + 1);
+	} catch (...) {
+		im->error = "the image could not be written";
+		return SYFS_NO_NODE;
+	}
+}
+
+int syfs_remove(syfs_image *im, syfs_node n)
+{
+	if (!im)
+		return 0;
+	if (!im->entry(n)) {
+		im->error = "no such node";
+		return 0;
+	}
+	if (!im->changes())
+		return 0;
+	try {
+		std::string why;
+		const bool ok = im->medium->remove(n - 1, why);
+		im->error = ok ? "" : why;
+		im->relate();
+		return ok;
+	} catch (...) {
+		im->error = "the image could not be written";
+		return 0;
+	}
+}
+
+int syfs_move(syfs_image *im, syfs_node n, syfs_node parent)
+{
+	if (!im)
+		return 0;
+	if (!im->entry(n) || !im->has(parent)) {
+		im->error = "no such node";
+		return 0;
+	}
+	if (!im->changes())
+		return 0;
+	try {
+		std::string why;
+		const bool ok = im->medium->move(n - 1, parent ? parent - 1 : NONE, why);
+		im->error = ok ? "" : why;
+		im->relate();
+		return ok;
+	} catch (...) {
+		im->error = "the image could not be written";
+		return 0;
+	}
+}
+
+// node n of another image made anew under parent: a file of its own bytes, a holder of files with what it holds
+static syfs_node transfer(syfs_image *to, syfs_node parent, syfs_image *from, syfs_node n, int depth)
+{
+	syfs_info info;
+	if (!syfs_node_info(from, n, &info) || depth > 64)
+		return SYFS_NO_NODE;
+	const size_t bytes = syfs_read(from, n, SYFS_AS_RAW, 0, nullptr, 0);
+	if (bytes || info.type == SYFS_TYPE_FILE) {
+		struct Node {
+			syfs_image *im;
+			syfs_node n;
+		} source { from, n };
+		const syfs_io io { &source, [](void *user, uint64_t offset, void *buf, size_t size) {
+			auto *s = static_cast<Node *>(user);
+			return syfs_read(s->im, s->n, SYFS_AS_RAW, offset, buf, size);
+		}, nullptr, bytes, nullptr, nullptr };
+		return syfs_import(to, parent, SYFS_TYPE_FILE, SYFS_AS_RAW, info.name, &io);
+	}
+	const size_t count = syfs_list(from, n, SYFS_REL_CHILDREN, nullptr, 0);
+	if (info.type != SYFS_TYPE_DIRECTORY && !count) {
+		to->error = "nothing of it can be copied as a file";
+		return SYFS_NO_NODE;
+	}
+	const syfs_node made = syfs_import(to, parent, SYFS_TYPE_DIRECTORY, SYFS_AS_RAW, info.name, nullptr);
+	if (made == SYFS_NO_NODE)
+		return made;
+	std::vector<syfs_node> held(count);
+	syfs_list(from, n, SYFS_REL_CHILDREN, held.data(), held.size());
+	for (syfs_node c : held)
+		if (transfer(to, made, from, c, depth + 1) == SYFS_NO_NODE)
+			return SYFS_NO_NODE;
+	return made;
+}
+
+syfs_node syfs_transfer(syfs_image *to, syfs_node parent, syfs_image *from, syfs_node n)
+{
+	if (!to || !from)
+		return SYFS_NO_NODE;
+	if (to == from || !from->entry(n) || !to->has(parent)) {
+		to->error = to == from ? "an image's node is moved within it, not transferred" : "no such node";
+		return SYFS_NO_NODE;
+	}
+	if (!to->changes())
+		return SYFS_NO_NODE;
+	return transfer(to, parent, from, n, 0);
 }
 
 size_t syfs_read(syfs_image *im, syfs_node n, syfs_key as, uint64_t at, void *buf, size_t size)
