@@ -29,6 +29,8 @@ enum syfs_keys {
 	SYFS_FORMAT_SRX = 0x483cd078,             //!< "srx"
 	SYFS_FORMAT_AKAI_S900 = 0x76a6c4c2,       //!< "akai-s900"
 	SYFS_FORMAT_FAT = 0x3ef81d14,             //!< "fat"
+	SYFS_FORMAT_JV80 = 0x254877a1,            //!< "jv80"
+	SYFS_FORMAT_JV1080 = 0x3d5fb978,          //!< "jv1080"
 
 	SYFS_MEDIUM_DISK = 0x456040a4,            //!< "disk"
 	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
@@ -119,6 +121,8 @@ enum syfs_keys {
 	X(SYFS_FORMAT_SRX, "format", "srx", "SRX") \
 	X(SYFS_FORMAT_AKAI_S900, "format", "akai-s900", "AKAI S900") \
 	X(SYFS_FORMAT_FAT, "format", "fat", "FAT") \
+	X(SYFS_FORMAT_JV80, "format", "jv80", "JV-80") \
+	X(SYFS_FORMAT_JV1080, "format", "jv1080", "JV-1080") \
 	X(SYFS_MEDIUM_DISK, "medium", "disk", "disk") \
 	X(SYFS_MEDIUM_FLOPPY, "medium", "floppy", "floppy") \
 	X(SYFS_MEDIUM_CARD, "medium", "card", "card") \

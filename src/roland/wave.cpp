@@ -567,4 +567,61 @@ std::unique_ptr<Medium> WaveRom::open(const syfs_io &io, syfs_key format)
 	return std::make_unique<WaveRom>(io, format);
 }
 
+// A DATA card: sixteen bytes of key, sixteen of text, then the card's memory as the machine keeps it
+namespace {
+constexpr uint64_t CARD_32K = 0x8000, CARD_64K = 0x10000;
+constexpr uint8_t JV80_KEY[] = { 'R', 'o', 'l', 'a', 'n', 'd', ' ', 'J', 'V', '-', '8', '0', 'D', 0xBB, 'P', 0xAF };
+constexpr uint8_t JV1080_KEY[] = { 'R', 'o', 'l', 'a', 'n', 'd', 'J', 'V', '-', '9', '9', '0', 'D', 0xBB, 'P', 0xAF };
+}
+
+syfs_key DataCard::probe(const Image &im)
+{
+	uint8_t h[16];
+	if ((im.size() != CARD_32K && im.size() != CARD_64K) || !im.read(0, h, sizeof h))
+		return SYFS_NONE;
+	return !memcmp(h, JV80_KEY, sizeof h) ? SYFS_FORMAT_JV80 : !memcmp(h, JV1080_KEY, sizeof h) ? SYFS_FORMAT_JV1080 : SYFS_NONE;
+}
+
+void DataCard::identify()
+{
+	uint8_t name[16];
+	if (format == SYFS_FORMAT_JV1080 && image.read(0x10, name, sizeof name))
+		label = trimmed(plain(name, sizeof name));
+	label_known = true;
+}
+
+void DataCard::list()
+{
+	// each list's records one after another, a name at the start of each: twelve characters as they are (a JV-80's),
+	// or packed seven bits each (a JV-1080's).  A JV-80's rhythm set has no name.
+	struct Run {
+		syfs_key kind;
+		uint32_t at, size, count;
+	};
+	static constexpr Run jv80[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 204, 16 }, { SYFS_TYPE_PATCH, 0xCE0, 362, 64 },
+		{ SYFS_TYPE_RHYTHM_SET, 0x6760, 0, 1 } };
+	static constexpr Run jv1080[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 245, 16 }, { SYFS_TYPE_PATCH, 0xF70, 401, 64 },
+		{ SYFS_TYPE_RHYTHM_SET, 0x73B0, 2699, 1 } };
+	const bool later = format == SYFS_FORMAT_JV1080;
+	// a JV-1080's 64 KB card is two halves alike, the upper's key a byte further on; a half without its key holds
+	// nothing
+	uint8_t upper[17];
+	const bool two = later && image.size() == CARD_64K && image.read(CARD_32K, upper, sizeof upper) && upper[0] == 0xAF
+		&& !memcmp(upper + 1, JV1080_KEY, 13);
+	for (const Run &r : later ? jv1080 : jv80)
+		for (uint32_t half = 0, number = 0; half < (two ? 2u : 1u); half++)
+			for (uint32_t k = 0; k < r.count; k++, number++) {
+				const uint64_t at = half * CARD_32K + r.at + uint64_t(k) * r.size;
+				uint8_t rec[12];
+				if (!image.read(at, rec, sizeof rec))
+					return;
+				add(r.kind, format, number, syfs::NONE, !r.size ? "" : later ? packed(rec, false) : plain(rec, 12), r.size, at);
+			}
+}
+
+std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)
+{
+	return std::make_unique<DataCard>(io, format);
+}
+
 }

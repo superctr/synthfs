@@ -23,6 +23,7 @@ struct Reader {
 
 syfs_key disk(const Image &) { return SYFS_MEDIUM_DISK; }
 syfs_key floppy(const Image &) { return SYFS_MEDIUM_FLOPPY; }
+syfs_key card(const Image &) { return SYFS_MEDIUM_CARD; }
 
 // tried in this order (docs/formats.md, "Telling them apart")
 template <class M>
@@ -37,6 +38,7 @@ constexpr Reader readers[] = {
 	reader<roland::S550Disk>(disk),
 	reader<roland::S550Floppy>(floppy),
 	reader<roland::WaveRom>(roland::WaveRom::medium_of),
+	reader<roland::DataCard>(card),
 	reader<akai::S1000Disk>(disk),
 	reader<akai::S1000Floppy>(floppy),
 	reader<akai::S900>(floppy),

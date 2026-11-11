@@ -49,7 +49,7 @@ patches may use one partial, two partials one sample.
 |---|---|---|
 | `format` | key | the format told, `none` where the library tells none |
 | `container` | key | `vhd` where the image is in a VHD, read through its sectors; else `raw` |
-| `medium` | key | `disk` (a hard disk's, MO's or CD-ROM's image), `floppy`, `card` (a PCM card's ROM), `board`, `smartmedia` (a SmartMedia card's pages) |
+| `medium` | key | `disk` (a hard disk's, MO's or CD-ROM's image), `floppy`, `card` (a PCM card's ROM, a DATA card's RAM), `board`, `smartmedia` (a SmartMedia card's pages) |
 | `label` | string | the image's own: an S-760/S-770 disk's system line, a floppy's kind line, an S-550 disk's title, an ISO 9660 volume's ID, a FAT volume's label, a board's name; else empty |
 | `volume` | string | an S-760/S-770 disk's name, the twelve characters a machine's drive list shows; the label there is the system line |
 | `model` | string | a board or card of Roland's: the model it was sold as ("SR-JV80-08", "SO-PCM1-01", "SRX-07") |

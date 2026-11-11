@@ -2769,6 +2769,66 @@ static void test_s700_taken()
 	close_image(from);
 }
 
+// ---- DATA cards: a JV-80's, its names as they are; a JV-1080's, its card's name and its names packed, one half or two
+static void test_data_cards()
+{
+	auto pack = [](Bytes &b, size_t at, const char *name) {
+		for (int i = 0; i < 12; i++)
+			for (int bit = 0; bit < 7; bit++)
+				if ((i < int(strlen(name)) ? name[i] : ' ') >> bit & 1)
+					b[at + size_t(7 * i + bit) / 8] |= uint8_t(1 << (7 * i + bit) % 8);
+	};
+	Bytes jv80(0x8000, 0);
+	memcpy(&jv80[0], "Roland JV-80D\xBBP\xAF", 16);
+	memcpy(&jv80[0x10], "Use M-256E only!", 16);
+	put_name(jv80, 0x20, "Syn Lead", 12);
+	put_name(jv80, 0x20 + 15 * 204, "Last Perf", 12);
+	put_name(jv80, 0xCE0, "JV Strings", 12);
+	put_name(jv80, 0xCE0 + 63 * 362, "Last Patch", 12);
+	syfs_io io = io_of(jv80);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_JV80 && medium == SYFS_MEDIUM_CARD && not_fat(jv80));
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && !*label_of(fs) && count_of(fs) == 16 + 64 + 1);
+	auto perfs = names(fs, SYFS_TYPE_PERFORMANCE), patches = names(fs, SYFS_TYPE_PATCH);
+	CHECK(perfs.size() == 16 && perfs[0] == "Syn Lead" && perfs[15] == "Last Perf" && patches.size() == 64
+		&& patches[0] == "JV Strings" && patches[63] == "Last Patch" && names(fs, SYFS_TYPE_RHYTHM_SET).size() == 1);
+	CHECK(entry_at(fs, find(fs, "Last Patch"))->number == 63 && entry_at(fs, find(fs, "Last Patch"))->bytes == 362);
+	close_image(fs);
+
+	Bytes jv(0x10000, 0);
+	memcpy(&jv[0], "RolandJV-990D\xBBP\xAF", 16);
+	memcpy(&jv[0x10], "My Card         ", 16);
+	pack(jv, 0x20, "Tekno Loop 1"), pack(jv, 0xF70, "Symphonique"), pack(jv, 0xF70 + 63 * 401, "Tortured"), pack(jv, 0x73B0, "HouseDrumSet");
+	pack(jv, 0x8020, "Kicks Attack"), pack(jv, 0x8F70, "Bass Marimba"), pack(jv, 0xF3B0, "JazzDrumSet1");
+	io = io_of(jv);
+	// its upper half without its key holds nothing
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_JV1080 && medium == SYFS_MEDIUM_CARD);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && !strcmp(label_of(fs), "My Card") && count_of(fs) == 16 + 64 + 1 && find(fs, "Bass Marimba") == NONE);
+	close_image(fs);
+	jv[0x8000] = 0xAF;
+	memcpy(&jv[0x8001], "RolandJV-990D", 13);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && count_of(fs) == 32 + 128 + 2);
+	CHECK(entry_at(fs, find(fs, "Tekno Loop 1"))->number == 0 && entry_at(fs, find(fs, "Kicks Attack"))->number == 16);
+	CHECK(entry_at(fs, find(fs, "Tortured"))->number == 63 && entry_at(fs, find(fs, "Bass Marimba"))->number == 64);
+	CHECK((names(fs, SYFS_TYPE_RHYTHM_SET) == std::vector<std::string> { "HouseDrumSet", "JazzDrumSet1" }));
+	close_image(fs);
+	// a 32 KB card is the lower half alone; another size, or another key, is no card
+	jv.resize(0x8000);
+	io = io_of(jv);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_FORMAT_JV1080 && count_of(fs) == 16 + 64 + 1);
+	close_image(fs);
+	jv[12] = 'N';
+	CHECK(probe(&io, &medium) == SYFS_NONE);
+	jv[12] = 'D';
+	jv.resize(0x9000);
+	io = io_of(jv);
+	CHECK(probe(&io, &medium) == SYFS_NONE);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2779,7 +2839,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 16 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_FAT
+	CHECK(formats == 18 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_JV1080
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -2797,6 +2857,7 @@ int main()
 	test_s700_floppy();
 	test_s550_floppy();
 	test_boards();
+	test_data_cards();
 	test_akai_floppy();
 	test_s900();
 	test_iso();

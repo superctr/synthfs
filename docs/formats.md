@@ -18,6 +18,7 @@ Tried in this order:
 | S-550, S-330, W-30, S-50 | floppy | four zero bytes and the system's ID at byte 0, 2 MB at most |
 | SR-JV80 | card, board | `Roland JV80`, `O` at byte 0x0C and `S` at 0x0E, 1, 2, 4 or 8 MB |
 | SRX | board | `Roland SRX` at byte 0, 32 MB |
+| JV-80, JV-1080 | card | a DATA card's key at byte 0 (below), 32 or 64 KB |
 | AKAI S1000, S3000 | disk | a partition header at byte 0 (below); S3000 where any volume is one |
 | AKAI S1000, S3000 | floppy | 800 or 1600 KB, the FAT's first four halfwords (five on 2HD) 0x4000; S3000 where any file's type has its top bit set |
 | AKAI S900 | floppy | whole 1024-byte blocks, 700 to 1600 KB, the FAT's first four halfwords zero, and a directory of at least one file, each with a printable name, an upper-case type and a start past block 3 |
@@ -586,6 +587,25 @@ other may have added blocks, or this very one, meanwhile.  The entry being writt
 one to a block not yet whole.  Writes into blocks that are there go where they go on a raw image, held by no one.
 
 Not read: differencing disks, the 511-byte footer of the oldest files, VHDX.
+
+## Roland DATA cards
+
+A JV's DATA card is a RAM card, an M-256E of 32 KB or an M-512E of 64: the image is its cells from the first.
+Sixteen bytes of key tell whose it is, sixteen of text follow, then the card's memory as the machine keeps it, each
+list's records one after another with a name at the start of each.  **[seen]**
+
+| Key | Card | Text | Lists |
+|---|---|---|---|
+| `Roland JV-80D`, 0xBB, `P`, 0xAF | a JV-80's or JV-880's | `Use M-256E only!` | 16 performances of 204 bytes from 0x20; 64 patches of 362 from 0xCE0; a rhythm set from 0x6760 |
+| `RolandJV-990D`, 0xBB, `P`, 0xAF | a JV-1080's | the card's name, which is the label | 16 performances of 245 bytes from 0x20; 64 patches of 401 from 0xF70; a rhythm set of 2699 from 0x73B0 |
+
+A JV-80's names are twelve characters as they are, and its rhythm set has none.  A JV-1080's are twelve characters
+of seven bits each, packed from bit 0 of the record's first byte up, as on a wave board's later patches.  A
+JV-1080's 64 KB card is two halves alike, the second from 0x8000 with 0xAF and then the key's text, a byte
+further on than the first's: its performances are numbered on from the first half's (17 to 32), its patches 65 to
+128, its rhythm set the second.  A half without that key holds nothing, and a 32 KB card is the first half alone.
+
+Not read: the records beyond their names, a JV-80's rhythm set, the cards of other machines a JV-1080 also takes.
 
 ## SmartMedia cards
 

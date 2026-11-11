@@ -108,6 +108,21 @@ protected:
 	bool packed() const override { return true; }
 };
 
+//! A JV's DATA card, a RAM card of 32 or 64 KB: a JV-80's or JV-880's, a JV-1080's.
+/*!
+ * Its performances, patches and rhythm sets by name, and a JV-1080's card's own name (docs/formats.md, "Roland DATA
+ * cards").
+ */
+class DataCard final : public Medium {
+public:
+	using Medium::Medium;
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
+	//! The card's name, a JV-1080's.
+	void identify() override;
+	void list() override;
+};
+
 class Socket;
 
 //! An SR-JV80 board or SO-PCM1 card, or an SRX board, as dumped.

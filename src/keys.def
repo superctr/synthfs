@@ -17,6 +17,8 @@ format SRJV80      srjv80      "SR-JV80"
 format SRX         srx         "SRX"
 format AKAI_S900   akai-s900   "AKAI S900"
 format FAT         fat         "FAT"
+format JV80        jv80        "JV-80"
+format JV1080      jv1080      "JV-1080"
 
 medium DISK        disk
 medium FLOPPY      floppy

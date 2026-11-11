@@ -2,7 +2,7 @@
 
 The images synthesizers and samplers keep their sounds in, read: sampler disk images (CD-ROMs, hard disks, floppies)
 and wave expansion ROMs.  The format and the medium are told (Roland S-550, S-330, W-30, S-760, S-770 and DJ-70, AKAI
-S900, S1000 and S3000, E-mu, ISO 9660 and FAT disks and floppies; Roland SR-JV80 and SRX boards and SO-PCM1 cards),
+S900, S1000 and S3000, E-mu, ISO 9660 and FAT disks and floppies; Roland SR-JV80 and SRX boards and SO-PCM1 cards, a JV's DATA card),
 what the image holds is listed as nodes, each with what it uses (an S-760/S-770 volume's performances down to a
 partial's samples, an AKAI program's samples and a multi's programs, an S-550 patch's tones, a board's banks of
 patches and rhythm sets and its waves, each with its samples by key), and a sample's (or a WAV or AIFF file's) rate,
