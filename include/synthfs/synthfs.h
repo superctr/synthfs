@@ -63,9 +63,10 @@ typedef struct syfs_image syfs_image;
 //! Opens an image through the host's io.
 /*!
  * The format and the medium are told from the first sectors, which is cheap (a scan of many images asks for no
- * more); what the image holds is read when a node, or a disk's label, is first asked for.  A raw CD-ROM image's
- * sectors and a SmartMedia card's pages are read through (the medium SYFS_MEDIUM_SMARTMEDIA).  An image of no
- * format the library tells opens with format SYFS_NONE and no nodes.
+ * more); what the image holds is read when a node, or a disk's label, is first asked for.  A VHD's sectors (fixed
+ * or dynamic; SYFS_PROP_CONTAINER tells), a raw CD-ROM image's sectors and a SmartMedia card's pages are read
+ * through (the medium SYFS_MEDIUM_SMARTMEDIA).  An image of no format the library tells opens with format SYFS_NONE
+ * and no nodes.
  *
  * \return NULL with why in err where it cannot be read.
  */
@@ -100,6 +101,17 @@ const char *syfs_error(const syfs_image *im);
  *         label it cannot hold, a write that failed.
  */
 int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char *label, char *err, size_t err_size);
+
+//! Copies an image into another container: a raw image into a VHD, or a VHD's sectors out into a raw image.
+/*!
+ * What is copied is the image out of its container, byte for byte: nothing of a format is read.  to is written from
+ * its start; its size is not looked at.
+ *
+ * \param container SYFS_CONTAINER_VHD for a dynamic VHD (the 2 MB blocks holding only zeros left out; the image must
+ *                  be whole 512-byte sectors), or SYFS_CONTAINER_RAW.
+ * \return The bytes written, or 0 with why in err.
+ */
+uint64_t syfs_convert(const syfs_io *from, const syfs_io *to, syfs_key container, char *err, size_t err_size);
 
 //! A node: what an image holds, by a number that stays its own while the image is open.
 typedef uint32_t syfs_node;
@@ -154,8 +166,9 @@ syfs_node syfs_at_key(syfs_image *im, syfs_node n, int key);
 
 //! A property: a value of a node's by its key (SYFS_PROP_).
 /*!
- * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_LABEL, and what tells a board or card
- * apart (SYFS_PROP_MODEL, _TITLE, _NUMBER, _ID, _DATE), none of which reads the image's lists.  Every other node has
+ * The root's are the image's: SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL, and what
+ * tells a board or card apart (SYFS_PROP_MODEL, _TITLE, _NUMBER, _ID, _DATE), none of which reads the image's lists.
+ * Every other node has
  * SYFS_PROP_NAME, _TYPE, _NUMBER, _SIZE and _FORMAT (the format of the volume it is in: one disk may mix two), and
  * _TAG where the image gives it a code of its own; a node with a wave has SYFS_PROP_RATE down to _MODE
  * (docs/properties.md).

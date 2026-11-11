@@ -54,6 +54,9 @@ enum syfs_keys {
 	SYFS_TYPE_RHYTHM_SET = 0x34ce407c,        //!< "rhythm-set"
 	SYFS_TYPE_WAVE = 0x29f017d4,              //!< "wave"
 
+	SYFS_CONTAINER_RAW = 0x43ff12f1,          //!< "raw"
+	SYFS_CONTAINER_VHD = 0x1214ab35,          //!< "vhd"
+
 	SYFS_LOOP_FORWARD = 0x345fa81a,           //!< "forward"
 	SYFS_LOOP_ALTERNATE = 0x43f6e25d,         //!< "alternate"
 
@@ -63,6 +66,7 @@ enum syfs_keys {
 
 	SYFS_PROP_FORMAT = 0x399d8552,            //!< "format"
 	SYFS_PROP_MEDIUM = 0x35afd776,            //!< "medium"
+	SYFS_PROP_CONTAINER = 0x0daff178,         //!< "container"
 	SYFS_PROP_LABEL = 0x769717fd,             //!< "label"
 	SYFS_PROP_MODEL = 0x308b665a,             //!< "model"
 	SYFS_PROP_TITLE = 0x1865b509,             //!< "title"
@@ -133,6 +137,8 @@ enum syfs_keys {
 	X(SYFS_TYPE_BANK, "type", "bank", "bank") \
 	X(SYFS_TYPE_RHYTHM_SET, "type", "rhythm-set", "rhythm set") \
 	X(SYFS_TYPE_WAVE, "type", "wave", "wave") \
+	X(SYFS_CONTAINER_RAW, "container", "raw", "raw") \
+	X(SYFS_CONTAINER_VHD, "container", "vhd", "VHD") \
 	X(SYFS_LOOP_FORWARD, "loop", "forward", "forward") \
 	X(SYFS_LOOP_ALTERNATE, "loop", "alternate", "alternate") \
 	X(SYFS_KIND_INT, "kind", "int", "int") \
@@ -140,6 +146,7 @@ enum syfs_keys {
 	X(SYFS_KIND_KEY, "kind", "key", "key") \
 	X(SYFS_PROP_FORMAT, "prop", "format", "format") \
 	X(SYFS_PROP_MEDIUM, "prop", "medium", "medium") \
+	X(SYFS_PROP_CONTAINER, "prop", "container", "container") \
 	X(SYFS_PROP_LABEL, "prop", "label", "label") \
 	X(SYFS_PROP_MODEL, "prop", "model", "model") \
 	X(SYFS_PROP_TITLE, "prop", "title", "title") \

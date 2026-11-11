@@ -28,6 +28,9 @@ Tried in this order:
 An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
 
+An image in a VHD is read through its sectors (below, "VHD") before anything else is told, so whatever follows
+holds for what a VHD contains as for a raw image.
+
 A SmartMedia card's image is read through its logical sectors (below, "SmartMedia cards"), and what they hold is
 told as any disk's is; its medium is `smartmedia` whatever the format, `none` for a card not formatted.
 
@@ -472,6 +475,33 @@ sample header.
 
 Not read: the second FAT (the first is trusted), timestamps and attributes, FAT32's FSInfo, exFAT, short names in
 code pages other than ASCII.
+
+## VHD
+
+Microsoft's virtual hard disk (the Virtual Hard Disk Image Format Specification, 2006), a container: the image is
+the disk's sectors, 512 bytes each, behind it.  Every number is big-endian.
+
+**Telling it**: the file's last 512 bytes are a footer: `conectix` at +0, and at +64 a checksum, the one's
+complement of the sum of the footer's other bytes, that holds.  The disk's size in bytes is at +48 (whole sectors,
+2040 GB at most) and its type at +60: 2 fixed, 3 dynamic.  A differencing disk (4), whose sectors are partly
+another file's, is not read: the file is then taken as it lies, as is one whose checksum does not hold.
+
+**A fixed disk** is the sectors from byte 0, then the footer.
+
+**A dynamic disk** starts with a copy of the footer, whose +16 gives the header's byte: `cxsparse` at +0, the block
+allocation table's byte at +16, its entries at +28, a block's bytes at +32 (a power of two of sectors; 2 MB as
+made) and a checksum at +36, counted as the footer's.  The table is one 32-bit entry a block: the sector of the
+file the block starts at, or 0xFFFFFFFF for a block never written, which reads as zeros.  A block in the file is a
+bitmap of its sectors, a bit each, padded to a whole sector (one sector for 2 MB), then its data; the bitmap is
+not looked at, since a dynamic disk's block is whole once it is there.
+
+**Written** (`syfs_convert` with the container `vhd`): a dynamic disk of 2 MB blocks.  The footer's copy, the
+header at 512, the table at 1536 padded to a sector with 0xFF, then each block that holds any byte but zero in the
+image's order, behind a bitmap of ones, then the footer.  The footer: features 2, version 1.0, the time in seconds
+since 2000 (UTC), the creator `syfs` 1.0 on `Wi2k`, the size twice, the geometry the specification counts from the
+sectors (its appendix), type 3, a random ID.  The image must be whole 512-byte sectors.
+
+Not read: differencing disks, the 511-byte footer of the oldest files, VHDX.
 
 ## SmartMedia cards
 

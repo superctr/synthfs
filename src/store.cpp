@@ -168,8 +168,12 @@ bool SmartMedia::blank(const syfs_io &io, std::string &why)
 Stores stores_of(const syfs_io &io)
 {
 	Stores s;
-	auto host = std::make_shared<const HostStore>(io);
-	s.top = host;
+	std::shared_ptr<const Store> host = std::make_shared<const HostStore>(io);
+	if (auto vhd = Vhd::over(host)) {
+		host = vhd;
+		s.vhd = true;
+	}
+	s.top = s.plain = host;
 	if (auto raw = RawSectors::over(host)) {
 		s.top = raw;
 		s.raw = true;

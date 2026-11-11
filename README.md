@@ -15,7 +15,9 @@ property, a relation) is a key, the hash of its string, with a constant in `syfs
 [docs/properties.md](docs/properties.md) lists them.
 
 The image is read through the host's callback (`syfs_io`: n bytes at an offset), so a file, a buffer or a stream all
-work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read; a
+work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read,
+as does an image in a VHD (fixed or dynamic), and `syfs_convert` copies a raw image into a dynamic VHD, which leaves
+out the blocks that hold only zeros, or a VHD's sectors back out; a
 SmartMedia card's image is read through its logical sectors; a board or card is read as dumped, and one of Roland's
 tells what it was sold as (`SYFS_PROP_MODEL`, `SYFS_PROP_TITLE`).  Opening tells the format only, which is cheap; the lists are read when first asked
 for.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).
@@ -75,7 +77,7 @@ if (!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, "SAMPLES", err, sizeof
 ## Building
 
 ```sh
-just build          # the library, synthfs-ls, synthfs-wav and the tests (CMake 3.23+, a C++20 compiler)
+just build          # the library, the tools (synthfs-ls, -wav, -convert) and the tests (CMake 3.23+, C++20)
 just test
 just keys           # syfs_keys.h made again after a change to src/keys.def (Python 3)
 just scan DIR       # every image under DIR, one line each
@@ -87,7 +89,8 @@ where synthfs is the top level (`SYNTHFS_TOOLS`, `SYNTHFS_TESTS`).
 `synthfs-ls IMAGE...` prints each image's format, counts and label; `-l` lists every node under what holds
 it, `-r` adds what each uses and each sample's header.  `synthfs-wav IMAGE DIR [NODE...]` writes every sample (or
 the nodes given by number) into DIR as 16-bit WAV files, named by number and name, the original key and loop in a
-`smpl` chunk; `synthfs-wav -n IMAGE` lists what it would write.
+`smpl` chunk; `synthfs-wav -n IMAGE` lists what it would write.  `synthfs-convert IN OUT.vhd` makes a dynamic VHD of a raw image and
+`synthfs-convert IN.vhd OUT` a raw image of a VHD, never over a file already there.
 
 ## Layout
 

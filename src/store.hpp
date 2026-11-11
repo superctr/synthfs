@@ -37,6 +37,32 @@ private:
 	syfs_io io_;
 };
 
+//! A virtual hard disk's sectors, out of a VHD file: fixed, or dynamic with the blocks never written left out.
+/*!
+ * docs/formats.md, "VHD".  A differencing disk, whose sectors are partly its parent's, is not read.
+ */
+class Vhd final : public Store {
+public:
+	//! The view over a VHD, or null where the store is none or cannot be read as one.
+	static std::shared_ptr<const Store> over(std::shared_ptr<const Store> under);
+	uint64_t size() const override { return size_; }
+	bool read(uint64_t offset, void *buf, size_t n) const override;
+	//! Writes a dynamic VHD of a store's bytes through the host's io, blocks holding only zeros left out.
+	/*!
+	 * eturn The bytes the VHD takes, or 0 with why where the store is not whole sectors, is larger than a VHD
+	 *         holds or a read or write failed.
+	 */
+	static uint64_t write(const Store &from, const syfs_io &to, std::string &why);
+
+private:
+	Vhd() = default;
+	std::shared_ptr<const Store> under_;
+	uint64_t size_ = 0;
+	uint32_t block_ = 0;         //!< A dynamic disk's block in bytes; 0 for a fixed disk.
+	uint32_t bitmap_ = 0;        //!< The bytes of the sector bitmap before a block's data.
+	std::vector<uint32_t> bat_;  //!< Each block's first sector in the file, 0xFFFFFFFF none.
+};
+
 //! A CD-ROM's 2048-byte user data, out of an image of raw 2352-byte sectors (a .bin: mode 1 or mode 2 form 1).
 class RawSectors final : public Store {
 public:
@@ -82,11 +108,13 @@ private:
 //! An image's stores, the host's at the bottom.
 struct Stores {
 	std::shared_ptr<const Store> top;  //!< What a format reads.
+	std::shared_ptr<const Store> plain;  //!< The image out of its container: a VHD's sectors, else the host's bytes.
+	bool vhd = false;                  //!< A VHD underneath.
 	bool raw = false;                  //!< Raw CD-ROM sectors underneath.
 	bool card = false;                 //!< A SmartMedia card's pages underneath.
 };
 
-//! The stores of the host's image: its own, and the view its first bytes ask for.
+//! The stores of the host's image: its own, a VHD's sectors where it is one, and the view their first bytes ask for.
 Stores stores_of(const syfs_io &io);
 
 }

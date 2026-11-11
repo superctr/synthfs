@@ -88,7 +88,7 @@ Value integer(int64_t v) { return { SYFS_KIND_INT, v, {} }; }
 Value string(std::string_view v) { return { SYFS_KIND_STRING, 0, std::string(v) }; }
 Value key(syfs_key v) { return { SYFS_KIND_KEY, v, {} }; }
 
-constexpr syfs_key root_props[] = { SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_LABEL };
+constexpr syfs_key root_props[] = { SYFS_PROP_FORMAT, SYFS_PROP_MEDIUM, SYFS_PROP_CONTAINER, SYFS_PROP_LABEL };
 constexpr syfs_key node_props[] = { SYFS_PROP_NAME, SYFS_PROP_TYPE, SYFS_PROP_NUMBER, SYFS_PROP_SIZE, SYFS_PROP_FORMAT,
 	SYFS_PROP_TAG };
 constexpr syfs_key wave_props[] = { SYFS_PROP_RATE, SYFS_PROP_CHANNELS, SYFS_PROP_BITS, SYFS_PROP_KEY, SYFS_PROP_FRAMES,
@@ -189,6 +189,7 @@ struct syfs_image {
 			switch (k) {
 			case SYFS_PROP_FORMAT: return key(medium->format);
 			case SYFS_PROP_MEDIUM: return key(medium->medium);
+			case SYFS_PROP_CONTAINER: return key(medium->image.vhd() ? SYFS_CONTAINER_VHD : SYFS_CONTAINER_RAW);
 			case SYFS_PROP_LABEL:
 				identify();
 				if (!medium->label_known)
@@ -375,6 +376,43 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 		say(err, err_size, "the image could not be written");
 	}
 	return 0;
+}
+
+uint64_t syfs_convert(const syfs_io *from, const syfs_io *to, syfs_key container, char *err, size_t err_size)
+{
+	if (!from || !from->read)
+		return say(err, err_size, "no reader given"), 0;
+	if (!to || !to->write)
+		return say(err, err_size, "no writer given"), 0;
+	try {
+		const Stores stores = stores_of(*from);
+		const Store &plain = *stores.plain;
+		std::string why;
+		if (container == SYFS_CONTAINER_VHD) {
+			uint64_t n = Vhd::write(plain, *to, why);
+			if (!n)
+				say(err, err_size, why.c_str());
+			return n;
+		}
+		if (container != SYFS_CONTAINER_RAW)
+			return say(err, err_size, "a container that cannot be made"), 0;
+		std::vector<uint8_t> buf(1 << 20);
+		for (uint64_t at = 0; at < plain.size();) {
+			size_t k = size_t(std::min<uint64_t>(buf.size(), plain.size() - at));
+			if (!plain.read(at, buf.data(), k))
+				return say(err, err_size, "the image could not be read"), 0;
+			if (to->write(to->user, at, buf.data(), k) != k)
+				return say(err, err_size, "the image could not be written"), 0;
+			at += k;
+		}
+		if (!plain.size())
+			say(err, err_size, "the image is empty");
+		return plain.size();
+	} catch (const std::bad_alloc &) {
+		return say(err, err_size, "out of memory"), 0;
+	} catch (...) {
+		return say(err, err_size, "the image could not be converted"), 0;
+	}
 }
 
 int syfs_node_info(syfs_image *im, syfs_node n, syfs_info *out)

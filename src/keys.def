@@ -42,6 +42,9 @@ type BANK          bank
 type RHYTHM_SET    rhythm-set  "rhythm set"
 type WAVE          wave
 
+container RAW      raw
+container VHD      vhd         "VHD"
+
 loop FORWARD       forward
 loop ALTERNATE     alternate
 
@@ -51,6 +54,7 @@ kind KEY           key
 
 prop FORMAT        format
 prop MEDIUM        medium
+prop CONTAINER     container
 prop LABEL         label
 prop MODEL         model
 prop TITLE         title

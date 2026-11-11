@@ -17,7 +17,7 @@ else()
 	set(SYNTHFS_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 endif()
 
-add_library(synthfs STATIC src/synthfs.cpp src/image.cpp src/store.cpp src/iso9660.cpp src/audio.cpp src/fat.cpp src/fat_format.cpp
+add_library(synthfs STATIC src/synthfs.cpp src/image.cpp src/store.cpp src/vhd.cpp src/iso9660.cpp src/audio.cpp src/fat.cpp src/fat_format.cpp
 	src/roland/s700.cpp src/roland/s700_floppy.cpp src/roland/s700_format.cpp src/roland/s550.cpp src/roland/wave.cpp
 	src/akai/s1000.cpp src/akai/s900.cpp
 	src/emu/emu.cpp)
@@ -31,6 +31,9 @@ if(SYNTHFS_TOOLS)
 	add_executable(synthfs-wav tools/synthfs_wav.cpp)
 	target_link_libraries(synthfs-wav PRIVATE synthfs)
 	target_compile_options(synthfs-wav PRIVATE ${SYNTHFS_WARNINGS})
+	add_executable(synthfs-convert tools/synthfs_convert.cpp)
+	target_link_libraries(synthfs-convert PRIVATE synthfs)
+	target_compile_options(synthfs-convert PRIVATE ${SYNTHFS_WARNINGS})
 endif()
 
 if(SYNTHFS_TESTS)

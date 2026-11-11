@@ -1984,6 +1984,104 @@ static void test_smartmedia()
 	CHECK(!syfs_create(&w, SYFS_FORMAT_S760, SYFS_MEDIUM_SMARTMEDIA, nullptr, err, sizeof err));
 }
 
+// ---- VHD: a disk written as a dynamic VHD and read back; a fixed one; what is no VHD
+static uint32_t vhd_sum(const uint8_t *p, size_t n, size_t field)
+{
+	uint32_t sum = 0;
+	for (size_t i = 0; i < n; i++)
+		if (i < field || i >= field + 4)
+			sum += p[i];
+	return ~sum;
+}
+
+static void test_vhd()
+{
+	const uint64_t MB = 1 << 20, SIZE = 33 * MB + 512;
+	char err[128] = "";
+	Sparse disk(SIZE);
+	syfs_io w = writer_of(disk);
+	CHECK(make(SYFS_FORMAT_FAT, SYFS_MEDIUM_DISK, &w, "VHDTEST", err, sizeof err));
+	const uint8_t mark[4] = { 1, 2, 3, 4 };
+	disk.put(20 * MB + 5, mark, 4);
+	disk.put(SIZE - 4, mark, 4);
+	Sparse vhd(64 * MB);
+	syfs_io from = io_of(disk), to = writer_of(vhd);
+	const uint64_t bytes = syfs_convert(&from, &to, SYFS_CONTAINER_VHD, err, sizeof err);
+	// the footer twice, the header, a table of 17 blocks in a sector, and the blocks that hold something: the first
+	// (the volume's structures), the eleventh and the last, each behind a sector of bitmap
+	CHECK(bytes == 512 + 1024 + 512 + 3 * (512 + 2 * MB) + 512);
+	uint8_t f[512], h[1024], copy[512];
+	vhd.get(bytes - 512, f, 512), vhd.get(0, copy, 512), vhd.get(512, h, 1024);
+	CHECK(!memcmp(f, "conectix", 8) && !memcmp(f, copy, 512) && f[63] == 3 && f[23] == 0 && f[22] == 2);
+	CHECK(vhd_sum(f, 512, 64) == (uint32_t(f[64]) << 24 | f[65] << 16 | f[66] << 8 | f[67]));
+	CHECK(vhd.get32(48) == 0 && f[52] == 0x02 && f[53] == 0x10 && f[54] == 0x02 && f[55] == 0x00);
+	CHECK(!memcmp(h, "cxsparse", 8) && h[31] == 17 && h[33] == 0x20 && h[23] == 0 && h[22] == 6);
+	CHECK(vhd_sum(h, 1024, 36) == (uint32_t(h[36]) << 24 | h[37] << 16 | h[38] << 8 | h[39]));
+	// 67585 sectors: 17 a track, 4 heads, 993 cylinders
+	CHECK(f[56] == (993 >> 8) && f[57] == (993 & 255) && f[58] == 4 && f[59] == 17);
+	uint8_t bat[8];
+	vhd.get(1536, bat, 8);
+	CHECK(bat[3] == 4 && bat[4] == 0xFF && bat[7] == 0xFF);
+
+	vhd.size = bytes;
+	syfs_io io = io_of(vhd);
+	syfs_key medium;
+	CHECK(probe(&io, &medium) == SYFS_FORMAT_FAT && medium == SYFS_MEDIUM_DISK);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_VHD && !strcmp(label_of(fs), "VHDTEST"));
+	close_image(fs);
+	fs = syfs_open(&from, nullptr, 0);
+	CHECK(fs && num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_RAW);
+	close_image(fs);
+	{
+		syfs::Image im(io);
+		uint8_t a[4096], b[4096];
+		CHECK(im.vhd() && im.size() == SIZE);
+		for (uint64_t at : { uint64_t(0), 2 * MB - 100, 20 * MB, SIZE - 4096 }) {
+			disk.get(at, b, sizeof b);
+			CHECK(im.read(at, a, sizeof a) && !memcmp(a, b, sizeof a));
+		}
+		CHECK(!im.read(SIZE - 100, a, 200));
+	}
+	// and out again, byte for byte
+	Sparse back(SIZE);
+	to = writer_of(back);
+	CHECK(syfs_convert(&io, &to, SYFS_CONTAINER_RAW, err, sizeof err) == SIZE && back.pages == disk.pages);
+
+	// a fixed VHD: the disk, then the footer
+	Sparse fixed(SIZE + 512);
+	fixed.pages = disk.pages;
+	f[63] = 2;
+	memset(f + 16, 0xFF, 8);
+	uint32_t sum = vhd_sum(f, 512, 64);
+	f[64] = uint8_t(sum >> 24), f[65] = uint8_t(sum >> 16), f[66] = uint8_t(sum >> 8), f[67] = uint8_t(sum);
+	fixed.put(SIZE, f, 512);
+	io = io_of(fixed);
+	fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs && num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_VHD && !strcmp(label_of(fs), "VHDTEST"));
+	close_image(fs);
+	CHECK(syfs::Image(io).size() == SIZE);
+	// a footer whose checksum is wrong, or of a differencing disk, is no VHD's: the file is read as it lies
+	f[70] ^= 1;
+	fixed.put(SIZE, f, 512);
+	CHECK(!syfs::Image(io).vhd() && syfs::Image(io).size() == SIZE + 512);
+	f[70] ^= 1, f[63] = 4;
+	sum = vhd_sum(f, 512, 64);
+	f[64] = uint8_t(sum >> 24), f[65] = uint8_t(sum >> 16), f[66] = uint8_t(sum >> 8), f[67] = uint8_t(sum);
+	fixed.put(SIZE, f, 512);
+	CHECK(!syfs::Image(io).vhd());
+
+	// an image not of whole sectors makes no VHD; one all zeros makes one of no blocks
+	Sparse odd(MB + 7), out(4 * MB);
+	from = io_of(odd), to = writer_of(out);
+	err[0] = 0;
+	CHECK(!syfs_convert(&from, &to, SYFS_CONTAINER_VHD, err, sizeof err) && err[0]);
+	CHECK(!syfs_convert(&from, &to, SYFS_FORMAT_FAT, err, sizeof err));
+	Sparse blank(8 * MB);
+	from = io_of(blank);
+	CHECK(syfs_convert(&from, &to, SYFS_CONTAINER_VHD, err, sizeof err) == 512 + 1024 + 512 + 512);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2020,6 +2118,7 @@ int main()
 	test_format_fat();
 	test_format_s700();
 	test_smartmedia();
+	test_vhd();
 	test_others();
 	if (failures)
 		fprintf(stderr, "%d failed\n", failures);
