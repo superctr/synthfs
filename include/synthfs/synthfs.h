@@ -105,7 +105,8 @@ int syfs_create(const syfs_io *io, syfs_key format, syfs_key medium, const char 
 //! Copies an image into another container: a raw image into a VHD, or a VHD's sectors out into a raw image.
 /*!
  * What is copied is the image out of its container, byte for byte: nothing of a format is read.  to is written from
- * its start; its size is not looked at.
+ * its start; its size is not looked at.  A SmartMedia card's image is kept complemented in a VHD, so that its erased
+ * pages are left out, and comes back out as it went in.
  *
  * \param container SYFS_CONTAINER_VHD for a dynamic VHD (the 2 MB blocks holding only zeros left out; the image must
  *                  be whole 512-byte sectors), or SYFS_CONTAINER_RAW.

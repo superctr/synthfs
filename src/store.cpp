@@ -73,15 +73,47 @@ uint64_t card_bytes(const Device &d)
 
 }
 
-std::shared_ptr<const Store> SmartMedia::over(std::shared_ptr<const Store> under)
+bool Complement::read(uint64_t offset, void *buf, size_t n) const
+{
+	if (!under_->read(offset, buf, n))
+		return false;
+	auto *p = static_cast<uint8_t *>(buf);
+	for (size_t i = 0; i < n; i++)
+		p[i] = uint8_t(~p[i]);
+	return true;
+}
+
+// the device of a card's image, from its size and the header's two codes; null where it is none
+static const Device *device_of(const Store &s, uint8_t flip)
 {
 	uint8_t head[2];
-	if (under->size() < CARD_HEADER || !under->read(0, head, 2) || head[0] == 0x00 || head[0] == 0xFF)
+	if (s.size() < CARD_HEADER || !s.read(0, head, 2))
 		return nullptr;
-	const Device *d = nullptr;
+	head[0] ^= flip, head[1] ^= flip;
+	if (head[0] == 0x00 || head[0] == 0xFF)
+		return nullptr;
 	for (const Device &v : devices)
-		if (v.code == head[1] && card_bytes(v) == under->size())
-			d = &v;
+		if (v.code == head[1] && card_bytes(v) == s.size())
+			return &v;
+	return nullptr;
+}
+
+bool SmartMedia::is_card(const Store &s)
+{
+	return device_of(s, 0) != nullptr;
+}
+
+// the header's rest is zeros in a card's image, so ones in its complement
+bool SmartMedia::is_complemented(const Store &s)
+{
+	uint8_t head[CARD_HEADER];
+	return device_of(s, 0xFF) && s.read(0, head, sizeof head)
+		&& std::all_of(head + 3, head + sizeof head, [](uint8_t v) { return v == 0xFF; });
+}
+
+std::shared_ptr<const Store> SmartMedia::over(std::shared_ptr<const Store> under)
+{
+	const Device *d = device_of(*under, 0);
 	if (!d)
 		return nullptr;
 	std::shared_ptr<SmartMedia> sm(new SmartMedia);
@@ -172,6 +204,8 @@ Stores stores_of(const syfs_io &io)
 	if (auto vhd = Vhd::over(host)) {
 		host = vhd;
 		s.vhd = true;
+		if (SmartMedia::is_complemented(*host))
+			host = std::make_shared<const Complement>(host);
 	}
 	s.top = s.plain = host;
 	if (auto raw = RawSectors::over(host)) {

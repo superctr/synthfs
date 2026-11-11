@@ -389,7 +389,10 @@ uint64_t syfs_convert(const syfs_io *from, const syfs_io *to, syfs_key container
 		const Store &plain = *stores.plain;
 		std::string why;
 		if (container == SYFS_CONTAINER_VHD) {
-			uint64_t n = Vhd::write(plain, *to, why);
+			// a card's image complemented, in blocks small enough to leave out most of what a card in use still
+			// has erased
+			uint64_t n = SmartMedia::is_card(plain) ? Vhd::write(Complement(stores.plain), *to, why, 0x10000)
+			                                        : Vhd::write(plain, *to, why);
 			if (!n)
 				say(err, err_size, why.c_str());
 			return n;

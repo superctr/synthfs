@@ -1955,6 +1955,31 @@ static void test_smartmedia()
 		CHECK(im.read(disk.size - 8192, a, 4096) && std::all_of(a, a + 4096, [](uint8_t v) { return v == 0xFF; }));
 		CHECK(!im.read(disk.size - 100, a, 200));
 	}
+	// the card in a VHD: complemented, so that what is erased is left out, and read as the card it is
+	{
+		Sparse vhd(32 << 20), back(card.size());
+		syfs_io to = writer_of(vhd);
+		const uint64_t bytes = syfs_convert(&io, &to, SYFS_CONTAINER_VHD, err, sizeof err);
+		// every block of this card is written, so nothing is left out
+		CHECK(bytes > card.size());
+		uint8_t first[4];
+		vhd.size = bytes;
+		// 64 KB blocks; the first's data, past the tables and its bitmap, starts with the header complemented
+		CHECK(vhd.get32(512 + 32) == 0x00000100);
+		vhd.get(512 + 1024 + 1024 + 512, first, 4);
+		CHECK(first[0] == 0x13 && first[1] == 0x19 && first[2] == 0x5A && first[3] == 0xFF);
+		syfs_io thin = io_of(vhd);
+		CHECK(probe(&thin, &medium) == SYFS_FORMAT_FAT && medium == SYFS_MEDIUM_SMARTMEDIA);
+		fs = syfs_open(&thin, nullptr, 0);
+		CHECK(fs && num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_VHD && !strcmp(label_of(fs), "CARD"));
+		close_image(fs);
+		to = writer_of(back);
+		CHECK(syfs_convert(&thin, &to, SYFS_CONTAINER_RAW, err, sizeof err) == card.size());
+		Bytes whole(card.size());
+		back.get(0, whole.data(), whole.size());
+		CHECK(whole == card);
+	}
+
 	// another device's code for the size, or a size no card has, is no card
 	card[1] = 0x73;
 	CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_NONE);
@@ -1975,6 +2000,15 @@ static void test_smartmedia()
 		blank.get(blank.size - 4, head, 4);
 		CHECK(head[0] == 0xFF && head[3] == 0xFF);
 		io = io_of(blank);
+		CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_MEDIUM_SMARTMEDIA);
+		// in a VHD a blank card is one block, for its header
+		Sparse vhd(1 << 20);
+		syfs_io to = writer_of(vhd);
+		const uint64_t bytes = syfs_convert(&io, &to, SYFS_CONTAINER_VHD, err, sizeof err);
+		const uint64_t table = (blank.size / 65536 + 1) * 4;
+		CHECK(bytes == 512 + 1024 + (table + 511) / 512 * 512 + 512 + 65536 + 512);
+		vhd.size = bytes;
+		io = io_of(vhd);
 		CHECK(probe(&io, &medium) == SYFS_NONE && medium == SYFS_MEDIUM_SMARTMEDIA);
 	}
 	Sparse odd(5 << 20);

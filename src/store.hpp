@@ -49,10 +49,13 @@ public:
 	bool read(uint64_t offset, void *buf, size_t n) const override;
 	//! Writes a dynamic VHD of a store's bytes through the host's io, blocks holding only zeros left out.
 	/*!
-	 * eturn The bytes the VHD takes, or 0 with why where the store is not whole sectors, is larger than a VHD
+	 * block is a block's bytes, a power of two of sectors.
+	 *
+	 * 
+eturn The bytes the VHD takes, or 0 with why where the store is not whole sectors, is larger than a VHD
 	 *         holds or a read or write failed.
 	 */
-	static uint64_t write(const Store &from, const syfs_io &to, std::string &why);
+	static uint64_t write(const Store &from, const syfs_io &to, std::string &why, uint32_t block = 0x200000);
 
 private:
 	Vhd() = default;
@@ -61,6 +64,21 @@ private:
 	uint32_t block_ = 0;         //!< A dynamic disk's block in bytes; 0 for a fixed disk.
 	uint32_t bitmap_ = 0;        //!< The bytes of the sector bitmap before a block's data.
 	std::vector<uint32_t> bat_;  //!< Each block's first sector in the file, 0xFFFFFFFF none.
+};
+
+//! A store's bytes, each complemented.
+/*!
+ * How a SmartMedia card's image is kept in a VHD: its erased pages, all ones, become the zeros a dynamic VHD leaves
+ * out (docs/formats.md, "SmartMedia cards").
+ */
+class Complement final : public Store {
+public:
+	explicit Complement(std::shared_ptr<const Store> under) : under_(std::move(under)) {}
+	uint64_t size() const override { return under_->size(); }
+	bool read(uint64_t offset, void *buf, size_t n) const override;
+
+private:
+	std::shared_ptr<const Store> under_;
 };
 
 //! A CD-ROM's 2048-byte user data, out of an image of raw 2352-byte sectors (a .bin: mode 1 or mode 2 form 1).
@@ -95,6 +113,10 @@ public:
 	 * \return false with why where the size is no card's or a write failed.
 	 */
 	static bool blank(const syfs_io &io, std::string &why);
+	//! Whether a store is a card's image: a card's size, and a header with the device code of that size.
+	static bool is_card(const Store &s);
+	//! Whether a store is a card's image complemented, as a VHD holds one.
+	static bool is_complemented(const Store &s);
 
 private:
 	SmartMedia() = default;
@@ -108,7 +130,8 @@ private:
 //! An image's stores, the host's at the bottom.
 struct Stores {
 	std::shared_ptr<const Store> top;  //!< What a format reads.
-	std::shared_ptr<const Store> plain;  //!< The image out of its container: a VHD's sectors, else the host's bytes.
+	//! The image out of its container: a VHD's sectors (a card's complemented back), else the host's bytes.
+	std::shared_ptr<const Store> plain;
 	bool vhd = false;                  //!< A VHD underneath.
 	bool raw = false;                  //!< Raw CD-ROM sectors underneath.
 	bool card = false;                 //!< A SmartMedia card's pages underneath.

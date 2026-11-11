@@ -17,7 +17,8 @@ property, a relation) is a key, the hash of its string, with a constant in `syfs
 The image is read through the host's callback (`syfs_io`: n bytes at an offset), so a file, a buffer or a stream all
 work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read,
 as does an image in a VHD (fixed or dynamic), and `syfs_convert` copies a raw image into a dynamic VHD, which leaves
-out the blocks that hold only zeros, or a VHD's sectors back out; a
+out the blocks that hold only zeros (and, for a SmartMedia card, the pages still erased), or a VHD's sectors back
+out; a
 SmartMedia card's image is read through its logical sectors; a board or card is read as dumped, and one of Roland's
 tells what it was sold as (`SYFS_PROP_MODEL`, `SYFS_PROP_TITLE`).  Opening tells the format only, which is cheap; the lists are read when first asked
 for.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).

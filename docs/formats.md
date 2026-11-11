@@ -499,7 +499,8 @@ not looked at, since a dynamic disk's block is whole once it is there.
 header at 512, the table at 1536 padded to a sector with 0xFF, then each block that holds any byte but zero in the
 image's order, behind a bitmap of ones, then the footer.  The footer: features 2, version 1.0, the time in seconds
 since 2000 (UTC), the creator `syfs` 1.0 on `Wi2k`, the size twice, the geometry the specification counts from the
-sectors (its appendix), type 3, a random ID.  The image must be whole 512-byte sectors.
+sectors (its appendix), type 3, a random ID.  The image must be whole 512-byte sectors.  A SmartMedia card's image is
+written complemented, in 64 KB blocks (below, "SmartMedia cards").
 
 Not read: differencing disks, the 511-byte footer of the oldest files, VHDX.
 
@@ -531,6 +532,13 @@ FAT volume.  **[seen]**
 
 Not read: the second address field (+11), the parity bit, the ECC bytes and the CIS block, which no logical number
 is asked of.
+
+**In a VHD** a card's image is kept complemented, every byte inverted, and is told by that: sectors of a card's
+size whose first two bytes are the complements of a maker's and that size's device code, the third 0x5A and the
+header's rest ones.  An erased page, all ones, is then zeros, which a dynamic VHD leaves out, so a card takes the
+room of what was written to it; read back, the image is the card's own, byte for byte.  `syfs_convert` makes such
+a VHD of a card's raw image, in 64 KB blocks (a card in use is written here and there, and a block holds what a 16 KB
+card block does four times over), and the raw image of such a VHD.
 
 **A blank card** (`syfs_create` with no format and the medium `smartmedia`): the header zero but for the maker's
 code 0xEC, the device's (the first of the table for the size) and 0xA5 at byte 2, then every page and spare area

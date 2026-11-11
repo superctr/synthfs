@@ -11,7 +11,7 @@ namespace syfs {
 
 namespace {
 
-constexpr uint32_t SECTOR = 512, FOOTER = 512, HEADER = 1024, BLOCK = 0x200000;
+constexpr uint32_t SECTOR = 512, FOOTER = 512, HEADER = 1024;
 constexpr uint32_t FIXED = 2, DYNAMIC = 3;
 constexpr uint32_t NO_BLOCK = 0xFFFFFFFF;
 // what a BAT of 32-bit sector numbers reaches, and the specification's limit on a disk
@@ -138,7 +138,7 @@ bool Vhd::read(uint64_t offset, void *buf, size_t n) const
 	return true;
 }
 
-uint64_t Vhd::write(const Store &from, const syfs_io &to, std::string &why)
+uint64_t Vhd::write(const Store &from, const syfs_io &to, std::string &why, uint32_t BLOCK)
 {
 	const uint64_t size = from.size();
 	if (!size || size % SECTOR || size > LARGEST) {
@@ -190,7 +190,7 @@ uint64_t Vhd::write(const Store &from, const syfs_io &to, std::string &why)
 		const uint64_t start = uint64_t(b) * BLOCK;
 		const size_t n = size_t(std::min<uint64_t>(BLOCK, size - start));
 		std::fill(block.begin(), block.begin() + bitmap, uint8_t(0));
-		std::fill(block.begin(), block.begin() + BLOCK / SECTOR / 8, uint8_t(0xFF));
+		std::fill(block.begin(), block.begin() + (BLOCK / SECTOR + 7) / 8, uint8_t(0xFF));
 		std::fill(block.begin() + bitmap + ptrdiff_t(n), block.end(), uint8_t(0));
 		if (!from.read(start, &block[bitmap], n)) {
 			why = "the image could not be read";
