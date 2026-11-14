@@ -16,7 +16,8 @@ property, a relation) is a key, the hash of its string, with a constant in `syfs
 
 The image is read through the host's callback (`syfs_io`: n bytes at an offset), so a file, a buffer or a stream all
 work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read,
-as does an image in a VHD (fixed or dynamic), and `syfs_convert` copies a raw image into a dynamic VHD, which leaves
+as does an image in a VHD (fixed or dynamic) and a compact disc as a cue sheet with its files (by path only: its
+audio tracks are nodes with waves, its data track's volume read as from an image of its own), and `syfs_convert` copies a raw image into a dynamic VHD, which leaves
 out the blocks that hold only zeros (and, for a SmartMedia card, the pages still erased), or a VHD's sectors back
 out.  A host that runs a machine from an image reads and writes it through `syfs_image_io`, the image out of its
 container as an io of its own, which adds a dynamic VHD's blocks as they are first written; a

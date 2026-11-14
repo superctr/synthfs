@@ -2829,6 +2829,150 @@ static void test_data_cards()
 	CHECK(probe(&io, &medium) == SYFS_NONE);
 }
 
+// ---- a cue sheet: the disc's tracks out of the files it names, the data track's volume read through
+static void write_file(const std::string &path, const void *data, size_t n)
+{
+	FILE *f = fopen(path.c_str(), "wb");
+	CHECK(f && fwrite(data, 1, n, f) == n);
+	if (f)
+		fclose(f);
+}
+
+// a track's sectors of audio: each value its place in the track, plus a base
+static Bytes audio_of(uint32_t sectors, int base)
+{
+	Bytes b(size_t(sectors) * 2352);
+	for (size_t k = 0; k < b.size() / 2; k++) {
+		const uint16_t v = uint16_t(base + int(k));
+		b[2 * k] = uint8_t(v);
+		b[2 * k + 1] = uint8_t(v >> 8);
+	}
+	return b;
+}
+
+static void test_cue()
+{
+	char dir[] = "/tmp/synthfs_cue_XXXXXX";
+	if (!mkdtemp(dir)) {
+		CHECK(!"a folder for the sheets");
+		return;
+	}
+	const std::string d(dir);
+	char err[200] = "";
+
+	// an audio disc in one file: three tracks, the second with two seconds of silence the file does not hold and
+	// pre-emphasis, the third with a gap the file holds
+	Bytes bin = audio_of(10, 0);
+	const Bytes two = audio_of(20, 1000), gap = audio_of(5, 2000), three = audio_of(8, 3000);
+	bin.insert(bin.end(), two.begin(), two.end());
+	bin.insert(bin.end(), gap.begin(), gap.end());
+	bin.insert(bin.end(), three.begin(), three.end());
+	write_file(d + "/audio.bin", bin.data(), bin.size());
+	const std::string sheet = "REM a disc\r\nTITLE \"Three Tracks\"\r\nFILE \"C:\\rips\\audio.bin\" BINARY\r\n"
+		"  TRACK 01 AUDIO\r\n    TITLE \"First One\"\r\n    INDEX 01 00:00:00\r\n"
+		"  TRACK 02 AUDIO\r\n    FLAGS DCP PRE\r\n    PREGAP 00:02:00\r\n    INDEX 01 00:00:10\r\n"
+		"  TRACK 03 AUDIO\r\n    INDEX 00 00:00:30\r\n    INDEX 01 00:00:35\r\n";
+	write_file(d + "/audio.cue", sheet.data(), sheet.size());
+	syfs_image *fs = syfs_open_path((d + "/audio.cue").c_str(), err, sizeof err);
+	CHECK(fs);
+	if (fs) {
+		CHECK(format_of(fs) == SYFS_FORMAT_CDDA && medium_of(fs) == SYFS_MEDIUM_DISK);
+		CHECK(num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_CUE);
+		CHECK(!strcmp(label_of(fs), "Three Tracks") && num(fs, SYFS_ROOT, SYFS_PROP_SECTORS) == 193);
+		CHECK(count_of(fs) == 3);
+		const uint32_t start[3] = { 0, 160, 185 }, sectors[3] = { 160, 25, 8 }, pregap[3] = { 0, 150, 5 };
+		for (syfs_node n = 1; n <= 3 && count_of(fs) == 3; n++) {
+			const syfs::Entry *e = entry_at(fs, n - 1);
+			CHECK(e->kind == SYFS_TYPE_TRACK && e->format == SYFS_FORMAT_CDDA && e->number == n - 1 && e->parent == NONE);
+			CHECK(!strcmp(e->name, n == 1 ? "First One" : n == 2 ? "Track 02" : "Track 03"));
+			CHECK(num(fs, n, SYFS_PROP_SECTOR, -1) == start[n - 1] && num(fs, n, SYFS_PROP_SECTORS, -1) == sectors[n - 1]);
+			CHECK(num(fs, n, SYFS_PROP_PREGAP, -1) == pregap[n - 1] && num(fs, n, SYFS_PROP_EMPHASIS, -1) == (n == 2));
+			CHECK(num(fs, n, SYFS_PROP_RATE) == 44100 && num(fs, n, SYFS_PROP_CHANNELS) == 2);
+			CHECK(num(fs, n, SYFS_PROP_FRAMES) == int64_t(sectors[n - 1]) * 588 && e->bytes == uint64_t(sectors[n - 1]) * 2352);
+			char exports[64] = "";
+			CHECK(syfs_get_str(fs, n, SYFS_PROP_EXPORTS, exports, sizeof exports) && !strcmp(exports, "raw wav s16"));
+		}
+		// the first track runs on into the second's silence; the second's values are its file's, and it runs on
+		// into the third's gap
+		int16_t pcm[8];
+		CHECK(syfs_read(fs, 1, SYFS_AS_S16, 0, pcm, sizeof pcm) == sizeof pcm && pcm[0] == 0 && pcm[7] == 7);
+		CHECK(syfs_read(fs, 1, SYFS_AS_S16, uint64_t(10) * 2352 - 4, pcm, sizeof pcm) == sizeof pcm);
+		CHECK(pcm[0] == 10 * 1176 - 2 && pcm[1] == 10 * 1176 - 1 && pcm[2] == 0 && pcm[7] == 0);
+		CHECK(syfs_read(fs, 2, SYFS_AS_S16, 0, pcm, sizeof pcm) == sizeof pcm && pcm[0] == 1000 && pcm[7] == 1007);
+		CHECK(syfs_read(fs, 2, SYFS_AS_S16, uint64_t(20) * 2352, pcm, sizeof pcm) == sizeof pcm && pcm[0] == 2000);
+		uint8_t raw[4];
+		CHECK(syfs_read(fs, 3, SYFS_AS_RAW, 2, raw, sizeof raw) == sizeof raw && syfs::le16(raw) == 3001 && syfs::le16(raw + 2) == 3002);
+		CHECK(syfs_read(fs, 3, SYFS_AS_S16, uint64_t(8) * 2352 - 4, pcm, sizeof pcm) == 4);
+		close_image(fs);
+	}
+
+	// a sampler's CD-ROM with audio after it, a file each: the volume as from its own image, the tracks after its
+	// entries; the audio kept big-endian
+	const Bytes s760 = s700_image(" S-760 System Disk    Ver. 2.24"), data = raw_of(s760);
+	Bytes big = audio_of(12, 500);
+	for (size_t k = 0; k + 1 < big.size(); k += 2)
+		std::swap(big[k], big[k + 1]);
+	write_file(d + "/data.bin", data.data(), data.size());
+	write_file(d + "/two.raw", big.data(), big.size());
+	const std::string mixed = "FILE \"data.bin\" BINARY\n  TRACK 01 MODE1/2352\n    INDEX 01 00:00:00\n"
+		"FILE \"two.raw\" MOTOROLA\n  TRACK 02 AUDIO\n    PREGAP 00:02:00\n    INDEX 01 00:00:00\n";
+	write_file(d + "/mixed.cue", mixed.data(), mixed.size());
+	Bytes plain = s760;
+	syfs_io io = io_of(plain);
+	syfs_image *alone = syfs_open(&io, nullptr, 0);
+	fs = syfs_open_path((d + "/mixed.cue").c_str(), err, sizeof err);
+	CHECK(fs && alone);
+	if (fs && alone) {
+		const size_t held = count_of(alone), sectors = data.size() / 2352;
+		CHECK(format_of(fs) == SYFS_FORMAT_S760 && num(fs, SYFS_ROOT, SYFS_PROP_CONTAINER) == SYFS_CONTAINER_CUE);
+		CHECK(!strcmp(label_of(fs), label_of(alone)) && held > 0 && count_of(fs) == held + 2);
+		for (size_t i = 0; i < held && count_of(fs) == held + 2; i++) {
+			const syfs::Entry *a = entry_at(alone, i), *b = entry_at(fs, i);
+			CHECK(a->kind == b->kind && a->parent == b->parent && !strcmp(a->name, b->name) && a->bytes == b->bytes);
+			CHECK(num(fs, syfs_node(i + 1), SYFS_PROP_FRAMES, -1) == num(alone, syfs_node(i + 1), SYFS_PROP_FRAMES, -1));
+		}
+		const syfs_node one = syfs_node(held + 1), two_ = syfs_node(held + 2);
+		const syfs::Entry *e = entry_at(fs, held);
+		CHECK(e && e->kind == SYFS_TYPE_TRACK && e->format == SYFS_FORMAT_S760 && e->bytes == s760.size());
+		CHECK(num(fs, one, SYFS_PROP_SECTOR, -1) == 0 && num(fs, one, SYFS_PROP_SECTORS, -1) == int64_t(sectors) + 150);
+		CHECK(num(fs, one, SYFS_PROP_RATE, -1) == -1 && num(fs, one, SYFS_PROP_EMPHASIS, -1) == -1);
+		Bytes back(s760.size());
+		CHECK(syfs_read(fs, one, SYFS_AS_RAW, 0, back.data(), back.size()) == back.size() && back == s760);
+		CHECK(num(fs, two_, SYFS_PROP_SECTOR, -1) == int64_t(sectors) + 150 && num(fs, two_, SYFS_PROP_SECTORS) == 12);
+		CHECK(num(fs, two_, SYFS_PROP_PREGAP) == 150 && num(fs, SYFS_ROOT, SYFS_PROP_SECTORS) == int64_t(sectors) + 162);
+		int16_t pcm[4];
+		CHECK(syfs_read(fs, two_, SYFS_AS_S16, 8, pcm, sizeof pcm) == sizeof pcm && pcm[0] == 504 && pcm[3] == 507);
+	}
+	if (fs)
+		close_image(fs);
+	if (alone)
+		close_image(alone);
+
+	// a sheet whose file is missing, a mode that is not read, and text that is no sheet
+	const std::string lost = "FILE \"gone.bin\" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n";
+	write_file(d + "/lost.cue", lost.data(), lost.size());
+	CHECK(!syfs_open_path((d + "/lost.cue").c_str(), err, sizeof err) && strstr(err, "gone.bin"));
+	const std::string odd = "FILE \"audio.bin\" BINARY\n  TRACK 01 MODE2/2336\n    INDEX 01 00:00:00\n";
+	write_file(d + "/odd.cue", odd.data(), odd.size());
+	CHECK(!syfs_open_path((d + "/odd.cue").c_str(), err, sizeof err) && strstr(err, "MODE2/2336"));
+	const std::string past = "FILE \"audio.bin\" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:01:00\n";
+	write_file(d + "/past.cue", past.data(), past.size());
+	CHECK(!syfs_open_path((d + "/past.cue").c_str(), err, sizeof err));
+	std::string text = "TRACK and FILE are words in a note that is no sheet at all.\n";
+	while (text.size() < 600)
+		text += "It goes on for longer than a sector, so that it is looked at as an image is.\n";
+	write_file(d + "/note.cue", text.data(), text.size());
+	fs = syfs_open_path((d + "/note.cue").c_str(), err, sizeof err);
+	CHECK(fs && format_of(fs) == SYFS_NONE);
+	if (fs)
+		close_image(fs);
+
+	for (const char *name : { "audio.bin", "audio.cue", "data.bin", "two.raw", "mixed.cue", "lost.cue", "odd.cue", "past.cue",
+		     "note.cue" })
+		remove((d + "/" + name).c_str());
+	remove(dir);
+}
+
 // ---- every key is its name's hash, and the names read back
 static void test_keys()
 {
@@ -2839,7 +2983,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 18 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_JV1080
+	CHECK(formats == 19 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_CDDA
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -2861,6 +3005,7 @@ int main()
 	test_akai_floppy();
 	test_s900();
 	test_iso();
+	test_cue();
 	test_encodings();
 	test_fat();
 	test_format_fat();

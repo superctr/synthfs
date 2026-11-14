@@ -142,11 +142,15 @@ public:
 	}
 	//! Gives entry i another parent (syfs::NONE: the top).
 	virtual bool move(size_t, size_t, std::string &why) { return why = "the format is not written", false; }
+	//! What the image is kept in.
+	virtual syfs_key container() const { return image.vhd() ? SYFS_CONTAINER_VHD : SYFS_CONTAINER_RAW; }
+	//! A property of entry i's that is its format's own, an integer; false where it has none of the key.
+	virtual bool number(size_t, syfs_key, int64_t &) const { return false; }
 	//! The sample entry i sounds at key (0 to 127), or syfs::NONE; here a sample, tone or file with a header itself.
 	virtual size_t sample_at(size_t i, int key) const;
 
 	const Image image;
-	const syfs_key format;
+	syfs_key format;
 	syfs_key medium = SYFS_NONE;
 	std::string label;
 	bool label_known = false;  //!< The label is identify's, not list's.

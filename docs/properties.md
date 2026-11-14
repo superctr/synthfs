@@ -42,13 +42,15 @@ patches may use one partial, two partials one sample.
 | `bank` | a board or card: its patches or rhythm sets in one record shape, named for the machines the shape is for |
 | `rhythm-set` | a board or card: a rhythm set (named only in the later shapes) |
 | `wave` | a board or card: the sound a patch's tone names; its samples, one a split of its keys, under it |
+| `track` | a cue sheet's disc: a track, audio (with a wave) or data |
 
 ## The image's properties
 
 | key | kind | |
 |---|---|---|
 | `format` | key | the format told, `none` where the library tells none |
-| `container` | key | `vhd` where the image is in a VHD, read through its sectors; else `raw` |
+| `container` | key | `vhd` where the image is in a VHD, read through its sectors; `cue` where it is a cue sheet's disc; else `raw` |
+| `sectors` | int | a cue sheet's disc: its sectors, where the lead-out starts |
 | `medium` | key | `disk` (a hard disk's, MO's or CD-ROM's image), `floppy`, `card` (a PCM card's ROM, a DATA card's RAM), `board`, `smartmedia` (a SmartMedia card's pages) |
 | `label` | string | the image's own: an S-760/S-770 disk's system line, a floppy's kind line, an S-550 disk's title, an ISO 9660 volume's ID, a FAT volume's label, a board's name; else empty |
 | `volume` | string | an S-760/S-770 disk's name, the twelve characters a machine's drive list shows; the label there is the system line |
@@ -69,7 +71,16 @@ patches may use one partial, two partials one sample.
 | `tag` | string | the image's own code, where it has one: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type letter (p, s, x, d, q, t, m, c; an `other`'s type in hex), an S-550 area's category number, a bank's record shape (an SR-JV80's type, 2 to 5; an SRX's class and type, "4:6"), a wave's split's keys ("60-64", the lowest and the highest it plays) |
 | `exports` | string | the conversions its contents are read in (`syfs_read`), a name each with a blank between; none where there are none |
 
-A node with a wave (a sample, a tone, a WAV or AIFF file, a board's wave, which answers as the split it plays at key
+A track of a cue sheet's disc has these too:
+
+| key | kind | |
+|---|---|---|
+| `sector` | int | where it starts on the disc, its index 1: sector 0 is two seconds into the disc's time |
+| `sectors` | int | its sectors, to the next track's start |
+| `pregap` | int | the sectors before its start that count down to it (its index 0), in a file or not |
+| `emphasis` | int | an audio track: 1 where it is recorded with pre-emphasis |
+
+A node with a wave (a sample, a tone, a WAV or AIFF file, an audio track, a board's wave, which answers as the split it plays at key
 60) has these too.  Points are frames from the first frame stored, the ends exclusive.
 
 | key | kind | |
@@ -91,7 +102,7 @@ What `syfs_read` gives of a node, by the names `exports` lists.
 
 | name | of | |
 |---|---|---|
-| `raw` | a FAT's or CD-ROM's file; an AKAI program, sample, multi or file of another type | the file's bytes as its volume keeps them, as far as its chain reads |
+| `raw` | a track: an audio track's sectors, a data track's user data; a FAT's or CD-ROM's file; an AKAI program, sample, multi or file of another type | the file's bytes as its volume keeps them, as far as its chain reads |
 | `wav` | a node with a wave | a WAV file of 16-bit values, the channels as stored, with a `smpl` chunk for the original key and the loop where the sample has either; zeros where the wave is cut short in the image |
 | `s16` | a node with a wave | the values alone, in the host's byte order |
 

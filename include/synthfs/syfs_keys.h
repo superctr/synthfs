@@ -31,6 +31,7 @@ enum syfs_keys {
 	SYFS_FORMAT_FAT = 0x3ef81d14,             //!< "fat"
 	SYFS_FORMAT_JV80 = 0x254877a1,            //!< "jv80"
 	SYFS_FORMAT_JV1080 = 0x3d5fb978,          //!< "jv1080"
+	SYFS_FORMAT_CDDA = 0x6ef71f89,            //!< "cdda"
 
 	SYFS_MEDIUM_DISK = 0x456040a4,            //!< "disk"
 	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
@@ -55,9 +56,11 @@ enum syfs_keys {
 	SYFS_TYPE_BANK = 0x3b952e97,              //!< "bank"
 	SYFS_TYPE_RHYTHM_SET = 0x34ce407c,        //!< "rhythm-set"
 	SYFS_TYPE_WAVE = 0x29f017d4,              //!< "wave"
+	SYFS_TYPE_TRACK = 0x7b3d6c3c,             //!< "track"
 
 	SYFS_CONTAINER_RAW = 0x43ff12f1,          //!< "raw"
 	SYFS_CONTAINER_VHD = 0x1214ab35,          //!< "vhd"
+	SYFS_CONTAINER_CUE = 0x65561300,          //!< "cue"
 
 	SYFS_LOOP_FORWARD = 0x345fa81a,           //!< "forward"
 	SYFS_LOOP_ALTERNATE = 0x43f6e25d,         //!< "alternate"
@@ -93,6 +96,10 @@ enum syfs_keys {
 	SYFS_PROP_REVERSE = 0x21506c05,           //!< "reverse"
 	SYFS_PROP_MODE = 0x6c6ee012,              //!< "mode"
 	SYFS_PROP_EXPORTS = 0x6dac1240,           //!< "exports"
+	SYFS_PROP_SECTOR = 0x6691818f,            //!< "sector"
+	SYFS_PROP_SECTORS = 0x730f9fb4,           //!< "sectors"
+	SYFS_PROP_PREGAP = 0x6713b272,            //!< "pregap"
+	SYFS_PROP_EMPHASIS = 0x5ff3a9f7,          //!< "emphasis"
 
 	SYFS_REL_CHILDREN = 0x67a9c9d2,           //!< "children"
 	SYFS_REL_USES = 0x61786085,               //!< "uses"
@@ -123,6 +130,7 @@ enum syfs_keys {
 	X(SYFS_FORMAT_FAT, "format", "fat", "FAT") \
 	X(SYFS_FORMAT_JV80, "format", "jv80", "JV-80") \
 	X(SYFS_FORMAT_JV1080, "format", "jv1080", "JV-1080") \
+	X(SYFS_FORMAT_CDDA, "format", "cdda", "Audio CD") \
 	X(SYFS_MEDIUM_DISK, "medium", "disk", "disk") \
 	X(SYFS_MEDIUM_FLOPPY, "medium", "floppy", "floppy") \
 	X(SYFS_MEDIUM_CARD, "medium", "card", "card") \
@@ -145,8 +153,10 @@ enum syfs_keys {
 	X(SYFS_TYPE_BANK, "type", "bank", "bank") \
 	X(SYFS_TYPE_RHYTHM_SET, "type", "rhythm-set", "rhythm set") \
 	X(SYFS_TYPE_WAVE, "type", "wave", "wave") \
+	X(SYFS_TYPE_TRACK, "type", "track", "track") \
 	X(SYFS_CONTAINER_RAW, "container", "raw", "raw") \
 	X(SYFS_CONTAINER_VHD, "container", "vhd", "VHD") \
+	X(SYFS_CONTAINER_CUE, "container", "cue", "cue sheet") \
 	X(SYFS_LOOP_FORWARD, "loop", "forward", "forward") \
 	X(SYFS_LOOP_ALTERNATE, "loop", "alternate", "alternate") \
 	X(SYFS_KIND_INT, "kind", "int", "int") \
@@ -179,6 +189,10 @@ enum syfs_keys {
 	X(SYFS_PROP_REVERSE, "prop", "reverse", "reverse") \
 	X(SYFS_PROP_MODE, "prop", "mode", "mode") \
 	X(SYFS_PROP_EXPORTS, "prop", "exports", "exports") \
+	X(SYFS_PROP_SECTOR, "prop", "sector", "sector") \
+	X(SYFS_PROP_SECTORS, "prop", "sectors", "sectors") \
+	X(SYFS_PROP_PREGAP, "prop", "pregap", "pregap") \
+	X(SYFS_PROP_EMPHASIS, "prop", "emphasis", "emphasis") \
 	X(SYFS_REL_CHILDREN, "rel", "children", "children") \
 	X(SYFS_REL_USES, "rel", "uses", "uses") \
 	X(SYFS_REL_ALL, "rel", "all", "all") \

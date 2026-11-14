@@ -81,6 +81,11 @@ syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size);
 
 //! Opens an image file.
 /*!
+ * A cue sheet opens the disc it tells, out of the files it names beside it (SYFS_PROP_CONTAINER is
+ * SYFS_CONTAINER_CUE): each track a node, an audio track with a wave, and the data track's volume read as an image
+ * of that track alone would be.  Such a disc is not written, and syfs_image_io gives the data track as its file
+ * holds it, or the audio's sectors where there is none.
+ *
  * \return NULL with why in err where it cannot be read.
  */
 syfs_image *syfs_open_path(const char *path, char *err, size_t err_size);

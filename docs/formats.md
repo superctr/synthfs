@@ -26,7 +26,7 @@ Tried in this order:
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 | FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
 
-An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
+A cue sheet is told first, by its text (below, "Cue sheets").  An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
 
 An image in a VHD is read through its sectors (below, "VHD") before anything else is told, so whatever follows
@@ -478,6 +478,44 @@ The primary volume descriptor at sector 16: the volume's ID at +40, the root dir
 is walked eight deep; files ending `.wav`, `.aif`, `.aiff` or `.aifc` are listed with their sizes, and a directory
 only where it holds some, at any depth.  Rock Ridge and Joliet names are not read.  A file's header is read as
 below ("WAV and AIFF files").
+
+## Cue sheets
+
+A compact disc kept as a cue sheet and the files it names: opened by the sheet's path (`syfs_open_path`), a text
+file of at most 1 MB with a `FILE` line and a `TRACK` line after it.  The files are looked for beside the sheet, by
+the name the sheet gives and then by that name's last part (sheets carry the paths of where they were written).
+
+| Line | Read as |
+|---|---|
+| `FILE "name" BINARY` | the sectors that follow, as they lie; audio little-endian |
+| `FILE "name" MOTOROLA` | the same, audio big-endian |
+| `FILE "name" WAVE`, `AIFF` | a WAV's or AIFF's frames: 16 bits, two channels, 44.1 kHz, or the sheet is not read |
+| `TRACK nn AUDIO` | an audio track, 2352 bytes a sector (588 frames) |
+| `TRACK nn MODE1/2352`, `MODE2/2352` | a data track of raw sectors |
+| `TRACK nn MODE1/2048` | a data track of user data alone |
+| `INDEX 00 mm:ss:ff`, `INDEX 01 mm:ss:ff` | where the track's gap and the track start in its file, in sectors (75 a second) |
+| `PREGAP mm:ss:ff` | silence before the track that no file holds |
+| `FLAGS ... PRE` | the track's pre-emphasis |
+| `TITLE "..."` | before any track the disc's, the image's label where no volume gives one; after one, the track's name |
+
+Any other line is passed over; another kind of file or mode of track (`MP3`, `MODE2/2336`, `CDG`) fails the sheet.
+A file's tracks are of one sector size.
+
+**The disc** is the files' sectors in the sheet's order, each `PREGAP` put in where its track's first index falls.
+Sector 0 is the first file's first: the lead-in's two seconds are before it, as in every image.  A track starts at
+its index 1 and runs to the next track's index 1 (the disc's end for the last), so the tracks follow one another
+with nothing between, and a track's last sectors are the next one's gap.  Sectors a first track's index 1 leaves
+before it belong to no track.
+
+**The nodes**: every track a `track` at the top, numbered from the sheet's track number less one, named by its
+`TITLE` or `Track nn`.  An audio track has a wave (stereo, 44.1 kHz, 588 frames a sector) and its format is `cdda`;
+read `raw` it is its sectors' bytes, little-endian whatever the file.  The first data track is read `raw` as its
+2048-byte user data, as far as its own file holds it before the next track.
+
+**The volume**: where a format here reads the first data track, the image is that volume in a container (`cue`):
+its format, medium, label, properties and nodes are the volume's, exactly as from an image of the track alone, and
+the tracks' nodes come after them.  With no data track the format is `cdda`; with one that no format reads, `cdda`
+where there is audio too and `none` otherwise.
 
 ## FAT
 

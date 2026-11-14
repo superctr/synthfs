@@ -4,6 +4,7 @@
 #include "emu/emu.hpp"
 #include "fat.hpp"
 #include "audio.hpp"
+#include "cue.hpp"
 #include "iso9660.hpp"
 #include "roland/roland.hpp"
 
@@ -97,6 +98,10 @@ constexpr syfs_key node_props[] = { SYFS_PROP_NAME, SYFS_PROP_TYPE, SYFS_PROP_NU
 constexpr syfs_key wave_props[] = { SYFS_PROP_RATE, SYFS_PROP_CHANNELS, SYFS_PROP_BITS, SYFS_PROP_KEY, SYFS_PROP_FRAMES,
 	SYFS_PROP_START, SYFS_PROP_END, SYFS_PROP_LOOP, SYFS_PROP_LOOP_START, SYFS_PROP_LOOP_END, SYFS_PROP_REVERSE,
 	SYFS_PROP_MODE };
+constexpr syfs_key track_props[] = { SYFS_PROP_SECTOR, SYFS_PROP_SECTORS, SYFS_PROP_PREGAP, SYFS_PROP_EMPHASIS };
+
+// a cue sheet is at most this long
+constexpr uint64_t SHEET_MAX = 1 << 20;
 
 }
 
@@ -229,7 +234,7 @@ struct syfs_image {
 			switch (k) {
 			case SYFS_PROP_FORMAT: return key(medium->format);
 			case SYFS_PROP_MEDIUM: return key(medium->medium);
-			case SYFS_PROP_CONTAINER: return key(medium->image.vhd() ? SYFS_CONTAINER_VHD : SYFS_CONTAINER_RAW);
+			case SYFS_PROP_CONTAINER: return key(medium->container());
 			case SYFS_PROP_LABEL:
 				identify();
 				if (!medium->label_known)
@@ -263,6 +268,9 @@ struct syfs_image {
 		}
 		default: break;
 		}
+		int64_t own;
+		if (medium->number(n - 1, k, own))
+			return integer(own);
 		const Sample *s = header(n - 1);
 		if (!s)
 			return {};
@@ -365,6 +373,34 @@ syfs_image *syfs_open_path(const char *path, char *err, size_t err_size)
 	fseeko(f, 0, SEEK_END);
 	io.size = uint64_t(ftello(f));
 #endif
+	// a cue sheet: the disc is in the files it names, beside it
+	if (io.size && io.size <= SHEET_MAX) {
+		try {
+			std::string text(size_t(io.size), '\0');
+			if (file_read(f, 0, text.data(), text.size()) == text.size() && Cue::is_sheet(text)) {
+				fclose(f);
+				std::string dir(path), why;
+				const size_t cut = dir.find_last_of("/\\");
+				dir = cut == dir.npos ? "." : dir.substr(0, cut ? cut : 1);
+				auto volume = [](const syfs_io &track) -> std::unique_ptr<Medium> {
+					Image image(track);
+					syfs_key format = SYFS_NONE;
+					const Reader *r = reader_of(image, format);
+					if (!r)
+						return nullptr;
+					auto m = r->open(track, format);
+					m->medium = r->medium(image);
+					return m;
+				};
+				auto im = std::make_unique<syfs_image>();
+				if (!(im->medium = Cue::open(text, dir, volume, why)))
+					return say(err, err_size, why.c_str()), nullptr;
+				return im.release();
+			}
+		} catch (...) {
+			return say(err, err_size, "the image could not be read"), nullptr;
+		}
+	}
 	syfs_image *im = syfs_open(&io, err, err_size);
 	if (!im) {
 		fclose(f);
@@ -618,7 +654,8 @@ int syfs_prop_at(syfs_image *im, syfs_node n, size_t i, syfs_prop *out)
 		*out = { p.key, syfs_key(p.text ? SYFS_KIND_STRING : SYFS_KIND_INT), 0 };
 		return 1;
 	}
-	return take(node_props, std::size(node_props)) || take(wave_props, std::size(wave_props));
+	return take(node_props, std::size(node_props)) || take(wave_props, std::size(wave_props))
+		|| take(track_props, std::size(track_props));
 }
 
 int syfs_get_int(syfs_image *im, syfs_node n, syfs_key key, int64_t *value)

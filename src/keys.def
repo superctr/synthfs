@@ -19,6 +19,7 @@ format AKAI_S900   akai-s900   "AKAI S900"
 format FAT         fat         "FAT"
 format JV80        jv80        "JV-80"
 format JV1080      jv1080      "JV-1080"
+format CDDA        cdda        "Audio CD"
 
 medium DISK        disk
 medium FLOPPY      floppy
@@ -43,9 +44,11 @@ type MULTI         multi
 type BANK          bank
 type RHYTHM_SET    rhythm-set  "rhythm set"
 type WAVE          wave
+type TRACK         track
 
 container RAW      raw
 container VHD      vhd         "VHD"
+container CUE      cue         "cue sheet"
 
 loop FORWARD       forward
 loop ALTERNATE     alternate
@@ -81,6 +84,10 @@ prop LOOP_END      loop-end
 prop REVERSE       reverse
 prop MODE          mode
 prop EXPORTS       exports
+prop SECTOR        sector
+prop SECTORS       sectors
+prop PREGAP        pregap
+prop EMPHASIS      emphasis
 
 rel CHILDREN       children
 rel USES           uses
