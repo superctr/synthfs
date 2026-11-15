@@ -57,6 +57,7 @@ patches may use one partial, two partials one sample.
 | `model` | string | a board or card of Roland's: the model it was sold as ("SR-JV80-08", "SO-PCM1-01", "SRX-07") |
 | `title` | string | a board or card of Roland's: its title ("Keyboards of the 60s and 70s") |
 | `number` | int | an SRX board: the number its header carries (1 to 12 the boards; from 31, a later software set of one, which has no patches) |
+| `short-name` | string | an SRX board: the short name its header carries, which a machine shows after the board's number ("Strng") |
 | `id`, `date` | string | a PCM card: the identity and the date its header carries ("CRD01010", "1991-11-12"), which together tell cards of one name apart |
 
 ## A node's properties
@@ -69,6 +70,8 @@ patches may use one partial, two partials one sample.
 | `size` | int | its bytes in the image: a sample's or tone's wave room, a file's length; 0 where unknown |
 | `format` | key | the format of the volume or area it is in (an AKAI disk mixes S1000 and S3000) |
 | `tag` | string | the image's own code, where it has one: an S-760/S-770 name's category (STR, PAD...), an AKAI file's type letter (p, s, x, d, q, t, m, c; an `other`'s type in hex), an S-550 area's category number, a bank's record shape (an SR-JV80's type, 2 to 5; an SRX's class and type, "4:6"), a wave's split's keys ("60-64", the lowest and the highest it plays) |
+| `bank-select` | int | an SRX board's bank of patches or rhythm sets: the bank select a machine chooses it by, MSB × 128 + LSB |
+| `category` | int | an SRX board's patch: its category, the number the machines' category lists give (0 none) |
 | `exports` | string | the conversions its contents are read in (`syfs_read`), a name each with a blank between; none where there are none |
 
 A track of a cue sheet's disc has these too:

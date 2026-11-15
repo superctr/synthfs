@@ -141,6 +141,8 @@ public:
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 	size_t sample_at(size_t i, int key) const override;
+	//! An SRX bank's bank select (MSB * 128 + LSB), an SRX patch's category.
+	bool number(size_t i, syfs_key key, int64_t &value) const override;
 
 private:
 	void list_srjv80();
@@ -156,6 +158,8 @@ private:
 	//! What a wave reads as: its sample at key 60, else its split's that sounds nearest.
 	size_t at_middle_c(size_t i) const;
 	uint32_t banks_ = 0;
+	//! Each entry's property of the board's own, where it has one.
+	std::map<size_t, std::pair<syfs_key, int64_t>> own_;
 	std::unique_ptr<Socket> socket_;
 	//! Each wave's splits: their top keys and sample entries (syfs::NONE where silent).
 	std::map<size_t, std::vector<std::pair<uint8_t, size_t>>> splits_;

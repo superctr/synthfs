@@ -100,6 +100,9 @@ enum syfs_keys {
 	SYFS_PROP_SECTORS = 0x730f9fb4,           //!< "sectors"
 	SYFS_PROP_PREGAP = 0x6713b272,            //!< "pregap"
 	SYFS_PROP_EMPHASIS = 0x5ff3a9f7,          //!< "emphasis"
+	SYFS_PROP_CATEGORY = 0x4f2f4271,          //!< "category"
+	SYFS_PROP_BANK_SELECT = 0x56dc32d6,       //!< "bank-select"
+	SYFS_PROP_SHORT_NAME = 0x686ad60b,        //!< "short-name"
 
 	SYFS_REL_CHILDREN = 0x67a9c9d2,           //!< "children"
 	SYFS_REL_USES = 0x61786085,               //!< "uses"
@@ -193,6 +196,9 @@ enum syfs_keys {
 	X(SYFS_PROP_SECTORS, "prop", "sectors", "sectors") \
 	X(SYFS_PROP_PREGAP, "prop", "pregap", "pregap") \
 	X(SYFS_PROP_EMPHASIS, "prop", "emphasis", "emphasis") \
+	X(SYFS_PROP_CATEGORY, "prop", "category", "category") \
+	X(SYFS_PROP_BANK_SELECT, "prop", "bank-select", "bank select") \
+	X(SYFS_PROP_SHORT_NAME, "prop", "short-name", "short name") \
 	X(SYFS_REL_CHILDREN, "rel", "children", "children") \
 	X(SYFS_REL_USES, "rel", "uses", "uses") \
 	X(SYFS_REL_ALL, "rel", "all", "all") \

@@ -88,6 +88,9 @@ prop SECTOR        sector
 prop SECTORS       sectors
 prop PREGAP        pregap
 prop EMPHASIS      emphasis
+prop CATEGORY      category
+prop BANK_SELECT   bank-select "bank select"
+prop SHORT_NAME    short-name  "short name"
 
 rel CHILDREN       children
 rel USES           uses

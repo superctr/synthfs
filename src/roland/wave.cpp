@@ -288,6 +288,12 @@ void WaveRom::identify()
 	if (format == SYFS_FORMAT_SRX) {
 		uint32_t number = socket_->be(0x40, 2);
 		set(SYFS_PROP_NUMBER, int64_t(number));
+		uint8_t brief[6];
+		if (socket_->read(0x3A, brief, sizeof brief)) {
+			std::string shown = trimmed(plain(brief, sizeof brief));
+			if (!shown.empty())
+				set(SYFS_PROP_SHORT_NAME, shown);
+		}
 		if (number >= 1 && number <= std::size(SRX_TITLES)) {
 			char model[16];
 			snprintf(model, sizeof model, "SRX-%02u", unsigned(number));
@@ -317,6 +323,7 @@ void WaveRom::identify()
 
 void WaveRom::list()
 {
+	own_.clear();
 	if (!socket_)
 		return;
 	if (format == SYFS_FORMAT_SRX)
@@ -384,11 +391,13 @@ void WaveRom::list_srjv80()
 }
 
 // The directory: its count at +0x42, sixteen-byte entries from +0x80, each a class and a type (halfwords), the offset
-// of its table and its length; a table's head a count, the offset of its records from the head and their stride.
+// of its table and its length; a table's head a count, the offset of its records from the head and their stride, a
+// bank's the bank select it is chosen by at +12 (MSB, LSB).
 // Class 1 the samples (24 bytes); class 2 the waves, each record the offset of its definition from the head (a long)
 // and its length, the definition the name, four bytes, then a split in four bytes (its top key, a byte, the sample's
-// number) to its end; class 4 a bank of patches, class 5 of rhythm sets, each record starting with its name, the
-// type the machines it is for
+// number) to its end; class 4 a bank of patches, class 5 of rhythm sets, each record starting with its name (a patch's
+// category in the seven bits after it), the type the machines it is for.  The board's short name, as a machine shows
+// it after the board's number, is six characters at +0x3A
 void WaveRom::list_srx()
 {
 	const Socket &s = *socket_;
@@ -440,15 +449,29 @@ void WaveRom::list_srx()
 			const uint32_t family = t.type - (t.cls == 4 ? 6 : 5);
 			std::string name = family < 4 ? std::string(families[family]) + (t.cls == 4 ? " Patches" : " Rhythm Sets") : "";
 			size_t parent = bank(std::to_string(t.cls) + ":" + std::to_string(t.type), name);
+			uint8_t select[2];
+			if (s.read(uint64_t(t.at) + 12, select, sizeof select))
+				own_[parent] = { SYFS_PROP_BANK_SELECT, select[0] * 128 + select[1] };
 			for (uint32_t k = 0; k < t.count; k++) {
 				uint64_t r = uint64_t(t.at) + t.records + uint64_t(k) * t.stride;
-				uint8_t rec[11];
-				if (!s.read(r, rec, sizeof rec))
+				uint8_t rec[12];
+				if (!s.read(r, rec, t.stride >= 12 ? 12 : 11))
 					return;
-				add(kind, format, k, parent, packed(rec, true), 0, r);
+				size_t e = add(kind, format, k, parent, packed(rec, true), 0, r);
+				if (kind == SYFS_TYPE_PATCH && t.stride >= 12)
+					own_[e] = { SYFS_PROP_CATEGORY, (rec[10] << 8 | rec[11]) >> 5 & 127 };
 			}
 		}
 	}
+}
+
+bool WaveRom::number(size_t i, syfs_key key, int64_t &value) const
+{
+	auto it = own_.find(i);
+	if (it == own_.end() || it->second.first != key)
+		return false;
+	value = it->second.second;
+	return true;
 }
 
 std::vector<size_t> WaveRom::refs(size_t i) const

@@ -359,7 +359,8 @@ are one period of the original key at 32 kHz, less the fine tune **[seen]**.
 **SRX boards**: the name at descrambled 0x20 (16 characters), the short name at 0x3A, the board's number at 0x40 and
 the directory's count at 0x42; the directory's 16-byte entries from 0x80, each a class and a type (halfwords), the
 address of its table and its length.  A table starts with a count (a halfword), the offset of its records from the
-table (a long, +4) and their stride (+8).
+table (a long, +4) and their stride (+8); a bank's table has the bank select it is chosen by at +12 (MSB, LSB:
+`bank-select`).
 
 | Class | Type | What | Bank |
 |---|---|---|---|
@@ -374,7 +375,8 @@ table (a long, +4) and their stride (+8).
 | 5 | 7 | rhythm sets | Global Rhythm Sets |
 | 5 | 8 | rhythm sets (on no board at hand) | Fantom-S Rhythm Sets |
 
-A patch's or rhythm set's name is twelve 7-bit characters packed from the first byte's top bit down.  A board holds
+A patch's or rhythm set's name is twelve 7-bit characters packed from the first byte's top bit down; a patch's
+category is the next seven bits (`category`).  A board holds
 the same sounds in each of its banks of a class, one bank for each family of machines, mostly under the same names
 but with some parameters of their own; each bank is listed, named as the table says and tagged `class:type`, and a
 class and type of no family above is listed unnamed.  The names are the ones the Fantom-X's wave information page
