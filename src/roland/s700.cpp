@@ -97,10 +97,10 @@ void sample_of(const uint8_t *rec, uint64_t frames, syfs::Sample &out)
 
 using namespace s700;
 
-// byte 0x0F: 0 on a disk, '@' on one the S-760's system was saved to; a floppy's kind otherwise
+// byte 0x0F: 0 or a space on a disk, '@' on one the S-760's system was saved to; a floppy's kind otherwise
 static bool disk_type(uint8_t type)
 {
-	return type == 0 || type == '@' || type == 'A';
+	return type == 0 || type == ' ' || type == '@' || type == 'A';
 }
 
 syfs_key S700Disk::probe(const Image &im)

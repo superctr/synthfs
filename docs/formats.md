@@ -12,7 +12,7 @@ Tried in this order:
 
 | Format | Medium | Test |
 |---|---|---|
-| S-760, S-770 | disk | four zero bytes and `S770 MR25A` at byte 0, then a zero, byte 0x0F zero or `@`, five list counts within their capacities; the system line tells which |
+| S-760, S-770 | disk | four zero bytes and `S770 MR25A` at byte 0, then a zero, byte 0x0F zero, a space or `@`, five list counts within their capacities; the system line tells which |
 | S-760, S-770, DJ-70 | floppy | four zero bytes, `S770 MR25A` and a zero at byte 0, a kind character at 0x0F, 2 MB at most; the kind line tells which |
 | S-550 | disk | `* ROLAND S-550 *` at byte 0 |
 | S-550, S-330, W-30, S-50 | floppy | four zero bytes and the system's ID at byte 0, 2 MB at most |
@@ -43,7 +43,8 @@ volumes side by side.
 The S-700 series' disk layout, the same on a hard disk's, an MO's and a CD-ROM's: 512-byte sectors from the start
 of the image.
 
-**Sector 0**: four zero bytes, `S770 MR25A` at +4, the system line at +0x20 (32 characters), the disk's name at
+**Sector 0**: four zero bytes, `S770 MR25A` at +4, at +0x0F a zero, or a space on some of Roland's L-CDP discs
+(SYS-772 2.19a, 2.21, 32k-4 among them) **[seen]**, the system line at +0x20 (32 characters), the disk's name at
 +0x100 (16 characters: `ID`, the SCSI ID it was formatted at, a colon, then twelve of the name itself, which is
 what a machine's drive list shows; `ID0:Formatted` as formatted, or with the name `syfs_create` is given), its last
 sector at +0x110 (a long), and at +0x114 five halfwords: how many slots each list
