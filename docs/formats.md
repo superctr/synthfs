@@ -26,7 +26,7 @@ Tried in this order:
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 | FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
 | System exclusive | file | `F0 41`, a device, the model ID of a model with a map and `12` at byte 0, 16 MB at most |
-| XV-5080, XV-3080 | file | `SVD1` at byte 2 and `XV88` at byte 20, 16 MB at most; a patch's record size tells which (below, "XV-5080 and XV-3080 files") |
+| XV-5080, XV-3080, Fantom | file | `SVD1` at byte 2 and at byte 20 `XV88` (an XV's; a patch's record size tells which) or `NEXY` (a Fantom's), 16 MB at most (below, "XV-5080, XV-3080 and Fantom files") |
 
 A cue sheet is told first, by its text (below, "Cue sheets").  An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -272,7 +272,9 @@ A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model I
 and what it adds lies after the JV-1080's blocks' ends, where it is passed over; the XV-5080 and XV-3080 share
 `00 10`, and a file is read by the XV-5080's map where a message of it is at an address the XV-3080's map lacks
 (a part past the sixteenth, the system's equalizer), else by the XV-3080's, whose system and performances are whole
-with sixteen parts.  Data Sets of that model with a right sum
+with sixteen parts.  The Fantom has that ID as well: a file is read by its map where more of the file's data is
+at addresses of its map than of the XV-5080's (a multitimbre, its system, a patch's controller), so a Fantom's
+patch sent without its controller reads as an XV's.  Data Sets of that model with a right sum
 are put where the map has their addresses, in whatever pieces and order they come; other messages, other models'
 and bytes between messages are passed over.
 
@@ -280,7 +282,7 @@ Each area of the map that the file fills whole is an entry: an area is one block
 a group's blocks (a JV-1080's patch: its common and four tones; a rhythm set: its common and 64 keys).  Its type is
 the area's (a volume, performance, patch, partial or sample; a JV-1080's or an XV's system, performance, patch or
 rhythm set), its name its first block's name parameters' (a system's the area's own), its format the model's
-records' (`S-760`, `JV-1080`, `XV-5080`, `XV-3080`).  An area filled in part is none, but that where the area has a
+records' (`S-760`, `JV-1080`, `XV-5080`, `XV-3080`, `Fantom`).  An area filled in part is none, but that where the area has a
 packed record a block that is not in it may be missing: an XV-5080's patch's split keys, which the machine does not
 send.  An S-700's entries are numbered by their places in memory.  A
 JV-1080's and an XV's are under banks, one for each kind of area the file has anything of, named as the map names them
@@ -750,7 +752,18 @@ patches, rhythm sets and performances tried (five or six patches, two rhythm set
 each).  What follows a patch's 574
 bytes in its place (the split keys of a patch made of samples) is not read.
 
-## XV-5080 and XV-3080 files
+**A Fantom's** (`Fantom`): 2 MB and 1 KB, the 1 KB of its EEPROM and then the upper half of its flash memory.
+Its user sounds are one block at 0x1A0400 **[seen]**: sixteen bytes that start `Roland MIGT4`, two lists of 64
+favorites of three bytes, then 64 performances of 1126 bytes (from 0x190 of the block), sixteen multitimbres of 954
+(0x11B10), 128 patches of 592 (0x156B0) and sixteen rhythm sets of 10824 (0x27EB0).  The records are packed as
+the XVs', by the Fantom's map (`maps.md`): a patch is an XV's 574 bytes and its controller's 18, a rhythm set an
+XV's 10808 and its controller's 16; a performance its common (44), three MFX (78 each), chorus (26), reverb (42),
+sixteen channels' MIDI (2), sixteen parts (36), sixteen zones (9) and controller (28); a multitimbre the same to
+its parts.  A flash never stored to lists nothing: the machine then plays its factory sounds, which are elsewhere.
+Checked: the machine started with a memory answers the same bytes for the user patches, rhythm sets, performances
+and multitimbres tried (four, three, three and three).
+
+## XV-5080, XV-3080 and Fantom files
 
 The file an XV-5080 or XV-3080 saves its user memory in (`\ROLAND\SOUND_nn.SVD`, on a card or a disk): a halfword,
 the length of the head less two; `SVD1`; ten zero bytes; then sixteen bytes for each chunk, its tag, the model
@@ -761,7 +774,15 @@ records (above).  A patch's record is 938 bytes in an XV-5080's file and 574 in 
 all, to the XV-5080's 223 482) **[seen]**, which is what tells whose the file is: the format is `XV-5080` or
 `XV-3080` by it.  Each record whose name is twelve printable characters is an entry, numbered by its place, and
 reads as `syx` by its machine's map at the user place of that number.  The other chunks (`SYSa` the system, `FVRa`,
-`CTGa`) are not read.  A file with another model's tag is not told.
+`CTGa`) are not read.
+
+A Fantom's file (on a floppy, in the root) has the same frame with twelve chunks, its own under the model `NEXY`:
+`PRFa` 64 performances of 1126 bytes and `MLTa` sixteen multitimbres of 954, the first of them, which tells the
+file; and under `XV88` `PATa`, 128 patches of 956 bytes, and `RHYa`, sixteen rhythm sets of 10824 **[seen]**.  A
+patch there is in an XV-5080's 938 bytes, the split keys' place zero, with its controller's 18 after: the memory's
+592 are its first 574 and those 18.  Its entries are the format `Fantom`, a multitimbre the type `multi`, and read
+as `syx` by the Fantom's map.  Checked: a file the machine saved gives the Data Sets of the memory it saved from,
+each of its 224 sounds.  A file with another model's tag is not told.
 
 Such a file is an image of its own (medium `file`), and on a FAT volume a file named `.SVD` that is one has its
 entries under it, read from the file's bytes: a card or disk the machine saved to opens down to its sounds.

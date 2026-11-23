@@ -720,8 +720,9 @@ struct MemoryOf {
 	uint64_t size;
 	const char *map;
 	bool from_top;   // its records' bits
-	MemoryRun runs[3];
+	MemoryRun runs[4];
 };
+constexpr uint32_t FANTOM_USER = 0x1A0400;  // its user block, in a memory of its EEPROM and half its flash
 constexpr MemoryOf memories[] = {
 	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x2000, 401, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2699, 2, "User Rhythm" } } },
@@ -729,6 +730,10 @@ constexpr MemoryOf memories[] = {
 		{ SYFS_TYPE_PATCH, 0x10BA8, 938, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2E0A8, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
 	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x10BA4, 838, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2AEA4, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
+	{ SYFS_FORMAT_FANTOM, 0x200400, "fantom", true, { { SYFS_TYPE_PERFORMANCE, FANTOM_USER + 0x190, 1126, 1126, 64, "User Performance" },
+		{ SYFS_TYPE_MULTI, FANTOM_USER + 0x11B10, 954, 954, 16, "User Multitimbre" },
+		{ SYFS_TYPE_PATCH, FANTOM_USER + 0x156B0, 592, 592, 128, "User Patch" },
+		{ SYFS_TYPE_RHYTHM_SET, FANTOM_USER + 0x27EB0, 10824, 10824, 16, "User Rhythm" } } },
 };
 const MemoryOf *memory_of(syfs_key format)
 {
@@ -770,7 +775,7 @@ void Memory::list()
 {
 	const MemoryOf *m = memory_of(format);
 	for (const MemoryRun &r : m->runs)
-		for (uint32_t k = 0; k < r.count; k++) {
+		for (uint32_t k = 0; r.bank && k < r.count; k++) {
 			const uint64_t at = r.at + uint64_t(k) * r.stride;
 			uint8_t rec[11];
 			if (!image.read(at, rec, sizeof rec))
@@ -785,7 +790,7 @@ bool Memory::data_sets(size_t i, std::vector<uint8_t> &out) const
 	const syfs::Entry &e = entries[i];
 	const MemoryOf *m = memory_of(format);
 	for (const MemoryRun &r : m->runs)
-		if (r.kind == e.kind) {
+		if (r.bank && r.kind == e.kind) {
 			const auto rec = image.read(where[i], r.size);
 			return !rec.empty() && syx::packed(m->map, r.bank, e.number, 0x10, rec, out);
 		}

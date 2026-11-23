@@ -15,6 +15,7 @@ enum : uint8_t {
 	LOW_FIRST = 2,    //!< Its bytes low first; else high first.
 	FIELD = 4,        //!< Some bits of its value only: `bit` and `width`.
 	RECEIVE_ONLY = 8, //!< Taken by the machine and never sent.
+	ALIGNED = 16,     //!< In a packed record it starts on a byte.
 };
 
 //! One parameter of a block.
@@ -47,6 +48,7 @@ struct Entry {
 	uint32_t addr;    //!< The address's bytes as base-128 digits.
 	uint16_t block;   //!< Which of the map's blocks.
 	uint16_t area;    //!< Which of the map's areas it is of.
+	uint16_t order;   //!< Its place among the area's blocks in a packed record.
 };
 
 //! One thing the map holds at a place: a block, or the blocks of a group (a patch's common and tones).
@@ -63,6 +65,7 @@ struct Area {
 struct Member {
 	uint32_t addr;
 	uint16_t block;
+	uint16_t order;   //!< Its place among the area's blocks in a packed record.
 };
 
 //! The areas alike one after another, as tools/maps.py writes them.
@@ -124,7 +127,8 @@ const Map *all(size_t &count);
 
 //! An area's packed record as its blocks' units, a vector for each entry of the area.
 /*!
- * A packed record is the area's blocks one after another that have bytes in one (Block::packed), each starting on a
+ * A packed record is the area's blocks one after another in their order there (Entry::order) that have bytes in one
+ * (Block::packed), each starting on a
  * byte after Block::lead bits; a block's parameters are in the order of their offsets, each in its bits times its
  * units.  Where Map::high_first the bits run from a byte's highest down and a parameter's first unit is first; else
  * from the lowest up, its last unit first.  A parameter of fewer bits than hold its range is kept less what puts 64

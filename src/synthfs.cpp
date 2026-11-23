@@ -377,7 +377,7 @@ syfs_image *syfs_open_as(const syfs_io *io, syfs_key format, syfs_key medium, ch
 {
 	if (!io || !io->read)
 		return say(err, err_size, "no reader given"), nullptr;
-	if (medium != SYFS_MEDIUM_MEMORY || (format != SYFS_FORMAT_JV1080 && format != SYFS_FORMAT_XV5080 && format != SYFS_FORMAT_XV3080))
+	if (medium != SYFS_MEDIUM_MEMORY || (format != SYFS_FORMAT_JV1080 && format != SYFS_FORMAT_XV5080 && format != SYFS_FORMAT_XV3080 && format != SYFS_FORMAT_FANTOM))
 		return say(err, err_size, "no image is opened as that"), nullptr;
 	if (!roland::Memory::fits(*io, format))
 		return say(err, err_size, "the image is not that machine's memory"), nullptr;

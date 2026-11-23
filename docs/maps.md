@@ -41,6 +41,7 @@ parameter's `bits` gives: 7 where a byte of the message is a unit, 4 where every
 | `frac` | the low bits that are a fraction |
 | `receive_only` | taken by the machine, never sent by it |
 | `absent` | the model has no such parameter, though its place in the block and in a record is kept |
+| `ignored`, `labels` | for whoever shows the map: a parameter the machine takes no notice of, its values' names |
 
 ## Packed records
 
@@ -56,6 +57,8 @@ that have bytes there; a block with none is not in the record (an XV-5080's patc
 | `first` | `low` (the default): the bits fill each byte from its lowest up, and a parameter of several units has its last unit first.  `high`: from the highest down, the first unit first |
 | `blocks` | each packed block's bytes |
 | `lead` | the bits of a block before its first parameter, where it has any |
+| `order` | for a group, its blocks in the record's order where that is not the order of their addresses; a block's places stay together, in the order of their addresses |
+| `align` | for a block, the offsets of the parameters that start on a byte |
 
 A parameter of one unit whose `bits` do not hold its `max` is a value about 64 kept about the middle of its bits:
 what is stored is the value less 64 and plus half the bits' range (61 to 67 in three bits as 1 to 7).  `map::unpack`
@@ -84,6 +87,15 @@ tone mix table, four tones, and the XV-5080's 88 split keys) and `1-3-2` a rhyth
 and keys 21 to 108).  The XV-3080's map is the XV-5080's without the system's equalizer, parts 17 to 32 and the
 split keys.  Their records are packed from the high bit (`formats.md`, "Roland wave expansion boards and cards" and
 "Battery memories"): a patch's 574 bytes, a rhythm set's 10808 and a performance's 926.
+
+## The Fantom
+
+`fantom`: model ID `00 10`, the XVs'; four-byte addresses.  Groups `fa-setup`, `fa-system`, `fa-performance` (its
+common, three MFX, chorus, reverb, sixteen channels' MIDI, sixteen parts, sixteen zones and a controller),
+`fa-multitimbre` (the same without zones and controller), `fa-patch` (an XV's patch and a controller) and
+`fa-rhythm` (an XV's rhythm set and a controller).  Its records are packed as the XVs' (`formats.md`, "Battery
+memories"), with the three MFX together after the common, a part's parameters from the decay time offset on
+starting on a byte (the 22 bytes of an XV's part, then 14), and a zone's six control switches on its last byte.
 
 ## The S-700 series
 

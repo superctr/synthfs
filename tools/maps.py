@@ -9,10 +9,10 @@ import sys
 
 root = pathlib.Path(__file__).resolve().parent.parent
 FLAGS = (("signed", "SIGNED"), ("receive_only", "RECEIVE_ONLY"))
-KNOWN = {"offset", "size", "bits", "name", "min", "max", "display", "signed", "field", "order", "frac", "receive_only", "absent"}
+KNOWN = {"offset", "size", "bits", "name", "min", "max", "display", "signed", "field", "order", "frac", "receive_only", "absent", "ignored", "labels"}
 
 
-def param(p, where):
+def param(p, where, align=False):
     if set(p) - KNOWN:
         sys.exit(f"{where}: {p['name']}: {sorted(set(p) - KNOWN)} not known")
     flags = [c for k, c in FLAGS if p.get(k)]
@@ -23,6 +23,8 @@ def param(p, where):
     bit, width = p.get("field", (0, 0))
     if "field" in p:
         flags.append("FIELD")
+    if align:
+        flags.append("ALIGNED")
     return (f"{{ {p['offset']}, {p['size']}, {p['bits']}, {' | '.join(flags) or '0'}, {bit}, {width}, "
             f"{p.get('frac', 0)}, {p['min']}, {p['max']} }}")
 
@@ -57,7 +59,7 @@ def table(kind, rows):
 records = {}
 for path in sorted((root / "maps/records").glob("*.json")):
     r = json.loads(path.read_text())
-    if r.get("packing") != "bits" or r.get("first", "low") not in ("low", "high") or set(r) - {"map", "packing", "first", "blocks", "lead"}:
+    if r.get("packing") != "bits" or r.get("first", "low") not in ("low", "high") or set(r) - {"map", "packing", "first", "blocks", "lead", "order", "align"}:
         sys.exit(f"{path.name}: packing {r.get('packing')!r}, first {r.get('first')!r}, keys {sorted(r)}")
     records[r["map"]] = r
 
@@ -80,7 +82,10 @@ for path in sorted((root / "maps").glob("*.json")):
         for p in b["params"]:
             if p["offset"] + p["size"] > b["size"]:
                 sys.exit(f"{path.name}: {k}: {p['name']} past the block's {b['size']}")
-        params = table("Param", [param(p, f"{path.name}: {k}") for p in b["params"]])
+        aligned = record.get("align", {}).get(k, [])
+        if set(aligned) - {p["offset"] for p in b["params"]}:
+            sys.exit(f"maps/records/{path.name}: {k}: no parameter at an offset of {aligned}")
+        params = table("Param", [param(p, f"{path.name}: {k}", p["offset"] in aligned) for p in b["params"]])
         # the name: the parameters "... Name 1" on, a character each
         chars = [p for p in b["params"] if re.search(r"name \d+$", p["name"], re.I)]
         first = chars[0] if chars and chars[0]["name"].lower().endswith("name 1") else None
@@ -89,7 +94,11 @@ for path in sorted((root / "maps").glob("*.json")):
             sys.exit(f"{path.name}: {k}: a name not in a row")
         name = f'{first["offset"]}, {len(chars)}, {first["size"]}' if first else "0, 0, 0"
         bytes_packed, before = packed.pop(k, 0), lead.pop(k, 0)
-        if bytes_packed and before + sum(p["bits"] * p["size"] for p in b["params"]) > 8 * bytes_packed:
+        used = before
+        for p in b["params"]:
+            used = (used + 7) // 8 * 8 if p["offset"] in aligned else used
+            used += p["bits"] * p["size"]
+        if bytes_packed and used > 8 * bytes_packed:
             sys.exit(f"{path.name}: {k}: its parameters' bits are more than {bytes_packed} bytes")
         for p in b["params"] if bytes_packed else []:
             if p["size"] == 1 and not 0 <= p["min"] - centre(p) <= p["max"] - centre(p) < 1 << p["bits"]:
@@ -127,7 +136,15 @@ for path in sorted((root / "maps").glob("*.json")):
                 if at <= last:
                     sys.exit(f"{path.name}: {e['name']}: {block} not after the block before it")
                 last = at + m["blocks"][block]["size"] - 1
-            members = table("Member", [f"{{ 0x{at - addr:07x}, {ids.index(block)} }}" for at, block in own])
+            # where each block comes in the packed record: as the records' file orders the group's blocks, a block's
+            # places together in the order of their addresses; else the order of the addresses
+            first = record.get("order", {}).get(group)
+            if first and {block for _, block in own if block in record.get("blocks", {})} - set(first):
+                sys.exit(f"maps/records/{path.name}: {group}: the order leaves out a packed block")
+            rank = sorted(range(len(own)), key=lambda n: (first.index(own[n][1]) if first and own[n][1] in first else len(own), n))
+            place = {n: k for k, n in enumerate(rank)}
+            members = table("Member", [f"{{ 0x{at - addr:07x}, {ids.index(block)}, {place[n]} }}"
+                                       for n, (at, block) in enumerate(own)])
             n = counts.get(bank, 0)
             counts[bank] = n + 1
             r = runs[-1] if runs else None

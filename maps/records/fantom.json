@@ -1,0 +1,69 @@
+{
+ "map": "fantom",
+ "packing": "bits",
+ "first": "high",
+ "blocks": {
+  "fa-performance-common": 44,
+  "fa-performance-common-mfx": 78,
+  "fa-performance-common-chorus": 26,
+  "fa-performance-common-reverb": 42,
+  "fa-performance-midi": 2,
+  "fa-performance-part": 36,
+  "fa-performance-zone": 9,
+  "fa-performance-controller": 28,
+  "fa-multitimbre-common": 44,
+  "fa-multitimbre-common-mfx": 78,
+  "fa-multitimbre-common-chorus": 26,
+  "fa-multitimbre-common-reverb": 42,
+  "fa-multitimbre-midi": 2,
+  "fa-multitimbre-part": 36,
+  "fa-patch-common": 56,
+  "fa-patch-common-mfx": 78,
+  "fa-patch-common-chorus": 26,
+  "fa-patch-common-reverb": 42,
+  "fa-patch-tmt-tone-mix-table": 32,
+  "fa-patch-tone": 85,
+  "fa-patch-controller": 18,
+  "fa-rhythm-common": 14,
+  "fa-rhythm-common-mfx": 78,
+  "fa-rhythm-common-chorus": 26,
+  "fa-rhythm-common-reverb": 42,
+  "fa-rhythm-tone": 121,
+  "fa-rhythm-controller": 16
+ },
+ "lead": {
+  "fa-performance-part": 2,
+  "fa-multitimbre-part": 2
+ },
+ "order": {
+  "fa-performance": [
+   "fa-performance-common",
+   "fa-performance-common-mfx",
+   "fa-performance-common-chorus",
+   "fa-performance-common-reverb",
+   "fa-performance-midi",
+   "fa-performance-part",
+   "fa-performance-zone",
+   "fa-performance-controller"
+  ],
+  "fa-multitimbre": [
+   "fa-multitimbre-common",
+   "fa-multitimbre-common-mfx",
+   "fa-multitimbre-common-chorus",
+   "fa-multitimbre-common-reverb",
+   "fa-multitimbre-midi",
+   "fa-multitimbre-part"
+  ]
+ },
+ "align": {
+  "fa-performance-part": [
+   33
+  ],
+  "fa-multitimbre-part": [
+   33
+  ],
+  "fa-performance-zone": [
+   14
+  ]
+ }
+}

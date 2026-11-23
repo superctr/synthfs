@@ -23,6 +23,7 @@ format CDDA        cdda        "Audio CD"
 format SYX         syx         "System exclusive"
 format XV5080      xv5080      "XV-5080"
 format XV3080      xv3080      "XV-3080"
+format FANTOM      fantom      "Fantom"
 
 medium DISK        disk
 medium FLOPPY      floppy

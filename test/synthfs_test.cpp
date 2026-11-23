@@ -2996,7 +2996,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 22 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_XV3080
+	CHECK(formats == 23 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_FANTOM
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -3008,7 +3008,7 @@ static void test_maps()
 	namespace map = syfs::map;
 	size_t count = 0;
 	const map::Map *maps = map::all(count);
-	CHECK(count == 7 && maps == map::find("jv1080") && !map::find("s7"));
+	CHECK(count == 8 && maps == map::find("fantom") && !map::find("s7"));
 	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
 		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
 	for (auto [id, model, blocks] : models)
@@ -3656,6 +3656,130 @@ static void test_syx_xv()
 	}
 }
 
+// the Fantom's records: the XVs' packing, with a group's blocks in an order of their own and parameters that start
+// on a byte
+static void test_syx_fantom()
+{
+	namespace map = syfs::map;
+	auto put = [](Bytes &b, size_t at, size_t bit, unsigned bits, unsigned v) {
+		for (unsigned k = 0; k < bits; k++)
+			if (v >> (bits - 1 - k) & 1)
+				b[at + (bit + k) / 8] |= uint8_t(0x80 >> (bit + k) % 8);
+	};
+	auto name = [&](Bytes &b, size_t at, const char *s) {
+		for (size_t i = 0; i < 12; i++)
+			put(b, at, 7 * i, 7, i < strlen(s) ? uint8_t(s[i]) : ' ');
+	};
+	auto at = [](const std::vector<std::pair<uint32_t, Bytes>> &sets, uint32_t addr) -> const Bytes * {
+		for (const auto &[a, data] : sets)
+			if (a == addr)
+				return &data;
+		return nullptr;
+	};
+	const map::Map *fa = map::find("fantom");
+	CHECK(fa && fa->high_first && fa->areas_of("User Multitimbre") == 16 && fa->areas_of("User Rhythm") == 16
+		&& fa->areas_of("Temporary Patch") == 33);
+	const map::Area *perf = fa ? fa->area("User Performance", 63) : nullptr;
+	CHECK(perf && perf->count == 6 + 16 * 3 + 1);
+	if (!perf)
+		return;
+	// the three MFX are together in the record, the second two after the reverb in the map
+	CHECK(fa->entries[perf->first + 4].addr == perf->addr + (8 << 7) && fa->entries[perf->first + 4].order == 2
+		&& fa->entries[perf->first + 2].order == 4);
+	const size_t user = 0x1A0400, perfs = user + 0x190, multis = user + 0x11B10, patches = user + 0x156B0, sets = user + 0x27EB0;
+	Bytes mem(0x200400, 0xFF);
+	const size_t p = perfs + 63 * 1126, m = multis + 15 * 954, pa = patches + 2 * 592, rs = sets + 15 * 10824;
+	std::fill(mem.begin() + p, mem.begin() + p + 1126, 0), std::fill(mem.begin() + m, mem.begin() + m + 954, 0);
+	std::fill(mem.begin() + pa, mem.begin() + pa + 592, 0), std::fill(mem.begin() + rs, mem.begin() + rs + 10824, 0);
+	name(mem, p, "Piano & Str"), name(mem, m, "GM2 Template"), name(mem, pa, "GlobalWarmup"), name(mem, rs, "OrchestraKit");
+	put(mem, p + 122, 0, 7, 5);                      // the second MFX's type, after the first's 78 bytes
+	put(mem, p + 378 + 36 + 22, 0, 7, 70);           // part 2's decay time offset, on the byte after its XV part
+	put(mem, p + 954 + 15 * 9 + 8, 0, 1, 1);         // zone 16's first control switch, on its last byte
+	put(mem, p + 1098, 1, 7, 99);                    // the controller's second parameter
+	put(mem, m + 378, 2, 4, 11);                      // multitimbre part 1's channel, after two bits
+	put(mem, pa + 574, 1, 7, 33);                    // the patch's controller, after its four tones
+	put(mem, rs + 10808, 1, 7, 44);                  // the rhythm set's, after its 88 keys
+	syfs_io io = io_of(mem);
+	syfs_image *fs = syfs_open_as(&io, SYFS_FORMAT_FANTOM, SYFS_MEDIUM_MEMORY, nullptr, 0);
+	CHECK(fs && format_of(fs) == SYFS_FORMAT_FANTOM && count_of(fs) == 4);
+	if (!fs)
+		return;
+	const size_t ip = find(fs, "Piano & Str"), im = find(fs, "GM2 Template"), ia = find(fs, "GlobalWarmup"), ir = find(fs, "OrchestraKit");
+	CHECK(entry_at(fs, ip)->number == 63 && entry_at(fs, im)->number == 15 && entry_at(fs, im)->kind == SYFS_TYPE_MULTI
+		&& entry_at(fs, ia)->number == 2 && entry_at(fs, ir)->number == 15);
+	auto got = xv_sets_of(syx_of(fs, ip));
+	const uint32_t base = 0x20u << 21 | 63 << 14;
+	const Bytes *second = at(got, base + (8 << 7)), *part = at(got, base + (33 << 7)), *zone = at(got, base + (95 << 7)),
+		*ctl = at(got, base + (96 << 7));
+	CHECK(second && (*second)[0] == 5 && at(got, base + (2 << 7)) && (*at(got, base + (2 << 7)))[0] == 0);
+	CHECK(part && part->size() == 49 && (*part)[33] == 70 && (*part)[34] == 0 && zone && (*zone)[14] == 1 && (*zone)[15] == 0
+		&& ctl && (*ctl)[1] == 99);
+	got = xv_sets_of(syx_of(fs, im));
+	CHECK(at(got, (0x50u << 21 | 15 << 14) + (32 << 7)) && (*at(got, (0x50u << 21 | 15 << 14) + (32 << 7)))[0] == 11);
+	got = xv_sets_of(syx_of(fs, ia));
+	CHECK(got.size() == 15 && got[0].first == (0x30u << 21 | 2 << 14) && got[14].first == got[0].first + (96 << 7)
+		&& got[14].second.size() == 28 && got[14].second[1] == 33);
+	got = xv_sets_of(syx_of(fs, ir));
+	CHECK(!got.empty() && got.back().second.size() == 26 && got.back().second[1] == 44);
+
+	// its .SVD: chunks of its own model and of the XV-5080's, a patch in the XV-5080's 938 bytes with its controller
+	// after; the same Data Sets as the memory's
+	Bytes svd(0x10 + 4 * 16, 0);
+	svd[1] = uint8_t(svd.size() - 2);
+	memcpy(&svd[2], "SVD1", 4);
+	const std::tuple<const char *, const char *, size_t, uint32_t, uint32_t> chunks[] = { { "PRFa", "NEXY", perfs, 1126, 64 },
+		{ "MLTa", "NEXY", multis, 954, 16 }, { "PATa", "XV88", patches, 592, 128 }, { "RHYa", "XV88", sets, 10824, 16 } };
+	size_t entry = 16;
+	for (auto [tag, model, from, stride, count] : chunks) {
+		const bool patch = stride == 592;
+		const uint32_t size = patch ? 956 : stride;
+		memcpy(&svd[entry], tag, 4), memcpy(&svd[entry + 4], model, 4);
+		const uint32_t head[4] = { uint32_t(svd.size()), 16 + count * size, count, size };
+		for (int w = 0; w < 2; w++)
+			for (int k = 0; k < 4; k++)
+				svd[entry + 8 + 4 * w + k] = uint8_t(head[w] >> (24 - 8 * k));
+		for (int w = 2; w < 4; w++)
+			for (int k = 0; k < 4; k++)
+				svd.push_back(uint8_t(head[w] >> (24 - 8 * k)));
+		svd.insert(svd.end(), { 0, 0, 0, 16, 0, 0, 0, 0 });
+		for (uint32_t k = 0; k < count; k++) {
+			const auto rec = mem.begin() + from + k * stride;
+			svd.insert(svd.end(), rec, rec + (patch ? 574 : stride));
+			if (patch) {
+				svd.insert(svd.end(), 364, 0);
+				svd.insert(svd.end(), rec + 574, rec + 592);
+			}
+		}
+		entry += 16;
+	}
+	syfs_io sio = io_of(svd);
+	syfs_key medium = SYFS_NONE;
+	CHECK(probe(&sio, &medium) == SYFS_FORMAT_FANTOM && medium == SYFS_MEDIUM_FILE);
+	syfs_image *sv = syfs_open(&sio, nullptr, 0);
+	CHECK(sv && count_of(sv) == 4);
+	if (sv) {
+		CHECK(syx_of(sv, find(sv, "Piano & Str")) == syx_of(fs, ip) && syx_of(sv, find(sv, "GM2 Template")) == syx_of(fs, im)
+			&& syx_of(sv, find(sv, "GlobalWarmup")) == syx_of(fs, ia) && syx_of(sv, find(sv, "OrchestraKit")) == syx_of(fs, ir));
+		close_image(sv);
+	}
+	// a file of its messages: the Fantom's where it holds what the XVs' maps have not (the patch's controller, a
+	// multitimbre), an XV's where it does not
+	Bytes file = syx_of(fs, ia), multi = syx_of(fs, im);
+	syfs_io fio = io_of(file);
+	syfs_image *sx = syfs_open(&fio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 2 && entry_at(sx, find(sx, "GlobalWarmup"))->format == SYFS_FORMAT_FANTOM
+		&& syx_of(sx, find(sx, "GlobalWarmup")) == file);
+	if (sx)
+		close_image(sx);
+	syfs_io mio = io_of(multi);
+	sx = syfs_open(&mio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 2 && entry_at(sx, find(sx, "GM2 Template"))->kind == SYFS_TYPE_MULTI
+		&& (names(sx, SYFS_TYPE_BANK) == std::vector<std::string> { "User Multitimbre" }));
+	if (sx)
+		close_image(sx);
+	close_image(fs);
+}
+
 int main()
 {
 	test_keys();
@@ -3670,6 +3794,7 @@ int main()
 	test_syx();
 	test_syx_jv();
 	test_syx_xv();
+	test_syx_fantom();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

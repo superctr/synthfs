@@ -50,13 +50,23 @@ constexpr Kind xv_kinds[] = {
 	{ "1-3-1", SYFS_TYPE_PATCH, nullptr },
 	{ "1-3-2", SYFS_TYPE_RHYTHM_SET, nullptr },
 };
+constexpr Kind fantom_kinds[] = {
+	{ "fa-system", SYFS_TYPE_SYSTEM, nullptr },
+	{ "fa-performance", SYFS_TYPE_PERFORMANCE, nullptr },
+	{ "fa-multitimbre", SYFS_TYPE_MULTI, nullptr },
+	{ "fa-patch", SYFS_TYPE_PATCH, nullptr },
+	{ "fa-rhythm", SYFS_TYPE_RHYTHM_SET, nullptr },
+};
 // the S-700 series share a model ID: the S-760's map has every block of the others'.  The JV-2080 shares the
 // JV-1080's, and what it adds lies past the JV-1080's blocks' ends.  The XV-3080 shares the XV-5080's and has fewer
-// parts and no system equalizer, so its system and performances are whole by its own map alone
+// parts and no system equalizer, so its system and performances are whole by its own map alone.  The Fantom shares
+// their ID too: a file is its where more of the file is in its map than in theirs (its multitimbres, its system, a
+// patch's controller)
 constexpr Family families[] = {
 	{ "s760", SYFS_FORMAT_S760, nullptr, SYFS_NONE, false, s700_kinds, std::size(s700_kinds) },
 	{ "jv1080", SYFS_FORMAT_JV1080, nullptr, SYFS_NONE, true, jv1080_kinds, std::size(jv1080_kinds) },
 	{ "xv5080", SYFS_FORMAT_XV5080, "xv3080", SYFS_FORMAT_XV3080, true, xv_kinds, std::size(xv_kinds) },
+	{ "fantom", SYFS_FORMAT_FANTOM, nullptr, SYFS_NONE, true, fantom_kinds, std::size(fantom_kinds) },
 };
 
 // a Data Set of a map's model: its device and address, and its data's place in the bytes
@@ -169,13 +179,12 @@ void Syx::list()
 	const Family *family = nullptr;
 	for (const Family &f : families) {
 		const map::Map *m = map::find(f.map);
-		if (m && bytes.size() > size_t(3 + m->model_id_size) && !memcmp(&bytes[3], m->model_id, m->model_id_size))
+		if (!family && m && bytes.size() > size_t(3 + m->model_id_size) && !memcmp(&bytes[3], m->model_id, m->model_id_size))
 			family = &f, map_ = m;
 	}
 	if (!family)
 		return;
 	// the Data Sets of the model
-	syfs_key records = family->format;
 	std::vector<Message> messages;
 	for (size_t at = 0; at < bytes.size();) {
 		if (bytes[at] != EXCLUSIVE) {
@@ -190,6 +199,20 @@ void Syx::list()
 			messages.push_back(msg);
 		at = end;
 	}
+	// of the families of that ID, the one whose map has the most of the file; the first where they have as much
+	size_t most = 0;
+	for (const Family &f : families) {
+		const map::Map *m = map::find(f.map);
+		if (!m || m->model_id_size != map_->model_id_size || memcmp(m->model_id, map_->model_id, m->model_id_size))
+			continue;
+		size_t known = 0;
+		for (const Message &msg : messages)
+			for (size_t u = 0; u < msg.size; u++)
+				known += m->entry_of(msg.addr + uint32_t(u)) != nullptr;
+		if (known > most)
+			most = known, family = &f, map_ = m;
+	}
+	syfs_key records = family->format;
 	if (const map::Map *lesser = family->lesser ? map::find(family->lesser) : nullptr) {
 		bool more = false;
 		for (const Message &msg : messages)

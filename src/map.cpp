@@ -28,7 +28,7 @@ Built make()
 				const uint32_t addr = run.addr + k * run.stride;
 				b.areas[n].push_back({ run.group, run.bank, run.number + k, addr, uint32_t(b.entries[n].size()), run.member_count });
 				for (uint32_t i = 0; i < run.member_count; i++)
-					b.entries[n].push_back({ addr + run.members[i].addr, run.members[i].block, uint16_t(b.areas[n].size() - 1) });
+					b.entries[n].push_back({ addr + run.members[i].addr, run.members[i].block, uint16_t(b.areas[n].size() - 1), run.members[i].order });
 			}
 		}
 		Map m {};
@@ -133,9 +133,14 @@ constexpr size_t ABSENT = ~size_t(0);
 bool laid(const Map &m, const Area &a, std::vector<size_t> &starts, size_t &size)
 {
 	size = 0;
-	for (uint32_t k = 0; k < a.count; k++) {
+	std::vector<uint32_t> by(a.count);
+	for (uint32_t k = 0; k < a.count; k++)
+		by[m.entries[a.first + k].order] = k;
+	starts.assign(a.count, ABSENT);
+	for (uint32_t k : by) {
 		const Block &b = m.blocks[m.entries[a.first + k].block];
-		starts.push_back(b.packed ? size : ABSENT);
+		if (b.packed)
+			starts[k] = size;
 		size += b.packed;
 	}
 	return size != 0;
@@ -181,6 +186,8 @@ bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::v
 		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];
+			if (q.flags & ALIGNED)
+				bits.at = (bits.at + 7) / 8 * 8;
 			for (uint32_t n = 0; n < q.size; n++) {
 				unsigned v = 0;
 				for (unsigned i = 0; i < q.bits; i++)
@@ -209,6 +216,8 @@ bool pack(const Map &m, const Area &a, const std::vector<std::vector<uint8_t>> &
 		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];
+			if (q.flags & ALIGNED)
+				bits.at = (bits.at + 7) / 8 * 8;
 			for (uint32_t n = 0; n < q.size; n++) {
 				const unsigned v = units[k][q.offset + (m.high_first ? n : q.size - 1 - n)] - centre(q);
 				for (unsigned i = 0; i < q.bits; i++)
