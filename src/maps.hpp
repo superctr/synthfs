@@ -39,6 +39,7 @@ struct Block {
 	uint8_t name_size; //!< Characters of the name, 0 where it has none.
 	uint8_t name_units; //!< Units a character.
 	uint32_t packed;  //!< Its bytes in a packed record, 0 where it is in none.
+	uint8_t lead;     //!< The bits of a packed record before its first parameter.
 };
 
 //! A block at an address.
@@ -58,6 +59,34 @@ struct Area {
 	uint32_t count;    //!< Its entries.
 };
 
+//! A block within an area, at its place from the area's address.
+struct Member {
+	uint32_t addr;
+	uint16_t block;
+};
+
+//! The areas alike one after another, as tools/maps.py writes them.
+struct Run {
+	const char *group, *bank;
+	uint32_t number;  //!< The first's.
+	uint32_t addr, stride, count;
+	const Member *members;
+	uint32_t member_count;
+};
+
+//! A map as tools/maps.py writes it; Map is made of it.
+struct Source {
+	const char *id, *model;
+	uint8_t model_id[4];
+	uint8_t model_id_size, addr_size;
+	bool high_first;
+	const Block *blocks;
+	uint32_t block_count;
+	const Run *runs;
+	uint32_t run_count;
+};
+const Source *sources(size_t &count);
+
 //! A model's map.
 struct Map {
 	const char *id;   //!< The file's name ("s760").
@@ -65,6 +94,7 @@ struct Map {
 	uint8_t model_id[4];
 	uint8_t model_id_size;
 	uint8_t addr_size; //!< Bytes an address.
+	bool high_first;  //!< Its packed records are filled from each byte's highest bit; else from the lowest.
 	const Block *blocks;
 	uint32_t block_count;
 	const Entry *entries;
@@ -94,9 +124,12 @@ const Map *all(size_t &count);
 
 //! An area's packed record as its blocks' units, a vector for each entry of the area.
 /*!
- * A packed record is each block's parameters in the order of their offsets, each in its bits from the record's
- * lowest bit up, a parameter of several units its last unit first; each block starts on a byte and has
- * Block::packed of them.  False where a block of the area is in no packed record or the record is short.
+ * A packed record is the area's blocks one after another that have bytes in one (Block::packed), each starting on a
+ * byte after Block::lead bits; a block's parameters are in the order of their offsets, each in its bits times its
+ * units.  Where Map::high_first the bits run from a byte's highest down and a parameter's first unit is first; else
+ * from the lowest up, its last unit first.  A parameter of fewer bits than hold its range is kept less what puts 64
+ * in the middle of them.  A block of no bytes there has no units.  False where no block of the area is in a packed
+ * record or the record is short.
  */
 bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::vector<std::vector<uint8_t>> &units);
 //! The units put back into a record of the area's bytes; what the map has no parameter for is zero.

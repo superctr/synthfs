@@ -154,7 +154,7 @@ public:
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 };
 
-//! A JV-1080's battery memory: its user performances, patches and rhythm sets.
+//! A JV-1080's, XV-5080's or XV-3080's battery memory: its user performances, patches and rhythm sets.
 class Memory final : public Medium {
 public:
 	using Medium::Medium;
@@ -185,7 +185,7 @@ public:
 	size_t sample_at(size_t i, int key) const override;
 	//! An SRX bank's bank select (MSB * 128 + LSB), an SRX patch's category.
 	bool number(size_t i, syfs_key key, int64_t &value) const override;
-	//! A patch or rhythm set of the JV-1080's shape.
+	//! A patch or rhythm set of the JV-1080's shape; an SRX board's of an XV-3080's or XV-5080's bank.
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 
 private:
@@ -211,6 +211,21 @@ private:
 	mutable size_t decoded_ = syfs::NONE;
 	mutable std::vector<int16_t> frames_;
 };
+
+//! An XV-5080's file of its user memory (.SVD): its performances, patches and rhythm sets.
+class Svd final : public Medium {
+public:
+	using Medium::Medium;
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
+	void list() override;
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
+};
+
+//! Whether a packed record's first eleven bytes are a name of twelve printable characters.
+bool named(const uint8_t *rec, bool from_top);
+//! An XV's packed record's name.
+std::string xv_name(const uint8_t *rec);
 
 //! A file of Data Sets: what they hold whole of a model's map, each area an entry.
 class Syx final : public Medium {

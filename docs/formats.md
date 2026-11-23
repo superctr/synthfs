@@ -26,6 +26,7 @@ Tried in this order:
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 | FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
 | System exclusive | file | `F0 41`, a device, the model ID of a model with a map and `12` at byte 0, 16 MB at most |
+| XV-5080 | file | `SVD1` at byte 2 and `XV88` at byte 20, 16 MB at most (below, "XV-5080 files") |
 
 A cue sheet is told first, by its text (below, "Cue sheets").  An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -268,16 +269,21 @@ A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model I
 (`DT1`, command `12`) the address, the data and a sum that brings the address's and data's bytes to a multiple of
 128, then `F7`.  The first message tells the model, by the maps' model IDs (`maps.md`); the S-700 series share ID
 `34` and are read by the S-760's map, which has every block of the others'; the JV-2080 shares the JV-1080's `6A`,
-and what it adds lies after the JV-1080's blocks' ends, where it is passed over.  Data Sets of that model with a right sum
+and what it adds lies after the JV-1080's blocks' ends, where it is passed over; the XV-5080 and XV-3080 share
+`00 10`, and a file is read by the XV-5080's map where a message of it is at an address the XV-3080's map lacks
+(a part past the sixteenth, the system's equalizer), else by the XV-3080's, whose system and performances are whole
+with sixteen parts.  Data Sets of that model with a right sum
 are put where the map has their addresses, in whatever pieces and order they come; other messages, other models'
 and bytes between messages are passed over.
 
 Each area of the map that the file fills whole is an entry: an area is one block at a place (an S-700's patch) or
 a group's blocks (a JV-1080's patch: its common and four tones; a rhythm set: its common and 64 keys).  Its type is
-the area's (a volume, performance, patch, partial or sample; a JV-1080's system, performance, patch or rhythm set),
-its name its first block's name parameters' (a system's the area's own), its format the model's records' (`S-760`,
-`JV-1080`).  An area filled in part is none.  An S-700's entries are numbered by their places in memory.  A
-JV-1080's are under banks, one for each kind of area the file has anything of, named as the map names them
+the area's (a volume, performance, patch, partial or sample; a JV-1080's or an XV's system, performance, patch or
+rhythm set), its name its first block's name parameters' (a system's the area's own), its format the model's
+records' (`S-760`, `JV-1080`, `XV-5080`, `XV-3080`).  An area filled in part is none, but that where the area has a
+packed record a block that is not in it may be missing: an XV-5080's patch's split keys, which the machine does not
+send.  An S-700's entries are numbered by their places in memory.  A
+JV-1080's and an XV's are under banks, one for each kind of area the file has anything of, named as the map names them
 ("User Patch", "Card Rhythm", "Temporary Patch"), and numbered by their place in the bank: a temporary patch's the
 performance's parts in the map's order and then the patch mode's.  An S-700 performance's name may have a number with its top bit set
 where the colon is (its fourth character, as the records on some floppies do **[seen]**); it reads as the colon.
@@ -442,6 +448,19 @@ board has no 4:7 (SRX-02's `PremierGrand`); neither reads 4:8, 4:9 or 5:7.  The 
 RD-700 and the Fantom-X, the Global rhythm sets and the Fantom-S banks by the Fantom-X.  SRX-01 and SRX-02 carry
 4:6 and 5:5 only (SRX-02 no rhythm sets), SRX-03 lacks 5:6, SRX-04 and SRX-10 to -12 carry no rhythm sets, and only
 SRX-10 to -12 carry 4:9 **[seen]**.  Roland's later plugin rebuilds of the boards carry waves only **[seen]**.
+
+**The XVs' records** (4:6 and 5:5 the XV-3080's, 4:7 and 5:6 the XV-5080's) are packed by the machine's address
+map (`maps.md`): within a block every parameter follows the one before in the order of their addresses, each in
+the bits the map gives it times its units, from the top bit of the block's first byte down, and each block starts
+on a byte.  A patch's 574 bytes are its common (56 bytes), MFX (78), chorus (26), reverb (42), tone mix table (32)
+and four tones (85 each).  A rhythm set's 512 are its common (14), MFX, chorus and reverb, 160 bytes in all, and
+then 88 longs, one for each key from 21: the offset from the bank's table of that key's tone, 121 bytes, which
+sets share.  A value sent about 64 in fewer bits than hold it is kept about the middle of its bits (an octave shift
+of 61 to 67 in three bits as 1 to 7).  Read as `syx` a patch or rhythm set is its parameters as Data Sets to device
+0x10, at the user patch (128) or user rhythm set (four) its number has, taken within those.  Checked: an XV-5080
+and an XV-3080 with SRX-05 fitted, the sound selected and the temporary patch or rhythm set asked back, answer the
+same bytes for the patches and rhythm sets tried of their own banks.  The Global and Fantom-S banks are not read
+as Data Sets.
 
 A wave's definition: the name (12 characters), four bytes (the first 1 on a few drum waves, which play the split
 of key 60 when a tone asks for the wave's own pitch; not read), then four bytes a split to the definition's end: the
@@ -718,6 +737,29 @@ its records a DATA card's: 32 performances of 245 bytes from 0x100, 128 patches 
 of 2699 from 0xE900 **[seen]**.  A record is listed where its name is twelve printable characters, so a memory the
 machine has not written lists nothing.  Each reads as `syx` at the user performance, patch or rhythm set of its
 number.  The system is not read.
+
+**An XV-5080's** (`XV-5080`) and **an XV-3080's** (`XV-3080`): 256 KB.  After the system, three lists one after
+another, each record in a place longer than it: 64 performances 1064 bytes apart, 128 patches 938 apart (an
+XV-3080's 838) and four rhythm sets of 10808 bytes; the performances start at 0x1A8 in an XV-5080's and 0x1A4 in
+an XV-3080's **[seen]**.  The records are packed as an SRX board's (above): a performance's first 926 bytes are its
+common (44), MFX (78), chorus (26), reverb (42), sixteen channels' MIDI (2 each) and its parts (22 each, the first
+two bits no parameter; 32 parts, of which an XV-3080 uses sixteen), a patch's first 574 a board's, and a rhythm set
+its 160 bytes and then the 88 keys' tones themselves, 121 bytes each.  Listed and read as a JV-1080's, at the user
+places of their numbers.  Checked: each machine, started with the memory, answers the same bytes for the user
+patches, rhythm sets and performances tried (five or six patches, two rhythm sets and three performances of
+each).  What follows a patch's 574
+bytes in its place (the split keys of a patch made of samples) is not read.
+
+## XV-5080 files
+
+The file an XV-5080 saves its user memory in (`.SVD`, on a card or a disk): a halfword, the length of the head
+less two; `SVD1`; ten zero bytes; then sixteen bytes for each chunk, its tag, the model (`XV88`) and the chunk's
+place and size (longs), all big-endian.  A chunk starts with its records' count, a record's size, the length of
+this head (16) and a zero (longs), and the records follow.  `PRFa` holds 64 performances of 926 bytes, `PATa` 128
+patches of 938, `RHYa` four rhythm sets of 10808: the battery memory's records (above).  Each record whose name is
+twelve printable characters is an entry, numbered by its place, and reads as `syx` at the user place of that
+number.  The other chunks (`SYSa` the system, `FVRa`, `CTGa`) are not read.  A file with another model's tag is not
+told.
 
 ## SmartMedia cards
 

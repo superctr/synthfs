@@ -48,6 +48,7 @@ constexpr Reader readers[] = {
 	reader<Iso9660>(disk),
 	reader<Fat>(Fat::medium_of),
 	reader<roland::Syx>(file),
+	reader<roland::Svd>(file),
 };
 
 const Reader *reader_of(const Image &im, syfs_key &format)
@@ -376,7 +377,7 @@ syfs_image *syfs_open_as(const syfs_io *io, syfs_key format, syfs_key medium, ch
 {
 	if (!io || !io->read)
 		return say(err, err_size, "no reader given"), nullptr;
-	if (medium != SYFS_MEDIUM_MEMORY || format != SYFS_FORMAT_JV1080)
+	if (medium != SYFS_MEDIUM_MEMORY || (format != SYFS_FORMAT_JV1080 && format != SYFS_FORMAT_XV5080 && format != SYFS_FORMAT_XV3080))
 		return say(err, err_size, "no image is opened as that"), nullptr;
 	if (!roland::Memory::fits(*io, format))
 		return say(err, err_size, "the image is not that machine's memory"), nullptr;

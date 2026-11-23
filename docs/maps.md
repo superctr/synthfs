@@ -40,14 +40,33 @@ parameter's `bits` gives: 7 where a byte of the message is a unit, 4 where every
 | `field` | `[bit, width]`: the parameter is those bits of the value at its offset, which others share |
 | `frac` | the low bits that are a fraction |
 | `receive_only` | taken by the machine, never sent by it |
+| `absent` | the model has no such parameter, though its place in the block and in a record is kept |
 
 ## Packed records
 
-`maps/records/<model>.json` gives the bytes each block has in a model's packed records (`packing`: `bits`): there a
-block's parameters follow one another in the order of their offsets, each in its `bits` from the lowest bit of the
-block's first byte up, a parameter of several units its last unit first, and the block's bytes are filled out with
-bits that are no parameter.  A record is its area's blocks one after another.  `map::unpack` and `map::pack` go
-between a record and its blocks' units.
+`maps/records/<model>.json` gives the bytes each block has in a model's packed records (`blocks`).  There a
+block's parameters follow one another in the order of their offsets, each in its `bits` times its units, and the
+block's bytes are filled out with bits that are no parameter.  A record is its area's blocks one after another
+that have bytes there; a block with none is not in the record (an XV-5080's patch's split keys).
+
+| key | what |
+|---|---|
+| `map` | the map's file's name |
+| `packing` | `bits`, the one way there is |
+| `first` | `low` (the default): the bits fill each byte from its lowest up, and a parameter of several units has its last unit first.  `high`: from the highest down, the first unit first |
+| `blocks` | each packed block's bytes |
+| `lead` | the bits of a block before its first parameter, where it has any |
+
+A parameter of one unit whose `bits` do not hold its `max` is a value about 64 kept about the middle of its bits:
+what is stored is the value less 64 and plus half the bits' range (61 to 67 in three bits as 1 to 7).  `map::unpack`
+and `map::pack` go between a record and its blocks' units.
+
+## The tables
+
+`src/maps.cpp` keeps a map's areas as runs: the areas alike one after another, a constant step apart, are one row
+with their count, and the blocks of an area are a list written once.  `src/map.cpp` writes them out, an area and
+an entry for each place, the first time a map is asked for.  An entry of the top whose group holds groups alone is
+an area for each of those, named as the group names them (an XV's part's "Temporary Patch" and "Temporary Rhythm").
 
 ## The JV-1080
 
@@ -55,6 +74,16 @@ between a record and its blocks' units.
 Groups `1-1` the system, `1-2` a performance, `1-3` a patch (the common and four tones) and `1-4` a rhythm set (the
 common and keys 35 to 98).  Its records are packed: a patch's 401 bytes and a rhythm set's 2699 on an SR-JV80
 board, and those and a performance's 245 on a DATA card and in the battery memory (`formats.md`).
+
+## The XV-5080 and XV-3080
+
+`xv5080`, `xv3080`: model ID `00 10` both, four-byte addresses, a unit a byte of the message; a parameter's `bits`
+are its value's, or a nibble's where it is sent in nibbles.  Groups `1-1` the system, `1-2` a performance (its
+common, MFX, chorus, reverb, sixteen channels' MIDI and its parts), `1-3-1` a patch (common, MFX, chorus, reverb,
+tone mix table, four tones, and the XV-5080's 88 split keys) and `1-3-2` a rhythm set (common, MFX, chorus, reverb
+and keys 21 to 108).  The XV-3080's map is the XV-5080's without the system's equalizer, parts 17 to 32 and the
+split keys.  Their records are packed from the high bit (`formats.md`, "Roland wave expansion boards and cards" and
+"Battery memories"): a patch's 574 bytes, a rhythm set's 10808 and a performance's 926.
 
 ## The S-700 series
 

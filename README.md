@@ -62,9 +62,10 @@ if (syfs_get_int(im, n, SYFS_PROP_FRAMES, &frames) && syfs_get_int(im, n, SYFS_P
 
 A node's `exports` property names what else it reads as: `SYFS_AS_WAV`, the same wave as a WAV file with its key and
 loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample), and `SYFS_AS_SYX`,
-an S-760's or S-770's performance, patch, partial or sample, or a board's or DATA card's JV-1080 patch or rhythm set,
-as Roland Data Sets by the model's parameter address map (a JV-1080's battery memory, which tells nothing of
-itself, opens with `syfs_open_as`)
+an S-760's or S-770's performance, patch, partial or sample, a board's or DATA card's JV-1080 patch or rhythm set, or
+an SRX board's or `.SVD` file's XV-5080 or XV-3080 one,
+as Roland Data Sets by the model's parameter address map (a JV-1080's, XV-5080's or XV-3080's battery memory, which
+tells nothing of itself, opens with `syfs_open_as`)
 ([docs/maps.md](docs/maps.md)); a file of such messages (`.syx`) opens as an image whose nodes are what it holds whole.
 `syfs_read` with no buffer gives the size.
 

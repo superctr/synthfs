@@ -137,6 +137,8 @@ struct Record {
 };
 
 constexpr uint32_t SRJV80_SAMPLE = 18, SRX_SAMPLE = 24, SRJV80_RATE = 32000;
+// an XV's packed records: a patch, a rhythm set of a common and 88 keys' tones
+constexpr uint32_t XV_PATCH = 574, XV_RHYTHM_COMMON = 160, XV_TONE = 121, XV_KEYS = 88, XV_RHYTHM = XV_RHYTHM_COMMON + XV_KEYS * XV_TONE;
 // a sample record's flags: the loop played back and forth, played once, played from the end
 constexpr uint8_t ALTERNATE = 1, ONCE = 2, REVERSE = 4;
 // a split's sample number for keys that sound nothing
@@ -586,14 +588,42 @@ syfs_key WaveRom::medium_of(const Image &im)
 }
 
 // a patch or rhythm set of the JV-1080's shape (its bank's type 5 or 4): the packed record by the JV-1080's map, at
-// the user patch or rhythm set its number has
+// the user patch or rhythm set its number has.  An SRX board's of an XV-3080's or XV-5080's bank, by that machine's
+// map: a patch's record as it is, a rhythm set's made whole of its common and the 88 tones it points at, each a long
+// from the bank's start
 bool WaveRom::data_sets(size_t i, std::vector<uint8_t> &out) const
 {
 	const syfs::Entry &e = entries[i];
-	if (format != SYFS_FORMAT_SRJV80 || e.parent == syfs::NONE)
+	if (e.parent == syfs::NONE || (e.kind != SYFS_TYPE_PATCH && e.kind != SYFS_TYPE_RHYTHM_SET))
 		return false;
-	const bool patch = e.kind == SYFS_TYPE_PATCH && !strcmp(entries[e.parent].tag, "5");
-	if (!patch && !(e.kind == SYFS_TYPE_RHYTHM_SET && !strcmp(entries[e.parent].tag, "4")))
+	const bool patch = e.kind == SYFS_TYPE_PATCH;
+	const char *shape = entries[e.parent].tag;
+	if (format == SYFS_FORMAT_SRX) {
+		const char *map = !strcmp(shape, patch ? "4:6" : "5:5") ? "xv3080" : !strcmp(shape, patch ? "4:7" : "5:6") ? "xv5080" : nullptr;
+		if (!map)
+			return false;
+		std::vector<uint8_t> rec(patch ? XV_PATCH : XV_RHYTHM);
+		if (patch)
+			return socket_->read(where[i], rec.data(), rec.size()) && syx::packed(map, "User Patch", e.number, 0x10, rec, out);
+		// the bank's start: the table of the directory this record is in
+		const Socket &s = *socket_;
+		const uint32_t tables = std::min<uint32_t>(s.be(0x42, 2), 64);
+		uint8_t set[XV_RHYTHM_COMMON + 4 * XV_KEYS];
+		for (uint32_t t = 0; t < tables; t++) {
+			const uint64_t at = s.be(0x80 + 16 * t + 4, 4), len = s.be(0x80 + 16 * t + 8, 4);
+			if (where[i] < at || where[i] + sizeof set > at + len || !s.read(where[i], set, sizeof set))
+				continue;
+			memcpy(rec.data(), set, XV_RHYTHM_COMMON);
+			for (uint32_t k = 0; k < XV_KEYS; k++) {
+				const uint64_t tone = be32(&set[XV_RHYTHM_COMMON + 4 * k]);
+				if (tone + XV_TONE > len || !s.read(at + tone, &rec[XV_RHYTHM_COMMON + k * XV_TONE], XV_TONE))
+					return false;
+			}
+			return syx::packed(map, "User Rhythm", e.number, 0x10, rec, out);
+		}
+		return false;
+	}
+	if (format != SYFS_FORMAT_SRJV80 || strcmp(shape, patch ? "5" : "4"))
 		return false;
 	std::vector<uint8_t> rec(patch ? 401 : 2699);
 	return socket_->read(where[i], rec.data(), rec.size())
@@ -676,49 +706,88 @@ std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)
 }
 
 // A JV-1080's battery memory: the system in the first 256 bytes, then the performances, the patches and the rhythm
-// sets, each list from a multiple of 256, their records a DATA card's
+// sets, each list from a multiple of 256, their records a DATA card's.  An XV-5080's and an XV-3080's: the system,
+// then the three lists one after another, a record in a place longer than it (a performance's 926 bytes in 1064, a
+// patch's 574 in 938 or 838)
 namespace {
-constexpr uint64_t MEMORY_SIZE = 0x10000;
 struct MemoryRun {
 	syfs_key kind;
-	uint32_t at, size, count;
+	uint32_t at, stride, size, count;
 	const char *bank;
 };
-constexpr MemoryRun memory_runs[] = { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 32, "User Performance" },
-	{ SYFS_TYPE_PATCH, 0x2000, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2, "User Rhythm" } };
+struct MemoryOf {
+	syfs_key format;
+	uint64_t size;
+	const char *map;
+	bool from_top;   // its records' bits
+	MemoryRun runs[3];
+};
+constexpr MemoryOf memories[] = {
+	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
+		{ SYFS_TYPE_PATCH, 0x2000, 401, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2699, 2, "User Rhythm" } } },
+	{ SYFS_FORMAT_XV5080, 0x40000, "xv5080", true, { { SYFS_TYPE_PERFORMANCE, 0x1A8, 1064, 926, 64, "User Performance" },
+		{ SYFS_TYPE_PATCH, 0x10BA8, 938, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2E0A8, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
+	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
+		{ SYFS_TYPE_PATCH, 0x10BA4, 838, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2AEA4, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
+};
+const MemoryOf *memory_of(syfs_key format)
+{
+	for (const MemoryOf &m : memories)
+		if (m.format == format)
+			return &m;
+	return nullptr;
+}
+}
+
+// whether a record's first eleven bytes are a name of twelve printable characters
+bool named(const uint8_t *rec, bool from_top)
+{
+	for (int c = 0; c < 12; c++) {
+		unsigned v = 0;
+		for (int b = 0; b < 7; b++) {
+			const int n = 7 * c + b;
+			v = from_top ? v << 1 | (rec[n / 8] >> (7 - n % 8) & 1) : v | unsigned(rec[n / 8] >> (n % 8) & 1) << b;
+		}
+		if (v < 32 || v >= 127)
+			return false;
+	}
+	return true;
+}
+
+std::string xv_name(const uint8_t *rec)
+{
+	return packed(rec, true);
 }
 
 bool Memory::fits(const syfs_io &io, syfs_key format)
 {
-	return format == SYFS_FORMAT_JV1080 && io.size == MEMORY_SIZE;
+	const MemoryOf *m = memory_of(format);
+	return m && io.size == m->size;
 }
 
 // a record whose name is twelve printable characters; a memory never written has none
 void Memory::list()
 {
-	for (const MemoryRun &r : memory_runs)
+	const MemoryOf *m = memory_of(format);
+	for (const MemoryRun &r : m->runs)
 		for (uint32_t k = 0; k < r.count; k++) {
-			const uint64_t at = r.at + uint64_t(k) * r.size;
+			const uint64_t at = r.at + uint64_t(k) * r.stride;
 			uint8_t rec[11];
 			if (!image.read(at, rec, sizeof rec))
 				return;
-			bool printable = true;
-			for (int c = 0; c < 12 && printable; c++) {
-				const unsigned v = (rec[7 * c / 8] | (7 * c / 8 + 1 < 11 ? rec[7 * c / 8 + 1] << 8 : 0)) >> (7 * c % 8) & 127;
-				printable = v >= 32 && v < 127;
-			}
-			if (printable)
-				add(r.kind, format, k, syfs::NONE, packed(rec, false), r.size, at);
+			if (named(rec, m->from_top))
+				add(r.kind, format, k, syfs::NONE, packed(rec, m->from_top), r.size, at);
 		}
 }
 
 bool Memory::data_sets(size_t i, std::vector<uint8_t> &out) const
 {
 	const syfs::Entry &e = entries[i];
-	for (const MemoryRun &r : memory_runs)
+	const MemoryOf *m = memory_of(format);
+	for (const MemoryRun &r : m->runs)
 		if (r.kind == e.kind) {
 			const auto rec = image.read(where[i], r.size);
-			return !rec.empty() && syx::packed("jv1080", r.bank, e.number, 0x10, rec, out);
+			return !rec.empty() && syx::packed(m->map, r.bank, e.number, 0x10, rec, out);
 		}
 	return false;
 }

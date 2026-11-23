@@ -4,6 +4,55 @@
 
 namespace syfs::map {
 
+namespace {
+
+// every map with its areas and their blocks' places written out
+struct Built {
+	std::vector<std::vector<Entry>> entries;
+	std::vector<std::vector<Area>> areas;
+	std::vector<Map> maps;
+};
+
+Built make()
+{
+	Built b;
+	size_t count;
+	const Source *src = sources(count);
+	b.entries.resize(count);
+	b.areas.resize(count);
+	for (size_t n = 0; n < count; n++) {
+		const Source &s = src[n];
+		for (uint32_t r = 0; r < s.run_count; r++) {
+			const Run &run = s.runs[r];
+			for (uint32_t k = 0; k < run.count; k++) {
+				const uint32_t addr = run.addr + k * run.stride;
+				b.areas[n].push_back({ run.group, run.bank, run.number + k, addr, uint32_t(b.entries[n].size()), run.member_count });
+				for (uint32_t i = 0; i < run.member_count; i++)
+					b.entries[n].push_back({ addr + run.members[i].addr, run.members[i].block, uint16_t(b.areas[n].size() - 1) });
+			}
+		}
+		Map m {};
+		m.id = s.id, m.model = s.model;
+		for (int i = 0; i < 4; i++)
+			m.model_id[i] = s.model_id[i];
+		m.model_id_size = s.model_id_size, m.addr_size = s.addr_size, m.high_first = s.high_first;
+		m.blocks = s.blocks, m.block_count = s.block_count;
+		m.entries = b.entries[n].data(), m.entry_count = uint32_t(b.entries[n].size());
+		m.areas = b.areas[n].data(), m.area_count = uint32_t(b.areas[n].size());
+		b.maps.push_back(m);
+	}
+	return b;
+}
+
+}
+
+const Map *all(size_t &count)
+{
+	static const Built built = make();
+	count = built.maps.size();
+	return built.maps.data();
+}
+
 const Map *find(std::string_view id)
 {
 	size_t count;
@@ -78,19 +127,41 @@ const Area *Map::area_in(std::string_view group, uint32_t n) const
 
 namespace {
 
-// each block of the area and where its bytes start in the record; false where one is in no packed record
+constexpr size_t ABSENT = ~size_t(0);
+
+// each block of the area and where its bytes start in the record (ABSENT where it has none); false where none has
 bool laid(const Map &m, const Area &a, std::vector<size_t> &starts, size_t &size)
 {
 	size = 0;
 	for (uint32_t k = 0; k < a.count; k++) {
 		const Block &b = m.blocks[m.entries[a.first + k].block];
-		if (!b.packed)
-			return false;
-		starts.push_back(size);
+		starts.push_back(b.packed ? size : ABSENT);
 		size += b.packed;
 	}
-	return a.count != 0;
+	return size != 0;
 }
+
+unsigned centre(const Param &q)
+{
+	return q.size == 1 && q.bits < 7 && q.max >= int64_t(1) << q.bits ? 64u - (1u << (q.bits - 1)) : 0;
+}
+
+// a record's bits one after another, in the map's order within a byte
+struct Bits {
+	bool high;
+	size_t at;
+	unsigned get(const uint8_t *rec)
+	{
+		const unsigned v = rec[at >> 3] >> (high ? 7 - (at & 7) : at & 7) & 1;
+		at++;
+		return v;
+	}
+	void put(uint8_t *rec, unsigned v)
+	{
+		rec[at >> 3] |= uint8_t((v & 1) << (high ? 7 - (at & 7) : at & 7));
+		at++;
+	}
+};
 
 }
 
@@ -102,15 +173,19 @@ bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::v
 		return false;
 	for (uint32_t k = 0; k < a.count; k++) {
 		const Block &b = m.blocks[m.entries[a.first + k].block];
+		if (starts[k] == ABSENT) {
+			units.emplace_back();
+			continue;
+		}
 		std::vector<uint8_t> u(b.size, 0);
-		size_t bit = 8 * starts[k];
+		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];
-			for (uint32_t n = q.size; n--;) {
+			for (uint32_t n = 0; n < q.size; n++) {
 				unsigned v = 0;
-				for (unsigned i = 0; i < q.bits; i++, bit++)
-					v |= unsigned(rec[bit >> 3] >> (bit & 7) & 1) << i;
-				u[q.offset + n] = uint8_t(v);
+				for (unsigned i = 0; i < q.bits; i++)
+					v |= bits.get(rec) << (m.high_first ? q.bits - 1 - i : i);
+				u[q.offset + (m.high_first ? n : q.size - 1 - n)] = uint8_t(v + centre(q));
 			}
 		}
 		units.push_back(std::move(u));
@@ -127,14 +202,18 @@ bool pack(const Map &m, const Area &a, const std::vector<std::vector<uint8_t>> &
 	rec.assign(need, 0);
 	for (uint32_t k = 0; k < a.count; k++) {
 		const Block &b = m.blocks[m.entries[a.first + k].block];
+		if (starts[k] == ABSENT)
+			continue;
 		if (units[k].size() != b.size)
 			return false;
-		size_t bit = 8 * starts[k];
+		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];
-			for (uint32_t n = q.size; n--;)
-				for (unsigned i = 0; i < q.bits; i++, bit++)
-					rec[bit >> 3] |= uint8_t((units[k][q.offset + n] >> i & 1) << (bit & 7));
+			for (uint32_t n = 0; n < q.size; n++) {
+				const unsigned v = units[k][q.offset + (m.high_first ? n : q.size - 1 - n)] - centre(q);
+				for (unsigned i = 0; i < q.bits; i++)
+					bits.put(rec.data(), v >> (m.high_first ? q.bits - 1 - i : i));
+			}
 		}
 	}
 	return true;

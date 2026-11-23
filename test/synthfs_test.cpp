@@ -2996,7 +2996,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 20 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_SYX
+	CHECK(formats == 22 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_XV3080
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -3008,7 +3008,7 @@ static void test_maps()
 	namespace map = syfs::map;
 	size_t count = 0;
 	const map::Map *maps = map::all(count);
-	CHECK(count == 5 && maps == map::find("jv1080") && !map::find("s7"));
+	CHECK(count == 7 && maps == map::find("jv1080") && !map::find("s7"));
 	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
 		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
 	for (auto [id, model, blocks] : models)
@@ -3435,6 +3435,198 @@ static void test_syx_jv()
 	close_image(fs);
 }
 
+// the XV-5080's and XV-3080's records: packed from each byte's top bit, a block from a byte
+static std::vector<std::pair<uint32_t, Bytes>> xv_sets_of(const Bytes &b)
+{
+	std::vector<std::pair<uint32_t, Bytes>> out;
+	for (size_t at = 0; at < b.size();) {
+		size_t end = at + 1;
+		while (end < b.size() && b[end] != 0xF7)
+			end++;
+		CHECK(end < b.size() && end - at >= 12 && b[at] == 0xF0 && b[at + 1] == 0x41 && b[at + 2] == 0x10 && b[at + 3] == 0
+			&& b[at + 4] == 0x10 && b[at + 5] == 0x12);
+		if (end >= b.size() || end - at < 12)
+			break;
+		unsigned sum = 0;
+		for (size_t k = at + 6; k < end; k++)
+			sum += b[k];
+		const uint32_t addr = uint32_t(b[at + 6]) << 21 | b[at + 7] << 14 | b[at + 8] << 7 | b[at + 9];
+		Bytes data(b.begin() + at + 10, b.begin() + end - 1);
+		CHECK(sum % 128 == 0 && !data.empty() && data.size() <= 128 && addr / 128 == (addr + data.size() - 1) / 128);
+		out.emplace_back(addr, data);
+		at = end + 1;
+	}
+	return out;
+}
+
+static void test_syx_xv()
+{
+	namespace map = syfs::map;
+	auto put = [](Bytes &b, size_t at, size_t bit, unsigned bits, unsigned v) {
+		for (unsigned k = 0; k < bits; k++)
+			if (v >> (bits - 1 - k) & 1)
+				b[at + (bit + k) / 8] |= uint8_t(0x80 >> (bit + k) % 8);
+	};
+	auto name = [&](Bytes &b, size_t at, const char *s) {
+		for (size_t i = 0; i < 12; i++)
+			put(b, at, 7 * i, 7, i < strlen(s) ? uint8_t(s[i]) : ' ');
+	};
+	// the maps: the XV-3080's is the XV-5080's less the system's equalizer, the parts past sixteen and the split keys;
+	// a part's temporary patch and rhythm set are areas apart
+	const map::Map *xv = map::find("xv5080"), *lesser = map::find("xv3080");
+	CHECK(xv && lesser && xv->high_first && xv->model_id_size == 2 && xv->model_id[1] == 0x10 && !map::find("jv1080")->high_first);
+	CHECK(xv->areas_of("User Patch") == 128 && xv->areas_of("User Rhythm") == 4 && xv->areas_of("User Performance") == 64
+		&& xv->areas_of("Temporary Patch") == 33 && lesser->areas_of("Temporary Rhythm") == 17);
+	const map::Area *user = xv->area("User Patch", 3), *small = lesser->area("User Patch", 3);
+	CHECK(user && small && user->addr == (0x30u << 21 | 3 << 14) && user->count == 9 + 88 && small->count == 9
+		&& !strcmp(user->group, "1-3-1") && xv->area("Temporary Rhythm", 32)->addr == (0x1Fu << 21 | 0x10 << 14));
+	{
+		// a patch: 574 bytes, the split keys in none; a value about 64 in fewer bits than hold it is kept about their
+		// middle (the octave shift, three bits after 121)
+		Bytes rec(574, 0);
+		std::vector<std::vector<uint8_t>> units, again;
+		name(rec, 0, "Octave Up");
+		put(rec, 0, 121, 3, 5);
+		put(rec, 56, 106, 16, 0x8123);            // the MFX's first parameter: four nibbles, the high one first
+		put(rec, 234 + 3 * 85, 0, 7, 99);         // tone 4's level
+		CHECK(map::unpack(*xv, *user, rec.data(), rec.size(), units) && units.size() == 97 && units[0].size() == 79
+			&& units[9].empty() && units[96].empty() && !map::unpack(*xv, *user, rec.data(), 573, again));
+		CHECK(!memcmp(units[0].data(), "Octave Up   ", 12) && units[0][19] == 65 && units[1][0x11] == 8 && units[1][0x12] == 1
+			&& units[1][0x14] == 3 && units[8][0] == 99 && units[5][0] == 0);
+		Bytes back;
+		CHECK(map::pack(*xv, *user, units, back) && back == rec);
+	}
+	// the battery memories: an XV-5080's lists from 0x1A8, an XV-3080's four bytes lower and its patches shorter
+	for (const bool five : { true, false }) {
+		Bytes mem(0x40000, 0);
+		const size_t perfs = five ? 0x1A8 : 0x1A4, patches = perfs + 64 * 1064, sets = patches + 128 * (five ? 938 : 838);
+		name(mem, perfs + 63 * 1064, "Seq:Template"), name(mem, patches + 3 * (five ? 938 : 838), "Y2K Concerto");
+		name(mem, sets + 3 * 10808, "XV Rust Kit");
+		put(mem, patches + 3 * (five ? 938 : 838), 92, 7, 111);           // the patch's level
+		put(mem, perfs + 63 * 1064 + 222 + 22, 2, 4, 9);                   // part 2's receive channel, after two bits
+		put(mem, sets + 3 * 10808 + 160 + 87 * 121, 0, 7, 'Z');            // the last key's tone's name
+		const syfs_key format = five ? SYFS_FORMAT_XV5080 : SYFS_FORMAT_XV3080;
+		syfs_io mio = io_of(mem);
+		syfs_image *m = syfs_open_as(&mio, format, SYFS_MEDIUM_MEMORY, nullptr, 0);
+		CHECK(m && format_of(m) == format && medium_of(m) == SYFS_MEDIUM_MEMORY && count_of(m) == 3);
+		if (!m)
+			continue;
+		const size_t p = find(m, "Y2K Concerto"), f = find(m, "Seq:Template"), r = find(m, "XV Rust Kit");
+		CHECK(entry_at(m, p)->number == 3 && entry_at(m, f)->number == 63 && entry_at(m, r)->number == 3 && exports(m, p, "syx"));
+		auto got = xv_sets_of(syx_of(m, p));
+		// the common, the MFX in two messages, the chorus, the reverb, the TMT and four tones in two each
+		CHECK(got.size() == 14 && got[0].first == (0x30u << 21 | 3 << 14) && got[0].second.size() == 79
+			&& got[0].second[14] == 111 && got[1].first == got[0].first + (2 << 7) && got[2].second.size() == 17
+			&& got[13].first == got[0].first + (0x27 << 7) && got[13].second.size() == 9);
+		got = xv_sets_of(syx_of(m, f));
+		const size_t parts = five ? 32 : 16;
+		CHECK(got.size() == 1 + 2 + 1 + 1 + 16 + parts && got[0].first == (0x20u << 21 | 63 << 14)
+			&& got[21].first == got[0].first + (0x20 << 7) && got[22].second[0] == 9 && got[21].second[0] == 0);
+		got = xv_sets_of(syx_of(m, r));
+		CHECK(got.size() == 1 + 2 + 1 + 1 + 2 * 88 && got[0].first == (0x40u << 21 | 0x30 << 14)
+			&& got[got.size() - 2].first == got[0].first + (0x10 << 7) + (2 * 87 << 7) && got[got.size() - 2].second[0] == 'Z');
+		// a file of them is read by the lesser map where nothing in it needs the greater: a performance of 32 parts does
+		Bytes file = syx_of(m, p), perf = syx_of(m, f);
+		syfs_io fio = io_of(file);
+		syfs_image *sx = syfs_open(&fio, nullptr, 0);
+		CHECK(sx && count_of(sx) == 2 && entry_at(sx, find(sx, "Y2K Concerto"))->format == SYFS_FORMAT_XV3080
+			&& syx_of(sx, find(sx, "Y2K Concerto")) == file && (names(sx, SYFS_TYPE_BANK) == std::vector<std::string> { "User Patch" }));
+		if (sx)
+			close_image(sx);
+		file.insert(file.end(), perf.begin(), perf.end());
+		syfs_io bio = io_of(file);
+		sx = syfs_open(&bio, nullptr, 0);
+		CHECK(sx && count_of(sx) == 4 && entry_at(sx, find(sx, "Seq:Template"))->format == format
+			&& syx_of(sx, find(sx, "Seq:Template")) == perf);
+		if (sx)
+			close_image(sx);
+		// an XV-5080's .SVD file: the same records in chunks, a patch's in 938 bytes
+		if (five) {
+			Bytes svd(0x70, 0);
+			svd[1] = 0x6E;
+			memcpy(&svd[2], "SVD1", 4);
+			const std::tuple<const char *, size_t, uint32_t, uint32_t, uint32_t> chunks[] = { { "PRFa", perfs, 1064, 926, 64 },
+				{ "PATa", patches, 938, 938, 128 }, { "RHYa", sets, 10808, 10808, 4 } };
+			size_t entry = 16;
+			for (auto [tag, at, stride, size, count] : chunks) {
+				memcpy(&svd[entry], tag, 4), memcpy(&svd[entry + 4], "XV88", 4);
+				const uint32_t head[4] = { uint32_t(svd.size()), 16 + count * size, count, size };
+				for (int w = 0; w < 2; w++)
+					for (int k = 0; k < 4; k++)
+						svd[entry + 8 + 4 * w + k] = uint8_t(head[w] >> (24 - 8 * k));
+				for (int w = 2; w < 4; w++)
+					for (int k = 0; k < 4; k++)
+						svd.push_back(uint8_t(head[w] >> (24 - 8 * k)));
+				svd.insert(svd.end(), { 0, 0, 0, 16, 0, 0, 0, 0 });
+				for (uint32_t k = 0; k < count; k++)
+					svd.insert(svd.end(), mem.begin() + at + k * stride, mem.begin() + at + k * stride + size);
+				entry += 16;
+			}
+			syfs_io sio = io_of(svd);
+			syfs_key medium = SYFS_NONE;
+			CHECK(probe(&sio, &medium) == SYFS_FORMAT_XV5080 && medium == SYFS_MEDIUM_FILE);
+			syfs_image *sv = syfs_open(&sio, nullptr, 0);
+			CHECK(sv && count_of(sv) == 3);
+			if (sv) {
+				CHECK(syx_of(sv, find(sv, "Y2K Concerto")) == syx_of(m, p) && syx_of(sv, find(sv, "Seq:Template")) == syx_of(m, f)
+					&& syx_of(sv, find(sv, "XV Rust Kit")) == syx_of(m, r) && entry_at(sv, find(sv, "XV Rust Kit"))->number == 3);
+				close_image(sv);
+			}
+		}
+		close_image(m);
+	}
+	CHECK(!syfs_open_as(nullptr, SYFS_FORMAT_XV5080, SYFS_MEDIUM_MEMORY, nullptr, 0));
+	Bytes wrong(0x10000, 0);
+	syfs_io wio = io_of(wrong);
+	CHECK(!syfs_open_as(&wio, SYFS_FORMAT_XV5080, SYFS_MEDIUM_MEMORY, nullptr, 0));
+
+	// an SRX board: an XV-5080 bank's patch as it is, an XV-3080 bank's rhythm set made of its common and the tones
+	// it points at from the bank's start; a bank for neither gives none
+	static const uint8_t srx_lines[18] = { 0, 4, 2, 3, 1, 13, 7, 12, 5, 10, 16, 9, 6, 8, 14, 17, 11, 15 };
+	Rom srx { Bytes(32 << 20, 0), srx_lines, 18 };
+	memcpy(&srx.b[0], "Roland SRX", 10);
+	srx.be(0x42, 3, 2);
+	const uint32_t patches = 0x1F80000, sets = 0x1F90000, global = 0x1FA0000;
+	srx.be(0x80, 4, 2), srx.be(0x82, 7, 2), srx.be(0x84, patches, 4), srx.be(0x88, 0x1000, 4);
+	srx.be(0x90, 5, 2), srx.be(0x92, 5, 2), srx.be(0x94, sets, 4), srx.be(0x98, 0x1000, 4);
+	srx.be(0xA0, 4, 2), srx.be(0xA2, 8, 2), srx.be(0xA4, global, 4), srx.be(0xA8, 0x1000, 4);
+	Bytes patch(574, 0), set(512, 0), tone(121, 0);
+	name(patch, 0, "Test Patch"), name(set, 0, "Test Kit"), name(tone, 0, "Rim Shot");
+	put(patch, 0, 92, 7, 80);
+	for (uint32_t k = 0; k < 88; k++)
+		set[160 + 4 * k + 2] = 0x08, set[160 + 4 * k + 3] = 0;       // every key the tone at +0x800
+	set[160 + 4 * 87 + 3] = 0x80;                                        // but the last, a tone of zeros
+	srx.be(patches, 130, 2), srx.be(patches + 4, 0x0E, 4), srx.be(patches + 8, 574, 4);
+	srx.be(global, 1, 2), srx.be(global + 4, 0x0E, 4), srx.be(global + 8, 574, 4);
+	srx.be(sets, 1, 2), srx.be(sets + 4, 20, 4), srx.be(sets + 8, 512, 4);
+	// 130 patches do not fit the table's 0x1000 bytes: its length is what the directory says, so make it so
+	srx.be(0x88, 0x20000 - 0x10000, 4), srx.be(patches, 2, 2);
+	for (size_t k = 0; k < 574; k++)
+		srx.put(patches + 0x0E + 574 + k, patch[k]), srx.put(global + 0x0E + k, patch[k]);
+	for (size_t k = 0; k < 512; k++)
+		srx.put(sets + 20 + k, set[k]);
+	for (size_t k = 0; k < 121; k++)
+		srx.put(sets + 0x800 + k, tone[k]);
+	syfs_io rio = io_of(srx.b);
+	syfs_image *fs = syfs_open(&rio, nullptr, 0);
+	CHECK(fs);
+	if (fs) {
+		size_t p = NONE, g = NONE;
+		const size_t kit = find(fs, "Test Kit");
+		for (size_t i = 0; i < count_of(fs); i++)
+			if (!strcmp(entry_at(fs, i)->name, "Test Patch"))
+				(!strcmp(entry_at(fs, entry_at(fs, i)->parent)->tag, "4:7") ? p : g) = i;
+		CHECK(p != NONE && g != NONE && exports(fs, p, "syx") && !exports(fs, g, "syx") && exports(fs, kit, "syx"));
+		auto got = xv_sets_of(syx_of(fs, p));
+		CHECK(got.size() == 14 && got[0].first == (0x30u << 21 | 1 << 14) && got[0].second[14] == 80
+			&& !memcmp(got[0].second.data(), "Test Patch  ", 12));
+		got = xv_sets_of(syx_of(fs, kit));
+		CHECK(got.size() == 5 + 2 * 88 && got[0].first == 0x40u << 21 && !memcmp(got[0].second.data(), "Test Kit    ", 12)
+			&& !memcmp(got[5].second.data(), "Rim Shot    ", 12) && got[5 + 2 * 87].second[0] == 0);
+		close_image(fs);
+	}
+}
+
 int main()
 {
 	test_keys();
@@ -3448,6 +3640,7 @@ int main()
 	test_s700_floppy();
 	test_syx();
 	test_syx_jv();
+	test_syx_xv();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

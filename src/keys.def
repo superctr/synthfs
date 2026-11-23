@@ -21,6 +21,8 @@ format JV80        jv80        "JV-80"
 format JV1080      jv1080      "JV-1080"
 format CDDA        cdda        "Audio CD"
 format SYX         syx         "System exclusive"
+format XV5080      xv5080      "XV-5080"
+format XV3080      xv3080      "XV-3080"
 
 medium DISK        disk
 medium FLOPPY      floppy

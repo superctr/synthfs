@@ -24,6 +24,8 @@ struct Kind {
 struct Family {
 	const char *map;     // the map its files are read by
 	syfs_key format;     // what its entries' records are
+	const char *lesser;  // a model of the same ID whose map is part of this, a file of nothing more read by it
+	syfs_key lesser_format;
 	bool banks;          // its entries are under their areas' banks
 	const Kind *kinds;
 	size_t count;
@@ -42,11 +44,19 @@ constexpr Kind jv1080_kinds[] = {
 	{ "1-3", SYFS_TYPE_PATCH, nullptr },
 	{ "1-4", SYFS_TYPE_RHYTHM_SET, nullptr },
 };
+constexpr Kind xv_kinds[] = {
+	{ "1-1", SYFS_TYPE_SYSTEM, nullptr },
+	{ "1-2", SYFS_TYPE_PERFORMANCE, nullptr },
+	{ "1-3-1", SYFS_TYPE_PATCH, nullptr },
+	{ "1-3-2", SYFS_TYPE_RHYTHM_SET, nullptr },
+};
 // the S-700 series share a model ID: the S-760's map has every block of the others'.  The JV-2080 shares the
-// JV-1080's, and what it adds lies past the JV-1080's blocks' ends
+// JV-1080's, and what it adds lies past the JV-1080's blocks' ends.  The XV-3080 shares the XV-5080's and has fewer
+// parts and no system equalizer, so its system and performances are whole by its own map alone
 constexpr Family families[] = {
-	{ "s760", SYFS_FORMAT_S760, false, s700_kinds, std::size(s700_kinds) },
-	{ "jv1080", SYFS_FORMAT_JV1080, true, jv1080_kinds, std::size(jv1080_kinds) },
+	{ "s760", SYFS_FORMAT_S760, nullptr, SYFS_NONE, false, s700_kinds, std::size(s700_kinds) },
+	{ "jv1080", SYFS_FORMAT_JV1080, nullptr, SYFS_NONE, true, jv1080_kinds, std::size(jv1080_kinds) },
+	{ "xv5080", SYFS_FORMAT_XV5080, "xv3080", SYFS_FORMAT_XV3080, true, xv_kinds, std::size(xv_kinds) },
 };
 
 // a Data Set of a map's model: its device and address, and its data's place in the bytes
@@ -122,7 +132,8 @@ bool packed(std::string_view map, std::string_view bank, uint32_t number, uint8_
 	if (!a || !map::unpack(*m, *a, rec.data(), rec.size(), units))
 		return false;
 	for (uint32_t k = 0; k < a->count; k++)
-		put(out, *m, device, m->entries[a->first + k].addr, units[k].data(), units[k].size());
+		if (!units[k].empty())
+			put(out, *m, device, m->entries[a->first + k].addr, units[k].data(), units[k].size());
 	return true;
 }
 
@@ -163,8 +174,9 @@ void Syx::list()
 	}
 	if (!family)
 		return;
-	// every Data Set's units put where the map has them
-	std::map<const map::Entry *, Filled> filled;
+	// the Data Sets of the model
+	syfs_key records = family->format;
+	std::vector<Message> messages;
 	for (size_t at = 0; at < bytes.size();) {
 		if (bytes[at] != EXCLUSIVE) {
 			at++;
@@ -174,37 +186,54 @@ void Syx::list()
 		while (end < bytes.size() && bytes[end] < 0x80)
 			end++;
 		Message msg;
-		if (end < bytes.size() && bytes[end] == END && message(bytes, at, end, *map_, msg)) {
-			for (size_t u = 0; u < msg.size; u++) {
-				const map::Entry *e = map_->entry_of(msg.addr + uint32_t(u));
-				if (!e)
-					continue;
-				Filled &f = filled[e];
-				if (f.units.empty()) {
-					f.device = msg.device;
-					f.units.assign(map_->blocks[e->block].size, 0);
-					f.got.assign(f.units.size(), false);
-				}
-				const uint32_t k = msg.addr + uint32_t(u) - e->addr;
-				f.units[k] = bytes[msg.data + u];
-				f.have += !f.got[k];
-				f.got[k] = true;
-			}
-		}
+		if (end < bytes.size() && bytes[end] == END && message(bytes, at, end, *map_, msg))
+			messages.push_back(msg);
 		at = end;
 	}
-	// an area all of whose blocks are whole, as the pieces of a record; none where any is not
+	if (const map::Map *lesser = family->lesser ? map::find(family->lesser) : nullptr) {
+		bool more = false;
+		for (const Message &msg : messages)
+			for (size_t u = 0; u < msg.size && !more; u++)
+				more = map_->entry_of(msg.addr + uint32_t(u)) && !lesser->entry_of(msg.addr + uint32_t(u));
+		if (!more)
+			map_ = lesser, records = family->lesser_format;
+	}
+	// every Data Set's units put where the map has them
+	std::map<const map::Entry *, Filled> filled;
+	for (const Message &msg : messages)
+		for (size_t u = 0; u < msg.size; u++) {
+			const map::Entry *e = map_->entry_of(msg.addr + uint32_t(u));
+			if (!e)
+				continue;
+			Filled &f = filled[e];
+			if (f.units.empty()) {
+				f.device = msg.device;
+				f.units.assign(map_->blocks[e->block].size, 0);
+				f.got.assign(f.units.size(), false);
+			}
+			const uint32_t k = msg.addr + uint32_t(u) - e->addr;
+			f.units[k] = bytes[msg.data + u];
+			f.have += !f.got[k];
+			f.got[k] = true;
+		}
+	// an area all of whose blocks are whole, as the pieces of a record; none where any is not.  Where the area has a
+	// packed record, a block that is not in it may be missing (an XV-5080's patch's split keys, which it never sends)
 	auto whole = [&](const map::Area *a, Record &r) {
 		if (!a)
 			return false;
+		bool packs = false;
+		for (uint32_t k = 0; k < a->count; k++)
+			packs = packs || map_->blocks[map_->entries[a->first + k].block].packed;
+		std::vector<const map::Entry *> have;
 		for (uint32_t k = 0; k < a->count; k++) {
 			const map::Entry *e = &map_->entries[a->first + k];
 			auto f = filled.find(e);
-			if (f == filled.end() || f->second.have != f->second.units.size())
+			if (f != filled.end() && f->second.have == f->second.units.size())
+				have.push_back(e);
+			else if (!packs || map_->blocks[e->block].packed)
 				return false;
 		}
-		for (uint32_t k = 0; k < a->count; k++) {
-			const map::Entry *e = &map_->entries[a->first + k];
+		for (const map::Entry *e : have) {
 			r.device = filled[e].device;
 			r.pieces.emplace_back(e->addr, filled[e].units);
 		}
@@ -241,12 +270,12 @@ void Syx::list()
 		if (family->banks) {
 			auto have = banks.find(area.bank);
 			if (have == banks.end()) {
-				have = banks.emplace(area.bank, add(SYFS_TYPE_BANK, family->format, uint32_t(banks.size()), syfs::NONE, area.bank, 0, 0)).first;
+				have = banks.emplace(area.bank, add(SYFS_TYPE_BANK, records, uint32_t(banks.size()), syfs::NONE, area.bank, 0, 0)).first;
 				records_.emplace_back();
 			}
 			parent = have->second;
 		}
-		const size_t i = add(kind->kind, family->format, area.number, parent, b->name_size ? name : std::string(area.bank), 0, 0);
+		const size_t i = add(kind->kind, records, area.number, parent, b->name_size ? name : std::string(area.bank), 0, 0);
 		if (family->format == SYFS_FORMAT_S760)
 			tag(i, s700::category(first));
 		if (kind->extended)
