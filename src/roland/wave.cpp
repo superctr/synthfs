@@ -585,6 +585,21 @@ syfs_key WaveRom::medium_of(const Image &im)
 	return SYFS_MEDIUM_BOARD;
 }
 
+// a patch or rhythm set of the JV-1080's shape (its bank's type 5 or 4): the packed record by the JV-1080's map, at
+// the user patch or rhythm set its number has
+bool WaveRom::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	const syfs::Entry &e = entries[i];
+	if (format != SYFS_FORMAT_SRJV80 || e.parent == syfs::NONE)
+		return false;
+	const bool patch = e.kind == SYFS_TYPE_PATCH && !strcmp(entries[e.parent].tag, "5");
+	if (!patch && !(e.kind == SYFS_TYPE_RHYTHM_SET && !strcmp(entries[e.parent].tag, "4")))
+		return false;
+	std::vector<uint8_t> rec(patch ? 401 : 2699);
+	return socket_->read(where[i], rec.data(), rec.size())
+		&& syx::packed("jv1080", patch ? "User Patch" : "User Rhythm", e.number, 0x10, rec, out);
+}
+
 std::unique_ptr<Medium> WaveRom::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<WaveRom>(io, format);
@@ -640,6 +655,16 @@ void DataCard::list()
 					return;
 				add(r.kind, format, number, syfs::NONE, !r.size ? "" : later ? packed(rec, false) : plain(rec, 12), r.size, at);
 			}
+}
+
+// a JV-1080's card's patch or rhythm set: the packed record a board has, at the card's place of its number
+bool DataCard::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	const syfs::Entry &e = entries[i];
+	if (format != SYFS_FORMAT_JV1080 || (e.kind != SYFS_TYPE_PATCH && e.kind != SYFS_TYPE_RHYTHM_SET))
+		return false;
+	const auto rec = image.read(where[i], size_t(e.bytes));
+	return !rec.empty() && syx::packed("jv1080", e.kind == SYFS_TYPE_PATCH ? "Card Patch" : "Card Rhythm", e.number, 0x10, rec, out);
 }
 
 std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)

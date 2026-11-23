@@ -1826,6 +1826,10 @@ static void test_boards()
 		CHECK(sample_at(fs, a, 0) == a0 && sample_at(fs, a, 59) == a0);
 		CHECK(sample_at(fs, a, 60) == a1 && sample_at(fs, a, 127) == a1 && sample_at(fs, a1, 0) == a1);
 		CHECK(sample_at(fs, find(fs, "Card Piano"), 60) == NONE);
+		// a rhythm set of the JV-1080's shape reads as Data Sets, at the user rhythm set of its number; a JV-880's
+		// patch as none
+		CHECK(syfs_read(fs, syfs_node(find(fs, "Card Drums") + 1), SYFS_AS_SYX, 0, nullptr, 0) == 12 + 64 * 58 + 65 * 11
+			&& !syfs_read(fs, syfs_node(find(fs, "Card Piano") + 1), SYFS_AS_SYX, 0, nullptr, 0));
 		syfs::Sample sm;
 		CHECK(sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
 		CHECK(sm.loop == SYFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
@@ -3004,7 +3008,7 @@ static void test_maps()
 	namespace map = syfs::map;
 	size_t count = 0;
 	const map::Map *maps = map::all(count);
-	CHECK(count == 4 && maps == map::find("s750") && !map::find("s7"));
+	CHECK(count == 5 && maps == map::find("jv1080") && !map::find("s7"));
 	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
 		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
 	for (auto [id, model, blocks] : models)
@@ -3026,6 +3030,44 @@ static void test_maps()
 		CHECK(!m->block("top") && !m->block("ext-partial") == !!strcmp(id, "s760"));
 		for (uint32_t n = 1; n < m->entry_count; n++)
 			CHECK(m->entries[n - 1].addr < m->entries[n].addr && m->entries[n].block < m->block_count);
+	}
+	// a grouped map: an area is a group's blocks, each at its place within it; a bank's areas are numbered
+	const map::Map *jv = map::find("jv1080");
+	CHECK(jv && jv->model_id_size == 1 && jv->model_id[0] == 0x6A && jv->addr_size == 4 && jv->area_count == 343);
+	const map::Area *user = jv->area("User Patch", 5), *drums = jv->area("User Rhythm", 1);
+	CHECK(jv->areas_of("User Patch") == 128 && jv->areas_of("Card Rhythm") == 2 && !jv->area("User Patch", 128));
+	CHECK(user && !strcmp(user->group, "1-3") && user->addr == (0x11u << 21 | 5 << 14) && user->count == 5
+		&& jv->area_in("1-3", 5) != user && drums && drums->count == 65 && drums->addr == (0x10u << 21 | 0x41 << 14));
+	if (user && drums) {
+		const map::Entry *tone = &jv->entries[user->first + 2];
+		const map::Block *common = &jv->blocks[jv->entries[user->first].block], *tb = &jv->blocks[tone->block];
+		CHECK(tone->addr == user->addr + (0x12 << 7) && jv->entry_of(tone->addr + 128) == tone && !jv->entry_of(tone->addr + 129)
+			&& &jv->areas[tone->area] == user);
+		CHECK(common->size == 72 && common->packed == 49 && common->name_size == 12 && common->name_units == 1
+			&& tb->size == 129 && tb->packed == 88 && jv->blocks[jv->entries[drums->first + 1].block].packed == 42);
+		// a packed record: every parameter in its bits from bit 0 up, a pair of nibbles its low one first, each block
+		// from a byte; packed again it is the record, but for what the map has no parameter for
+		std::vector<std::vector<uint8_t>> units, again;
+		std::vector<uint8_t> rec(401), back;
+		for (size_t k = 0; k < rec.size(); k++)
+			rec[k] = uint8_t(k * 37 + 11);
+		CHECK(map::unpack(*jv, *user, rec.data(), rec.size(), units) && units.size() == 5 && units[0].size() == 72
+			&& units[4].size() == 129 && !map::unpack(*jv, *user, rec.data(), 400, again));
+		CHECK(units[0][0] == (rec[0] & 127) && units[0][1] == ((rec[0] >> 7 | rec[1] << 1) & 127)
+			&& units[0][12] == ((rec[10] >> 4 | rec[11] << 4) & 63));
+		// the tone's wave number, two nibbles after 1 + 2 + 7 bits: the low one first in the record
+		CHECK(units[1][0] == (rec[49] & 1) && units[1][4] == ((rec[50] >> 2) & 15) && units[1][3] == ((rec[50] >> 6 | rec[51] << 2) & 15));
+		CHECK(map::pack(*jv, *user, units, back) && back.size() == 401 && map::unpack(*jv, *user, back.data(), back.size(), again)
+			&& again == units);
+		size_t same = 0;
+		for (size_t k = 0; k < 401; k++)
+			same += back[k] == rec[k];
+		CHECK(same >= 401 - 12 && !memcmp(back.data(), rec.data(), 46) && !memcmp(&back[49], &rec[49], 87));
+		units.clear();
+		std::vector<uint8_t> set(2699, 0x5A);
+		CHECK(map::unpack(*jv, *drums, set.data(), set.size(), units) && units.size() == 65 && units[64].size() == 58
+			&& map::pack(*jv, *drums, units, back) && back.size() == 2699);
+		CHECK(!map::unpack(*jv, *jv->area("System", 0), set.data(), set.size(), units));
 	}
 	const map::Block *sample = map::find("s760")->block("sample");
 	const map::Param *start = nullptr, *select = nullptr;
@@ -3226,6 +3268,130 @@ static void test_syx()
 	CHECK(probe(&nio, nullptr) == SYFS_NONE && !syfs_open(&nio, nullptr, 0));
 }
 
+// ---- the JV-1080's packed records as Data Sets: a card's and a board's, and files of them
+// Roland Data Sets of a model and device as (address, data), each within a row of 128 and its sum right
+static std::vector<std::pair<uint32_t, Bytes>> data_sets_of(const Bytes &b, uint8_t device, uint8_t model)
+{
+	std::vector<std::pair<uint32_t, Bytes>> out;
+	for (size_t at = 0; at < b.size();) {
+		size_t end = at + 1;
+		while (end < b.size() && b[end] != 0xF7)
+			end++;
+		CHECK(end < b.size() && end - at >= 11 && b[at] == 0xF0 && b[at + 1] == 0x41 && b[at + 2] == device
+			&& b[at + 3] == model && b[at + 4] == 0x12);
+		if (end >= b.size() || end - at < 11)
+			break;
+		unsigned sum = 0;
+		for (size_t k = at + 5; k < end; k++)
+			sum += b[k];
+		const uint32_t addr = uint32_t(b[at + 5]) << 21 | b[at + 6] << 14 | b[at + 7] << 7 | b[at + 8];
+		Bytes data(b.begin() + at + 9, b.begin() + end - 1);
+		CHECK(sum % 128 == 0 && !data.empty() && data.size() <= 128 && addr / 128 == (addr + data.size() - 1) / 128);
+		out.emplace_back(addr, data);
+		at = end + 1;
+	}
+	return out;
+}
+
+static void test_syx_jv()
+{
+	// a card of two halves: a patch in each, the second half's last, and a rhythm set; fields put in their bits
+	auto put = [](Bytes &b, size_t at, size_t bit, unsigned bits, unsigned v) {
+		for (unsigned k = 0; k < bits; k++)
+			if (v >> k & 1)
+				b[at + (bit + k) / 8] |= uint8_t(1 << (bit + k) % 8);
+	};
+	auto name = [&](Bytes &b, size_t at, const char *s) {
+		for (size_t i = 0; i < 12; i++)
+			put(b, at, 7 * i, 7, i < strlen(s) ? uint8_t(s[i]) : ' ');
+	};
+	Bytes jv(0x10000, 0);
+	memcpy(&jv[0], "RolandJV-990D\xBBP\xAF", 16);
+	memcpy(&jv[0x10], "My Card         ", 16);
+	jv[0x8000] = 0xAF;
+	memcpy(&jv[0x8001], "RolandJV-990D", 13);
+	const size_t first = 0xF70, last = 0x8F70 + 63 * 401, set = 0x73B0;
+	name(jv, first, "Symphonique"), name(jv, last, "Tortured"), name(jv, set, "HouseDrumSet");
+	put(jv, first, 84, 6, 39);                    // the EFX type, after the name
+	put(jv, first, 8 * 49 + 3, 7, 89);            // tone 1's wave group ID, after its switch and group
+	put(jv, first, 8 * 49 + 10, 4, 0xE);          // its wave number's low nibble, then the high one
+	put(jv, first, 8 * 49 + 14, 4, 0xF);
+	put(jv, first, 8 * (49 + 3 * 88), 1, 1);      // tone 4's switch
+	put(jv, first, 8 * (49 + 3 * 88) + 689, 7, 100);  // and its last parameter
+	put(jv, set, 8 * (11 + 42 * 63), 1, 1);       // the rhythm set's last key: its switch
+	put(jv, set, 8 * (11 + 42 * 63) + 326, 7, 77);  // and its last parameter
+	syfs_io io = io_of(jv);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	const size_t symph = find(fs, "Symphonique"), tortured = find(fs, "Tortured"), house = find(fs, "HouseDrumSet");
+	CHECK(exports(fs, symph, "syx") && exports(fs, house, "syx") && !exports(fs, find(fs, "", SYFS_TYPE_PERFORMANCE), "syx"));
+	// the common and four tones at the card's patch of its number: a tone's 129 bytes are two messages
+	const uint32_t card = 0x21u << 21;
+	auto sets = data_sets_of(syx_of(fs, symph), 0x10, 0x6A);
+	CHECK(sets.size() == 9 && sets[0].first == card && sets[0].second.size() == 72 && sets[1].first == card + (0x10 << 7)
+		&& sets[1].second.size() == 128 && sets[2].first == card + (0x11 << 7) && sets[2].second.size() == 1
+		&& sets[7].first == card + (0x16 << 7));
+	if (sets.size() == 9) {
+		CHECK(!memcmp(sets[0].second.data(), "Symphonique ", 12) && sets[0].second[12] == 39 && sets[0].second[13] == 0);
+		CHECK(sets[1].second[2] == 89 && sets[1].second[3] == 0xF && sets[1].second[4] == 0xE && sets[1].second[0] == 0);
+		CHECK(sets[7].second[0] == 1 && sets[8].second[0] == 100);
+	}
+	sets = data_sets_of(syx_of(fs, tortured), 0x10, 0x6A);
+	CHECK(sets.size() == 9 && sets[0].first == card + (127 << 14) && !memcmp(sets[0].second.data(), "Tortured    ", 12));
+	// a rhythm set: its common and keys 35 to 98
+	sets = data_sets_of(syx_of(fs, house), 0x10, 0x6A);
+	CHECK(sets.size() == 65 && sets[0].first == (0x20u << 21 | 0x40 << 14) && sets[0].second.size() == 12
+		&& sets[1].first == sets[0].first + (35 << 7) && sets[64].first == sets[0].first + (98 << 7)
+		&& sets[64].second.size() == 58 && sets[64].second[0] == 1 && sets[64].second[57] == 77 && sets[63].second[0] == 0);
+
+	// a file of the three: each under its bank, numbered as the card has them, giving the same messages
+	Bytes file = syx_of(fs, tortured), more = syx_of(fs, house), third = syx_of(fs, symph);
+	file.insert(file.end(), more.begin(), more.end());
+	file.insert(file.end(), third.begin(), third.end());
+	syfs_io fio = io_of(file);
+	syfs_key medium = SYFS_NONE;
+	CHECK(probe(&fio, &medium) == SYFS_FORMAT_SYX && medium == SYFS_MEDIUM_FILE);
+	syfs_image *sx = syfs_open(&fio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 5);
+	if (sx) {
+		CHECK((names(sx, SYFS_TYPE_BANK) == std::vector<std::string> { "Card Rhythm", "Card Patch" }));
+		CHECK((names(sx, SYFS_TYPE_PATCH) == std::vector<std::string> { "Symphonique", "Tortured" }));
+		const size_t a = find(sx, "Symphonique"), z = find(sx, "Tortured"), h = find(sx, "HouseDrumSet");
+		CHECK(entry_at(sx, a)->number == 0 && entry_at(sx, z)->number == 127 && entry_at(sx, h)->number == 0
+			&& entry_at(sx, h)->kind == SYFS_TYPE_RHYTHM_SET && entry_at(sx, a)->format == SYFS_FORMAT_JV1080);
+		CHECK(entry_at(sx, a)->parent == find(sx, "Card Patch") && entry_at(sx, h)->parent == find(sx, "Card Rhythm"));
+		CHECK(syx_of(sx, a) == syx_of(fs, symph) && syx_of(sx, z) == syx_of(fs, tortured) && syx_of(sx, h) == syx_of(fs, house));
+		CHECK(!exports(sx, find(sx, "Card Patch"), "syx") && used(sx, a).empty());
+		close_image(sx);
+	}
+	// a patch short of a tone is none; a common two bytes longer, as a JV-2080 sends it, is the same patch; a
+	// system's blocks are an entry of their own
+	Bytes whole = syx_of(fs, symph);
+	Bytes shorter(whole.begin(), whole.end() - 12);
+	syfs_io hio = io_of(shorter);
+	sx = syfs_open(&hio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 0);
+	if (sx)
+		close_image(sx);
+	Bytes longer = { 0xF0, 0x41, 0x10, 0x6A, 0x12, 0x21, 0x00, 0x00, 0x00 };
+	unsigned sum = 0x21;
+	for (int k = 0; k < 74; k++) {
+		longer.push_back(k < 72 ? whole[9 + k] : 1);
+		sum += longer.back();
+	}
+	longer.push_back(uint8_t((128 - sum % 128) % 128));
+	longer.push_back(0xF7);
+	longer.insert(longer.end(), whole.begin() + 9 + 72 + 2, whole.end());
+	syfs_io lio = io_of(longer);
+	sx = syfs_open(&lio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 2 && syx_of(sx, 1) == whole);
+	if (sx)
+		close_image(sx);
+	close_image(fs);
+}
+
 int main()
 {
 	test_keys();
@@ -3238,6 +3404,7 @@ int main()
 	test_s550();
 	test_s700_floppy();
 	test_syx();
+	test_syx_jv();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

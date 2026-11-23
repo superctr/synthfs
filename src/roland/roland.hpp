@@ -20,6 +20,9 @@ namespace syx {
 void put(std::vector<uint8_t> &out, const map::Map &m, uint8_t device, uint32_t addr, const uint8_t *units, size_t n);
 //! Bytes as nibbles, the high one first.
 std::vector<uint8_t> nibbles(const uint8_t *bytes, size_t n);
+//! A packed record as Data Sets by a map, at the place its number has among a bank's areas; false where it is none.
+bool packed(std::string_view map, std::string_view bank, uint32_t number, uint8_t device, const std::vector<uint8_t> &rec,
+	std::vector<uint8_t> &out);
 }
 
 //! What the S-700 series' disk and floppy readers share.
@@ -147,6 +150,8 @@ public:
 	//! The card's name, a JV-1080's.
 	void identify() override;
 	void list() override;
+	//! A JV-1080's card's patch or rhythm set.
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 };
 
 class Socket;
@@ -169,6 +174,8 @@ public:
 	size_t sample_at(size_t i, int key) const override;
 	//! An SRX bank's bank select (MSB * 128 + LSB), an SRX patch's category.
 	bool number(size_t i, syfs_key key, int64_t &value) const override;
+	//! A patch or rhythm set of the JV-1080's shape.
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 
 private:
 	void list_srjv80();
@@ -205,11 +212,10 @@ public:
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 
 private:
-	//! An entry's units as the messages gave them, and its extended block's where they did.
+	//! An entry's blocks as the messages gave them, each at its address; a bank's has none.
 	struct Record {
-		uint8_t device;
-		const map::Entry *at, *ext_at;
-		std::vector<uint8_t> units, ext;
+		uint8_t device = 0;
+		std::vector<std::pair<uint32_t, std::vector<uint8_t>>> pieces;
 	};
 	const map::Map *map_ = nullptr;
 	std::vector<Record> records_;

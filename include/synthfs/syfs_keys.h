@@ -59,6 +59,7 @@ enum syfs_keys {
 	SYFS_TYPE_RHYTHM_SET = 0x34ce407c,        //!< "rhythm-set"
 	SYFS_TYPE_WAVE = 0x29f017d4,              //!< "wave"
 	SYFS_TYPE_TRACK = 0x7b3d6c3c,             //!< "track"
+	SYFS_TYPE_SYSTEM = 0x491e0a9c,            //!< "system"
 
 	SYFS_CONTAINER_RAW = 0x43ff12f1,          //!< "raw"
 	SYFS_CONTAINER_VHD = 0x1214ab35,          //!< "vhd"
@@ -162,6 +163,7 @@ enum syfs_keys {
 	X(SYFS_TYPE_RHYTHM_SET, "type", "rhythm-set", "rhythm set") \
 	X(SYFS_TYPE_WAVE, "type", "wave", "wave") \
 	X(SYFS_TYPE_TRACK, "type", "track", "track") \
+	X(SYFS_TYPE_SYSTEM, "type", "system", "system") \
 	X(SYFS_CONTAINER_RAW, "container", "raw", "raw") \
 	X(SYFS_CONTAINER_VHD, "container", "vhd", "VHD") \
 	X(SYFS_CONTAINER_CUE, "container", "cue", "cue sheet") \

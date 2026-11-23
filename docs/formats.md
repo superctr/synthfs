@@ -267,19 +267,25 @@ lists none.  The S-330's and W-30's parameters are read as the S-550's: the S-33
 A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model ID, the command, and for a Data Set
 (`DT1`, command `12`) the address, the data and a sum that brings the address's and data's bytes to a multiple of
 128, then `F7`.  The first message tells the model, by the maps' model IDs (`maps.md`); the S-700 series share ID
-`34` and are read by the S-760's map, which has every block of the others'.  Data Sets of that model with a right sum
+`34` and are read by the S-760's map, which has every block of the others'; the JV-2080 shares the JV-1080's `6A`,
+and what it adds lies after the JV-1080's blocks' ends, where it is passed over.  Data Sets of that model with a right sum
 are put where the map has their addresses, in whatever pieces and order they come; other messages, other models'
 and bytes between messages are passed over.
 
-Each place of a block that the file fills whole is an entry: its type the block's (a volume, performance, patch,
-partial or sample), its number the place's, its name the block's name parameters', its format the model's records'
-(`S-760`).  A block filled in part is none.  An S-700 performance's name may have a number with its top bit set
+Each area of the map that the file fills whole is an entry: an area is one block at a place (an S-700's patch) or
+a group's blocks (a JV-1080's patch: its common and four tones; a rhythm set: its common and 64 keys).  Its type is
+the area's (a volume, performance, patch, partial or sample; a JV-1080's system, performance, patch or rhythm set),
+its name its first block's name parameters' (a system's the area's own), its format the model's records' (`S-760`,
+`JV-1080`).  An area filled in part is none.  An S-700's entries are numbered by their places in memory.  A
+JV-1080's are under banks, one for each kind of area the file has anything of, named as the map names them
+("User Patch", "Card Rhythm", "Temporary Patch"), and numbered by their place in the bank: a temporary patch's the
+performance's parts in the map's order and then the patch mode's.  An S-700 performance's name may have a number with its top bit set
 where the colon is (its fourth character, as the records on some floppies do **[seen]**); it reads as the colon.
 The extended performance and the extended partial belong to the entry of the same number and are no entries of
 their own.  What an entry uses is what its record names among the file's entries: a performance's patches (bytes
 at +0x10, 0xFF none), a patch's partials (88 bytes at +0x20), a partial's samples (halfwords at +16, +32, +48, +64).
 
-An entry reads as `syx`: its block, and its extended block where the file had it, as Data Sets to the device the
+An entry reads as `syx`: its blocks, and its extended block where the file had it, as Data Sets to the device the
 file's had, each within a row of 128 addresses (the address's last byte), so a block of 512 units is four messages.
 The library writes its own Data Sets the same way, to device 0.
 
@@ -375,6 +381,19 @@ SR-JV80-04 alone, whose manual gives it 255 patches each for the JV series and f
 them one at a time into its temporary patch, and takes the JV series' with a conversion.  The cards (SO-PCM1)
 carry type 2 only, and SR-JV80-01 to -03, -05 and -99 likewise; SR-JV80-97 and -98 carry an empty type 2 slot,
 which is not listed **[seen]**.
+
+**The JV-1080's records** (types 5 and 4) are packed: a patch its common in 49 bytes and four tones in 88 each, a
+rhythm set its common in 11 and keys 35 to 98 in 42 each.  Within a block every parameter of the JV-1080's address
+map (`maps.md`) follows the one before in the order of their addresses, each in the bits the map gives it (seven a
+character of the name, six the EFX type, one a switch), from bit 0 of the block's first byte up; a parameter sent
+as two nibbles has the low one first.  The bits left in a block are no parameter of the JV-1080's (a patch's
+common has two fields more, a bit and seven bits, as a JV-2080 keeps them).  Read as `syx` a patch or rhythm set
+is its parameters as Data Sets to device 0x10, at the user patch (128 of them) or user rhythm set (two) its number
+has, taken within those; a tone's 129 bytes are two messages.  Checked: every record of the sixteen
+boards here with these shapes (3693 of them) has every value within its parameter's range, and a JV-1080 with the
+board fitted, the sound selected and its temporary patch or rhythm set asked back, answers the same bytes for the
+five patches and three rhythm sets tried, of five boards.  The JV-880's and
+JD-990's shapes are not read as Data Sets.
 
 An SR-JV80 sample:
 
@@ -682,7 +701,11 @@ JV-1080's 64 KB card is two halves alike, the second from 0x8000 with 0xAF and t
 further on than the first's: its performances are numbered on from the first half's (17 to 32), its patches 65 to
 128, its rhythm set the second.  A half without that key holds nothing, and a 32 KB card is the first half alone.
 
-Not read: the records beyond their names, a JV-80's rhythm set, the cards of other machines a JV-1080 also takes.
+A JV-1080's card's patches and rhythm sets are a board's packed records (above) and read as `syx` the same way,
+at the card's patch or rhythm set of their number.
+
+Not read: a performance beyond its name, a JV-80's records beyond their names and its rhythm set, the cards of other
+machines a JV-1080 also takes.
 
 ## SmartMedia cards
 

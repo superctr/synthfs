@@ -47,6 +47,7 @@ type BANK          bank
 type RHYTHM_SET    rhythm-set  "rhythm set"
 type WAVE          wave
 type TRACK         track
+type SYSTEM        system
 
 container RAW      raw
 container VHD      vhd         "VHD"

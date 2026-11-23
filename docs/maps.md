@@ -21,6 +21,9 @@ Other keys (a count of parts, lists of names) are for whoever shows the map and 
 
 `blocks.top.entries` is where the blocks are: each entry an `addr` (the address's bytes, three or four), a `name` as
 the manual prints it and the `block` found there.  A block that repeats (a patch for each of 128) has an entry each.
+A block with `entries` of its own in place of `params` is a group: its blocks at their addresses within it (a patch's
+common and tones).  An entry of the top is an area, one thing the machine keeps at a place; the areas whose names
+are the same up to a bracket ("User Patch (001)") are a bank, numbered in the map's order.
 
 A block has a `name`, a `size` and its `params`.  Sizes and offsets count the units a value is sent in, which a
 parameter's `bits` gives: 7 where a byte of the message is a unit, 4 where every value goes a nibble a byte.
@@ -37,6 +40,21 @@ parameter's `bits` gives: 7 where a byte of the message is a unit, 4 where every
 | `field` | `[bit, width]`: the parameter is those bits of the value at its offset, which others share |
 | `frac` | the low bits that are a fraction |
 | `receive_only` | taken by the machine, never sent by it |
+
+## Packed records
+
+`maps/records/<model>.json` gives the bytes each block has in a model's packed records (`packing`: `bits`): there a
+block's parameters follow one another in the order of their offsets, each in its `bits` from the lowest bit of the
+block's first byte up, a parameter of several units its last unit first, and the block's bytes are filled out with
+bits that are no parameter.  A record is its area's blocks one after another.  `map::unpack` and `map::pack` go
+between a record and its blocks' units.
+
+## The JV-1080
+
+`jv1080`: model ID `6A`, four-byte addresses, a unit a byte of the message; a parameter's `bits` are its value's.
+Groups `1-1` the system, `1-2` a performance, `1-3` a patch (the common and four tones) and `1-4` a rhythm set (the
+common and keys 35 to 98).  Its records are packed: a patch's 401 bytes and a rhythm set's 2699 on an SR-JV80
+board and a DATA card (`formats.md`).
 
 ## The S-700 series
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ian Karlsson
-# maps/*.json made src/maps.cpp: each model's blocks, parameters and addresses as tables (docs/maps.md)
+# maps/*.json and maps/records/*.json made src/maps.cpp: each model's blocks, parameters, addresses and areas as
+# tables (docs/maps.md)
 import json
 import pathlib
 import re
@@ -8,12 +9,12 @@ import sys
 
 root = pathlib.Path(__file__).resolve().parent.parent
 FLAGS = (("signed", "SIGNED"), ("receive_only", "RECEIVE_ONLY"))
+KNOWN = {"offset", "size", "bits", "name", "min", "max", "display", "signed", "field", "order", "frac", "receive_only"}
 
 
 def param(p, where):
-    known = {"offset", "size", "bits", "name", "min", "max", "display", "signed", "field", "order", "frac", "receive_only"}
-    if set(p) - known:
-        sys.exit(f"{where}: {p['name']}: {sorted(set(p) - known)} not known")
+    if set(p) - KNOWN:
+        sys.exit(f"{where}: {p['name']}: {sorted(set(p) - KNOWN)} not known")
     flags = [c for k, c in FLAGS if p.get(k)]
     if p.get("order", "be") not in ("be", "le"):
         sys.exit(f"{where}: {p['name']}: order {p['order']!r}")
@@ -26,14 +27,21 @@ def param(p, where):
             f"{p.get('frac', 0)}, {p['min']}, {p['max']} }}")
 
 
+def number(addr):
+    n = 0
+    for byte in addr:
+        n = n * 128 + byte
+    return n
+
+
 out = [
-    "// Made by tools/maps.py from maps/*.json: not edited by hand.",
+    "// Made by tools/maps.py from maps/*.json and maps/records/*.json: not edited by hand.",
     '#include "maps.hpp"',
     "",
     "namespace syfs::map {",
     "",
 ]
-tables, maps = {}, []
+tables, maps, strings = {}, [], {}
 
 
 def table(kind, rows):
@@ -46,9 +54,18 @@ def table(kind, rows):
     return tables[kind, body]
 
 
+records = {}
+for path in sorted((root / "maps/records").glob("*.json")):
+    r = json.loads(path.read_text())
+    if r.get("packing") != "bits":
+        sys.exit(f"{path.name}: packing {r.get('packing')!r}")
+    records[r["map"]] = r["blocks"]
+
 for path in sorted((root / "maps").glob("*.json")):
     m = json.loads(path.read_text())
-    ids = [k for k in m["blocks"] if k != "top"]
+    packed = dict(records.get(path.stem, {}))
+    # the blocks of parameters; a block of entries is a group, its blocks at their places within it
+    ids = [k for k, b in m["blocks"].items() if "params" in b]
     blocks = []
     for k in ids:
         b = m["blocks"][k]
@@ -57,77 +74,52 @@ for path in sorted((root / "maps").glob("*.json")):
                 sys.exit(f"{path.name}: {k}: {p['name']} past the block's {b['size']}")
         params = table("Param", [param(p, f"{path.name}: {k}") for p in b["params"]])
         # the name: the parameters "... Name 1" on, a character each
-        chars = [p for p in b["params"] if re.search(r"Name \d+$", p["name"])]
-        first = chars[0] if chars and chars[0]["name"].endswith("Name 1") else None
+        chars = [p for p in b["params"] if re.search(r"name \d+$", p["name"], re.I)]
+        first = chars[0] if chars and chars[0]["name"].lower().endswith("name 1") else None
         if first and any(p["size"] != first["size"] or p["offset"] != first["offset"] + n * first["size"]
                          for n, p in enumerate(chars)):
             sys.exit(f"{path.name}: {k}: a name not in a row")
         name = f'{first["offset"]}, {len(chars)}, {first["size"]}' if first else "0, 0, 0"
-        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name} }}')
-    entries, sizes, last = [], set(), -1
+        bytes_packed = packed.pop(k, 0)
+        if bytes_packed and sum(p["bits"] * p["size"] for p in b["params"]) > 8 * bytes_packed:
+            sys.exit(f"{path.name}: {k}: its parameters' bits are more than {bytes_packed} bytes")
+        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name}, {bytes_packed} }}')
+    if packed:
+        sys.exit(f"maps/records/{path.name}: no blocks {sorted(packed)}")
+
+    def leaves(block, addr):
+        """the blocks of parameters under a block, each with its address"""
+        b = m["blocks"][block]
+        if "params" in b:
+            return [(addr, block)]
+        found = []
+        for e in b["entries"]:
+            found += leaves(e["block"], addr + number(e["addr"]))
+        return found
+
+    # an area is an entry of the top: a block, or a group's blocks; its bank the entry's name before a bracket, its
+    # number its place among the bank's
+    entries, areas, sizes, last, counts = [], [], set(), -1, {}
     for e in m["blocks"]["top"]["entries"]:
-        addr = 0
-        for byte in e["addr"]:
-            addr = addr * 128 + byte
         sizes.add(len(e["addr"]))
-        if entries and addr <= last:
-            sys.exit(f"{path.name}: {e['name']} not after the entry before it")
-        last = addr
-        entries.append(f"{{ 0x{addr:07x}, {ids.index(e['block'])} }}")
+        bank = e["name"].split(" (")[0]
+        own = leaves(e["block"], number(e["addr"]))
+        areas.append(f'{{ "{e["block"]}", "{bank}", {counts.get(bank, 0)}, 0x{number(e["addr"]):07x}, '
+                     f"{len(entries)}, {len(own)} }}")
+        counts[bank] = counts.get(bank, 0) + 1
+        for addr, block in own:
+            if addr <= last:
+                sys.exit(f"{path.name}: {e['name']}: {block} not after the block before it")
+            last = addr + m["blocks"][block]["size"] - 1
+            entries.append(f"{{ 0x{addr:07x}, {ids.index(block)}, {len(areas) - 1} }}")
     if len(sizes) != 1 or len(m["model_id"]) > 4:
         sys.exit(f"{path.name}: addresses of {sorted(sizes)} bytes, a model ID of {len(m['model_id'])}")
     maps.append(f'{{ "{path.stem}", "{m["model"]}", {{ {", ".join(f"0x{b:02x}" for b in m["model_id"])} }}, '
                 f'{len(m["model_id"])}, {sizes.pop()}, {table("Block", blocks)}, {len(blocks)}, '
-                f'{table("Entry", entries)}, {len(entries)} }}')
+                f'{table("Entry", entries)}, {len(entries)}, {table("Area", areas)}, {len(areas)} }}')
 
 out.append("static const Map maps[] = {\n" + "".join(f"\t{r},\n" for r in maps) + "};\n")
-out.append("""const Block *Map::block(std::string_view id) const
-{
-	for (uint32_t n = 0; n < block_count; n++)
-		if (id == blocks[n].id)
-			return &blocks[n];
-	return nullptr;
-}
-
-const Entry *Map::at(const Block *b, uint32_t n) const
-{
-	for (uint32_t k = 0; k < entry_count; k++)
-		if (&blocks[entries[k].block] == b && !n--)
-			return &entries[k];
-	return nullptr;
-}
-
-uint32_t Map::places(const Block *b) const
-{
-	uint32_t n = 0;
-	for (uint32_t k = 0; k < entry_count; k++)
-		n += &blocks[entries[k].block] == b;
-	return n;
-}
-
-// the entries are in the order of their addresses
-const Entry *Map::entry_of(uint32_t addr) const
-{
-	uint32_t lo = 0, hi = entry_count;
-	while (lo < hi) {
-		const uint32_t mid = (lo + hi) / 2;
-		if (entries[mid].addr <= addr)
-			lo = mid + 1;
-		else
-			hi = mid;
-	}
-	return lo && addr - entries[lo - 1].addr < blocks[entries[lo - 1].block].size ? &entries[lo - 1] : nullptr;
-}
-
-const Map *find(std::string_view id)
-{
-	for (const Map &m : maps)
-		if (id == m.id)
-			return &m;
-	return nullptr;
-}
-
-const Map *all(size_t &count)
+out.append("""const Map *all(size_t &count)
 {
 	count = sizeof maps / sizeof *maps;
 	return maps;

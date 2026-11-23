@@ -39,10 +39,11 @@ patches may use one partial, two partials one sample.
 | `other` | AKAI: a file of another type (drum inputs, effects, cue or take list, an operating system) |
 | `area`, `tone` | S-550: an area, a disk's worth of patches and tones; a tone, a wave and its settings |
 | `directory`, `file` | ISO 9660: a directory holding audio files, a WAV or AIFF file; FAT: any |
-| `bank` | a board or card: its patches or rhythm sets in one record shape, named for the machines the shape is for |
+| `bank` | a board or card: its patches or rhythm sets in one record shape, named for the machines the shape is for; a system exclusive file: the areas of one kind ("User Patch") |
 | `rhythm-set` | a board or card: a rhythm set (named only in the later shapes) |
 | `wave` | a board or card: the sound a patch's tone names; its samples, one a split of its keys, under it |
 | `track` | a cue sheet's disc: a track, audio (with a wave) or data |
+| `system` | a system exclusive file: a machine's system settings |
 
 ## The image's properties
 
@@ -108,9 +109,9 @@ What `syfs_read` gives of a node, by the names `exports` lists.
 | `raw` | a track: an audio track's sectors, a data track's user data; a FAT's or CD-ROM's file; an AKAI program, sample, multi or file of another type | the file's bytes as its volume keeps them, as far as its chain reads |
 | `wav` | a node with a wave | a WAV file of 16-bit values, the channels as stored, with a `smpl` chunk for the original key and the loop where the sample has either; zeros where the wave is cut short in the image |
 | `s16` | a node with a wave | the values alone, in the host's byte order |
-| `syx` | an S-760/S-770 disk's or floppy's performance, patch, partial or sample; an entry of a system exclusive file | its parameters as Roland Data Sets by its model's address map (`maps.md`, `formats.md`), ready to send or to keep as a `.syx` file |
+| `syx` | an S-760/S-770 disk's or floppy's performance, patch, partial or sample; a board's or DATA card's patch or rhythm set of the JV-1080's shape; an entry of a system exclusive file | its parameters as Roland Data Sets by its model's address map (`maps.md`, `formats.md`), ready to send or to keep as a `.syx` file |
 
-Not yet: an S-760/S-770 or S-550 record's bytes, and a board's patch or an S-550's as system exclusive.
+Not yet: an S-760/S-770 or S-550 record's bytes; a board's patch of another shape than the JV-1080's (the JV-880's, the JD-990's, an SRX's), a DATA card's performance or an S-550's as system exclusive.
 
 ## Changes
 
