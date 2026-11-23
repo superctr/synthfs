@@ -54,7 +54,7 @@ between a record and its blocks' units.
 `jv1080`: model ID `6A`, four-byte addresses, a unit a byte of the message; a parameter's `bits` are its value's.
 Groups `1-1` the system, `1-2` a performance, `1-3` a patch (the common and four tones) and `1-4` a rhythm set (the
 common and keys 35 to 98).  Its records are packed: a patch's 401 bytes and a rhythm set's 2699 on an SR-JV80
-board and a DATA card (`formats.md`).
+board, and those and a performance's 245 on a DATA card and in the battery memory (`formats.md`).
 
 ## The S-700 series
 

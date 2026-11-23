@@ -657,19 +657,75 @@ void DataCard::list()
 			}
 }
 
-// a JV-1080's card's patch or rhythm set: the packed record a board has, at the card's place of its number
+// a JV-1080's card's performance, patch or rhythm set: the packed record a board has, at the card's place of its
+// number
 bool DataCard::data_sets(size_t i, std::vector<uint8_t> &out) const
 {
 	const syfs::Entry &e = entries[i];
-	if (format != SYFS_FORMAT_JV1080 || (e.kind != SYFS_TYPE_PATCH && e.kind != SYFS_TYPE_RHYTHM_SET))
+	const char *bank = e.kind == SYFS_TYPE_PERFORMANCE ? "Card Performance" : e.kind == SYFS_TYPE_PATCH ? "Card Patch"
+		: e.kind == SYFS_TYPE_RHYTHM_SET ? "Card Rhythm" : nullptr;
+	if (format != SYFS_FORMAT_JV1080 || !bank)
 		return false;
 	const auto rec = image.read(where[i], size_t(e.bytes));
-	return !rec.empty() && syx::packed("jv1080", e.kind == SYFS_TYPE_PATCH ? "Card Patch" : "Card Rhythm", e.number, 0x10, rec, out);
+	return !rec.empty() && syx::packed("jv1080", bank, e.number, 0x10, rec, out);
 }
 
 std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<DataCard>(io, format);
+}
+
+// A JV-1080's battery memory: the system in the first 256 bytes, then the performances, the patches and the rhythm
+// sets, each list from a multiple of 256, their records a DATA card's
+namespace {
+constexpr uint64_t MEMORY_SIZE = 0x10000;
+struct MemoryRun {
+	syfs_key kind;
+	uint32_t at, size, count;
+	const char *bank;
+};
+constexpr MemoryRun memory_runs[] = { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 32, "User Performance" },
+	{ SYFS_TYPE_PATCH, 0x2000, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2, "User Rhythm" } };
+}
+
+bool Memory::fits(const syfs_io &io, syfs_key format)
+{
+	return format == SYFS_FORMAT_JV1080 && io.size == MEMORY_SIZE;
+}
+
+// a record whose name is twelve printable characters; a memory never written has none
+void Memory::list()
+{
+	for (const MemoryRun &r : memory_runs)
+		for (uint32_t k = 0; k < r.count; k++) {
+			const uint64_t at = r.at + uint64_t(k) * r.size;
+			uint8_t rec[11];
+			if (!image.read(at, rec, sizeof rec))
+				return;
+			bool printable = true;
+			for (int c = 0; c < 12 && printable; c++) {
+				const unsigned v = (rec[7 * c / 8] | (7 * c / 8 + 1 < 11 ? rec[7 * c / 8 + 1] << 8 : 0)) >> (7 * c % 8) & 127;
+				printable = v >= 32 && v < 127;
+			}
+			if (printable)
+				add(r.kind, format, k, syfs::NONE, packed(rec, false), r.size, at);
+		}
+}
+
+bool Memory::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	const syfs::Entry &e = entries[i];
+	for (const MemoryRun &r : memory_runs)
+		if (r.kind == e.kind) {
+			const auto rec = image.read(where[i], r.size);
+			return !rec.empty() && syx::packed("jv1080", r.bank, e.number, 0x10, rec, out);
+		}
+	return false;
+}
+
+std::unique_ptr<Medium> Memory::open(const syfs_io &io, syfs_key format)
+{
+	return std::make_unique<Memory>(io, format);
 }
 
 }

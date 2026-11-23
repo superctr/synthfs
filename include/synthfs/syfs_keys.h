@@ -40,6 +40,7 @@ enum syfs_keys {
 	SYFS_MEDIUM_BOARD = 0x6f92fe2b,           //!< "board"
 	SYFS_MEDIUM_SMARTMEDIA = 0x4e2c2132,      //!< "smartmedia"
 	SYFS_MEDIUM_FILE = 0x2aea5743,            //!< "file"
+	SYFS_MEDIUM_MEMORY = 0x04e9f1ae,          //!< "memory"
 
 	SYFS_TYPE_IMAGE = 0x335135fa,             //!< "image"
 	SYFS_TYPE_PARTITION = 0x59095409,         //!< "partition"
@@ -145,6 +146,7 @@ enum syfs_keys {
 	X(SYFS_MEDIUM_BOARD, "medium", "board", "board") \
 	X(SYFS_MEDIUM_SMARTMEDIA, "medium", "smartmedia", "SmartMedia") \
 	X(SYFS_MEDIUM_FILE, "medium", "file", "file") \
+	X(SYFS_MEDIUM_MEMORY, "medium", "memory", "memory") \
 	X(SYFS_TYPE_IMAGE, "type", "image", "image") \
 	X(SYFS_TYPE_PARTITION, "type", "partition", "partition") \
 	X(SYFS_TYPE_VOLUME, "type", "volume", "volume") \

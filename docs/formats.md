@@ -4,7 +4,7 @@ What synthfs reads of each format.  Every number is little-endian unless it says
 what the images at hand show and the library relies on without a machine's reading behind it.
 
 Each image is also of a medium: a disk (a hard disk's, MO's or CD-ROM's image, which share their layouts), a
-floppy, a card or a board; a file of exclusive messages is a file.
+floppy, a card or a board; a file of exclusive messages is a file, a machine's battery memory a memory.
 
 ## Telling them apart
 
@@ -702,10 +702,22 @@ further on than the first's: its performances are numbered on from the first hal
 128, its rhythm set the second.  A half without that key holds nothing, and a 32 KB card is the first half alone.
 
 A JV-1080's card's patches and rhythm sets are a board's packed records (above) and read as `syx` the same way,
-at the card's patch or rhythm set of their number.
+at the card's patch or rhythm set of their number; a performance is packed likewise, its common in 53 bytes and
+sixteen parts in 12 each, and reads at the card's performance of its number.  Checked: a JV-1080's first user
+performance, as its memory keeps it, read so is what the machine answers for it.
 
-Not read: a performance beyond its name, a JV-80's records beyond their names and its rhythm set, the cards of other
-machines a JV-1080 also takes.
+Not read: a JV-80's records beyond their names and its rhythm set, the cards of other machines a JV-1080 also takes.
+
+## Battery memories
+
+A machine's battery memory as a file: its bytes as the machine reads them.  Nothing in one tells whose it is, so
+it is opened by the host that knows (`syfs_open_as`, the format and the medium `memory`), not told.
+
+**A JV-1080's** (`JV-1080`): 64 KB.  The first 256 bytes are the system's; then each list from a multiple of 256,
+its records a DATA card's: 32 performances of 245 bytes from 0x100, 128 patches of 401 from 0x2000, two rhythm sets
+of 2699 from 0xE900 **[seen]**.  A record is listed where its name is twelve printable characters, so a memory the
+machine has not written lists nothing.  Each reads as `syx` at the user performance, patch or rhythm set of its
+number.  The system is not read.
 
 ## SmartMedia cards
 

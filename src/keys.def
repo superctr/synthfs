@@ -28,6 +28,7 @@ medium CARD        card
 medium BOARD       board
 medium SMARTMEDIA  smartmedia  "SmartMedia"
 medium FILE        file
+medium MEMORY      memory
 
 type IMAGE         image
 type PARTITION     partition

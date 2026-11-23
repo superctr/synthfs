@@ -68,7 +68,18 @@ bool Session::open(const std::string &image, bool write)
 {
 	close();
 	char err[256] = "";
-	if (write) {
+	// FORMAT:MEDIUM=FILE: an image that does not tell what it is, opened as the kind named
+	const size_t eq = image.find('='), colon = image.find(':');
+	const syfs_key format = colon < eq && eq != std::string::npos ? syfs_key_of(image.substr(0, colon).c_str()) : syfs_key(SYFS_NONE);
+	const syfs_key medium = format ? syfs_key_of(image.substr(colon + 1, eq - colon - 1).c_str()) : syfs_key(SYFS_NONE);
+	if (format && syfs_name(format) && syfs_name(medium)) {
+		file = fopen(image.c_str() + eq + 1, "rb");
+		if (!file)
+			return fail(image.substr(eq + 1), "cannot be opened"), false;
+		fseeko(file, 0, SEEK_END);
+		const syfs_io io { file, file_read, nullptr, uint64_t(ftello(file)), nullptr, nullptr };
+		im = syfs_open_as(&io, format, medium, err, sizeof err);
+	} else if (write) {
 		file = fopen(image.c_str(), "r+b");
 		if (!file)
 			return fail(image, "cannot be opened for writing"), false;

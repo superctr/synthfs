@@ -372,6 +372,26 @@ syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size)
 	}
 }
 
+syfs_image *syfs_open_as(const syfs_io *io, syfs_key format, syfs_key medium, char *err, size_t err_size)
+{
+	if (!io || !io->read)
+		return say(err, err_size, "no reader given"), nullptr;
+	if (medium != SYFS_MEDIUM_MEMORY || format != SYFS_FORMAT_JV1080)
+		return say(err, err_size, "no image is opened as that"), nullptr;
+	if (!roland::Memory::fits(*io, format))
+		return say(err, err_size, "the image is not that machine's memory"), nullptr;
+	try {
+		auto im = std::make_unique<syfs_image>();
+		im->medium = roland::Memory::open(*io, format);
+		im->medium->medium = medium;
+		return im.release();
+	} catch (const std::bad_alloc &) {
+		return say(err, err_size, "out of memory"), nullptr;
+	} catch (...) {
+		return say(err, err_size, "the image could not be read"), nullptr;
+	}
+}
+
 static size_t file_read(void *user, uint64_t offset, void *buf, size_t n)
 {
 	FILE *f = static_cast<FILE *>(user);

@@ -79,6 +79,16 @@ typedef struct syfs_image syfs_image;
  */
 syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size);
 
+//! Opens an image the host knows the kind of, where the image does not tell it.
+/*!
+ * A machine's battery memory carries nothing that tells whose it is: the host that keeps it knows.  The kinds
+ * opened: SYFS_FORMAT_JV1080 with SYFS_MEDIUM_MEMORY, a JV-1080's memory of 64 KB, its bytes as the machine reads
+ * them (docs/formats.md, "Battery memories").
+ *
+ * eturn NULL with why in err where the kind is none of these or the image cannot be one.
+ */
+syfs_image *syfs_open_as(const syfs_io *io, syfs_key format, syfs_key medium, char *err, size_t err_size);
+
 //! Opens an image file.
 /*!
  * A cue sheet opens the disc it tells, out of the files it names beside it (SYFS_PROP_CONTAINER is

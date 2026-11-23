@@ -3312,6 +3312,8 @@ static void test_syx_jv()
 	memcpy(&jv[0x8001], "RolandJV-990D", 13);
 	const size_t first = 0xF70, last = 0x8F70 + 63 * 401, set = 0x73B0;
 	name(jv, first, "Symphonique"), name(jv, last, "Tortured"), name(jv, set, "HouseDrumSet");
+	name(jv, 0x20, "Tekno Loop 1");
+	put(jv, 0x20, 8 * (53 + 15 * 12), 1, 1);      // the first performance's last part: its receive switch
 	put(jv, first, 84, 6, 39);                    // the EFX type, after the name
 	put(jv, first, 8 * 49 + 3, 7, 89);            // tone 1's wave group ID, after its switch and group
 	put(jv, first, 8 * 49 + 10, 4, 0xE);          // its wave number's low nibble, then the high one
@@ -3326,7 +3328,14 @@ static void test_syx_jv()
 	if (!fs)
 		return;
 	const size_t symph = find(fs, "Symphonique"), tortured = find(fs, "Tortured"), house = find(fs, "HouseDrumSet");
-	CHECK(exports(fs, symph, "syx") && exports(fs, house, "syx") && !exports(fs, find(fs, "", SYFS_TYPE_PERFORMANCE), "syx"));
+	CHECK(exports(fs, symph, "syx") && exports(fs, house, "syx"));
+	// a performance: its common in 53 bytes and sixteen parts in 12 each, at the card's performance of its number
+	{
+		auto perf = data_sets_of(syx_of(fs, find(fs, "Tekno Loop 1")), 0x10, 0x6A);
+		CHECK(perf.size() == 17 && perf[0].first == 0x20u << 21 && perf[0].second.size() == 64
+			&& !memcmp(perf[0].second.data(), "Tekno Loop 1", 12) && perf[1].first == (0x20u << 21) + (0x10 << 7)
+			&& perf[16].second.size() == 19 && perf[16].second[0] == 1 && perf[15].second[0] == 0);
+	}
 	// the common and four tones at the card's patch of its number: a tone's 129 bytes are two messages
 	const uint32_t card = 0x21u << 21;
 	auto sets = data_sets_of(syx_of(fs, symph), 0x10, 0x6A);
@@ -3346,6 +3355,40 @@ static void test_syx_jv()
 		&& sets[1].first == sets[0].first + (35 << 7) && sets[64].first == sets[0].first + (98 << 7)
 		&& sets[64].second.size() == 58 && sets[64].second[0] == 1 && sets[64].second[57] == 77 && sets[63].second[0] == 0);
 
+	// ---- a JV-1080's battery memory, opened as one: the user performances, patches and rhythm sets whose names
+	// are printable, each at its own place
+	{
+		Bytes mem(0x10000, 0);
+		name(mem, 0x100 + 31 * 245, "Power JV"), name(mem, 0x2000 + 5 * 401, "Fantasia JV"), name(mem, 0xE900 + 2699, "JazzDrumSet1");
+		memcpy(&mem[0x2000 + 6 * 401], "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 11);
+		put(mem, 0x2000 + 5 * 401, 84, 6, 17);
+		syfs_io mio = io_of(mem);
+		char err[64] = "";
+		CHECK(!syfs_open_as(&mio, SYFS_FORMAT_JV80, SYFS_MEDIUM_MEMORY, err, sizeof err) && *err);
+		CHECK(!syfs_open_as(&mio, SYFS_FORMAT_JV1080, SYFS_MEDIUM_CARD, err, sizeof err));
+		syfs_image *m = syfs_open_as(&mio, SYFS_FORMAT_JV1080, SYFS_MEDIUM_MEMORY, err, sizeof err);
+		CHECK(m && format_of(m) == SYFS_FORMAT_JV1080 && medium_of(m) == SYFS_MEDIUM_MEMORY && count_of(m) == 3);
+		if (m) {
+			const size_t p = find(m, "Fantasia JV"), f = find(m, "Power JV"), r = find(m, "JazzDrumSet1");
+			CHECK(entry_at(m, p)->number == 5 && entry_at(m, p)->kind == SYFS_TYPE_PATCH && entry_at(m, f)->number == 31
+				&& entry_at(m, r)->number == 1 && entry_at(m, r)->kind == SYFS_TYPE_RHYTHM_SET);
+			auto got = data_sets_of(syx_of(m, p), 0x10, 0x6A);
+			CHECK(got.size() == 9 && got[0].first == (0x11u << 21 | 5 << 14) && got[0].second[12] == 17);
+			got = data_sets_of(syx_of(m, f), 0x10, 0x6A);
+			CHECK(got.size() == 17 && got[0].first == (0x10u << 21 | 31 << 14));
+			got = data_sets_of(syx_of(m, r), 0x10, 0x6A);
+			CHECK(got.size() == 65 && got[0].first == (0x10u << 21 | 0x41 << 14));
+			close_image(m);
+		}
+		// a memory never written lists nothing; another size is none
+		Bytes blank(0x10000, 0), small(0x8000, 0);
+		syfs_io bio = io_of(blank), smio = io_of(small);
+		m = syfs_open_as(&bio, SYFS_FORMAT_JV1080, SYFS_MEDIUM_MEMORY, nullptr, 0);
+		CHECK(m && count_of(m) == 0);
+		if (m)
+			close_image(m);
+		CHECK(!syfs_open_as(&smio, SYFS_FORMAT_JV1080, SYFS_MEDIUM_MEMORY, nullptr, 0));
+	}
 	// a file of the three: each under its bank, numbered as the card has them, giving the same messages
 	Bytes file = syx_of(fs, tortured), more = syx_of(fs, house), third = syx_of(fs, symph);
 	file.insert(file.end(), more.begin(), more.end());

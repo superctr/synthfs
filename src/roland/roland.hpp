@@ -150,7 +150,18 @@ public:
 	//! The card's name, a JV-1080's.
 	void identify() override;
 	void list() override;
-	//! A JV-1080's card's patch or rhythm set.
+	//! A JV-1080's card's performance, patch or rhythm set.
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
+};
+
+//! A JV-1080's battery memory: its user performances, patches and rhythm sets.
+class Memory final : public Medium {
+public:
+	using Medium::Medium;
+	//! Whether an image can be a memory of the format.
+	static bool fits(const syfs_io &io, syfs_key format);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
+	void list() override;
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 };
 
