@@ -2,6 +2,7 @@
 // Each format's reader on a small image made here: what is listed, what is left out, what entries use
 #include "../src/akai/akai.hpp"
 #include "../src/fat.hpp"
+#include "../src/maps.hpp"
 #include "../src/roland/roland.hpp"
 
 #include <cstdio>
@@ -2989,9 +2990,51 @@ static void test_keys()
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
 }
 
+// the address maps as tables: an S-700 block is its disk record a nibble a unit, at the manuals' addresses
+static void test_maps()
+{
+	namespace map = syfs::map;
+	size_t count = 0;
+	const map::Map *maps = map::all(count);
+	CHECK(count == 4 && maps == map::find("s750") && !map::find("s7"));
+	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
+		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
+	for (auto [id, model, blocks] : models)
+	{
+		const map::Map *m = map::find(id);
+		CHECK(m && !strcmp(m->model, model) && m->model_id_size == 1 && m->model_id[0] == 0x34 && m->addr_size == 4
+			&& m->block_count == blocks);
+		const std::tuple<const char *, uint32_t, uint32_t> records[] = { { "volume", 16, 0 }, { "performance", 256, 1 << 14 },
+			{ "patch", 256, 4 << 14 }, { "partial", 128, 8 << 14 }, { "sample", 48, 12 << 14 } };
+		for (auto [name, bytes, addr] : records)
+		{
+			const map::Block *b = m->block(name);
+			CHECK(b && b->size == bytes * 2 && m->first(b) && m->first(b)->addr == addr);
+			for (uint32_t n = 0; b && n < b->count; n++)
+				CHECK(b->params[n].bits == 4 && b->params[n].offset + b->params[n].size <= b->size
+					&& b->params[n].min <= b->params[n].max);
+		}
+		CHECK(!m->block("top") && !m->block("ext-partial") == !!strcmp(id, "s760"));
+		for (uint32_t n = 1; n < m->entry_count; n++)
+			CHECK(m->entries[n - 1].addr < m->entries[n].addr && m->entries[n].block < m->block_count);
+	}
+	const map::Block *sample = map::find("s760")->block("sample");
+	const map::Param *start = nullptr, *select = nullptr;
+	for (uint32_t n = 0; n < sample->count; n++)
+		if (sample->params[n].offset == 32)
+			start = &sample->params[n];
+	CHECK(start && start->size == 8 && start->flags == map::LOW_FIRST && start->frac == 8 && start->max == 0xFFFFFFFF);
+	const map::Block *perf = map::find("s760")->block("performance");
+	for (uint32_t n = 0; n < perf->count; n++)
+		if (perf->params[n].offset == 32)
+			select = &perf->params[n];
+	CHECK(select && select->flags == map::SIGNED && select->min == -1 && select->max == 127);
+}
+
 int main()
 {
 	test_keys();
+	test_maps();
 	Bytes s760 = s700_image(" S-760 System Disk    Ver. 2.24");
 	test_s700(s760, SYFS_FORMAT_S760, "S-760 System Disk    Ver. 2.24");
 	test_s700(raw_of(s760), SYFS_FORMAT_S760, "S-760 System Disk    Ver. 2.24");

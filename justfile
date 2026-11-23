@@ -16,3 +16,7 @@ scan dir: build
 # include/synthfs/syfs_keys.h made again from src/keys.def
 keys:
 	python3 tools/keys.py
+
+# src/maps.cpp made again from maps/*.json
+maps:
+	python3 tools/maps.py
