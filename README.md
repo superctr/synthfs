@@ -93,22 +93,23 @@ if (!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, "SAMPLES", err, sizeof
 ## Building
 
 ```sh
-just build          # the library, the tools (synthfs-ls, -wav, -convert, -edit) and the tests (CMake 3.23+, C++20)
+just build          # the library, the synthfs tool and the tests (CMake 3.23+, C++20)
 just test
 just keys           # syfs_keys.h made again after a change to src/keys.def (Python 3)
 just scan DIR       # every image under DIR, one line each
 ```
 
-In another project: `add_subdirectory(synthfs)` and link `synthfs`; the tools and the tests are built only
+In another project: `add_subdirectory(synthfs)` and link `synthfs`; the tool and the tests are built only
 where synthfs is the top level (`SYNTHFS_TOOLS`, `SYNTHFS_TESTS`).
 
-`synthfs-ls IMAGE...` prints each image's format, counts and label; `-l` lists every node under what holds
-it, `-r` adds what each uses and each sample's header.  `synthfs-wav IMAGE DIR [NODE...]` writes every sample (or
-the nodes given by number) into DIR as 16-bit WAV files, named by number and name, the original key and loop in a
-`smpl` chunk; `synthfs-wav -n IMAGE` lists what it would write.  `synthfs-convert IN OUT.vhd` makes a dynamic VHD of a raw image and
-`synthfs-convert IN.vhd OUT` a raw image of a VHD, never over a file already there.  `synthfs-edit IMAGE` changes a FAT
-volume: `add FILE [DIR]`, `mkdir PATH`, `rm PATH`, `mv PATH NEW`, `from OTHER PATH [DIR]` (a node of another image
-copied in) and `get PATH FILE [wav]` (a node written out).
+`synthfs` is the command line: `synthfs COMMAND IMAGE [ARGS...]` runs one command on an image, and `synthfs shell
+[-w] IMAGE` reads them from stdin, walking the image's nodes like a file tree (`cd`, `pwd`).  `ls` lists a node and
+what it holds (`-l` every node under it, `-r` with what each uses and each sample's header), `info` a node's
+properties, `uses` what it uses; `export` writes nodes in a conversion they export (`-t syx -o all.syx /`: the whole
+image's Data Sets), `wav` every sample as a WAV file; `add`, `mkdir`, `rm`, `mv`, `transfer` and `set` change a FAT
+volume; `scan IMAGE...` gives each image's line, `convert` makes a VHD of a raw image or a raw image of a VHD, and
+`create` an empty volume.  A node is named by a path of names, or `TYPE:NUMBER` where names are shared
+(`synthfs --help`).
 
 ## Layout
 

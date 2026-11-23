@@ -1,9 +1,9 @@
 # Copyright 2026 Ian Karlsson
-# synthfs: synthesizer and sampler images read (the library), synthfs-ls and synthfs-wav (the tools) and the tests
+# synthfs: synthesizer and sampler images read (the library), synthfs (the command line tool) and the tests
 cmake_minimum_required(VERSION 3.23)
 project(synthfs VERSION 0.1.0 LANGUAGES CXX)
 
-option(SYNTHFS_TOOLS "Build synthfs-ls and synthfs-wav, the command line tools" ${PROJECT_IS_TOP_LEVEL})
+option(SYNTHFS_TOOLS "Build synthfs, the command line tool" ${PROJECT_IS_TOP_LEVEL})
 option(SYNTHFS_TESTS "Build the tests" ${PROJECT_IS_TOP_LEVEL})
 
 set(CMAKE_CXX_STANDARD 20)
@@ -25,18 +25,10 @@ target_include_directories(synthfs PUBLIC include)
 target_compile_options(synthfs PRIVATE ${SYNTHFS_WARNINGS})
 
 if(SYNTHFS_TOOLS)
-	add_executable(synthfs-ls tools/synthfs_ls.cpp)
-	target_link_libraries(synthfs-ls PRIVATE synthfs)
-	target_compile_options(synthfs-ls PRIVATE ${SYNTHFS_WARNINGS})
-	add_executable(synthfs-wav tools/synthfs_wav.cpp)
-	target_link_libraries(synthfs-wav PRIVATE synthfs)
-	target_compile_options(synthfs-wav PRIVATE ${SYNTHFS_WARNINGS})
-	add_executable(synthfs-edit tools/synthfs_edit.cpp)
-	target_link_libraries(synthfs-edit PRIVATE synthfs)
-	target_compile_options(synthfs-edit PRIVATE ${SYNTHFS_WARNINGS})
-	add_executable(synthfs-convert tools/synthfs_convert.cpp)
-	target_link_libraries(synthfs-convert PRIVATE synthfs)
-	target_compile_options(synthfs-convert PRIVATE ${SYNTHFS_WARNINGS})
+	add_executable(synthfs-cli tools/synthfs.cpp tools/commands.cpp tools/nodes.cpp)
+	set_target_properties(synthfs-cli PROPERTIES OUTPUT_NAME synthfs)
+	target_link_libraries(synthfs-cli PRIVATE synthfs)
+	target_compile_options(synthfs-cli PRIVATE ${SYNTHFS_WARNINGS})
 endif()
 
 if(SYNTHFS_TESTS)
@@ -45,4 +37,7 @@ if(SYNTHFS_TESTS)
 	target_link_libraries(synthfs_test PRIVATE synthfs)
 	target_compile_options(synthfs_test PRIVATE ${SYNTHFS_WARNINGS})
 	add_test(NAME synthfs COMMAND synthfs_test)
+	if(SYNTHFS_TOOLS AND NOT WIN32)
+		add_test(NAME synthfs-cli COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/test/cli_test.sh $<TARGET_FILE:synthfs-cli>)
+	endif()
 endif()
