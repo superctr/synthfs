@@ -26,7 +26,7 @@ Tried in this order:
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 | FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
 | System exclusive | file | `F0 41`, a device, the model ID of a model with a map and `12` at byte 0, 16 MB at most |
-| XV-5080 | file | `SVD1` at byte 2 and `XV88` at byte 20, 16 MB at most (below, "XV-5080 files") |
+| XV-5080, XV-3080 | file | `SVD1` at byte 2 and `XV88` at byte 20, 16 MB at most; a patch's record size tells which (below, "XV-5080 and XV-3080 files") |
 
 A cue sheet is told first, by its text (below, "Cue sheets").  An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -750,16 +750,24 @@ patches, rhythm sets and performances tried (five or six patches, two rhythm set
 each).  What follows a patch's 574
 bytes in its place (the split keys of a patch made of samples) is not read.
 
-## XV-5080 files
+## XV-5080 and XV-3080 files
 
-The file an XV-5080 saves its user memory in (`.SVD`, on a card or a disk): a halfword, the length of the head
-less two; `SVD1`; ten zero bytes; then sixteen bytes for each chunk, its tag, the model (`XV88`) and the chunk's
-place and size (longs), all big-endian.  A chunk starts with its records' count, a record's size, the length of
-this head (16) and a zero (longs), and the records follow.  `PRFa` holds 64 performances of 926 bytes, `PATa` 128
-patches of 938, `RHYa` four rhythm sets of 10808: the battery memory's records (above).  Each record whose name is
-twelve printable characters is an entry, numbered by its place, and reads as `syx` at the user place of that
-number.  The other chunks (`SYSa` the system, `FVRa`, `CTGa`) are not read.  A file with another model's tag is not
-told.
+The file an XV-5080 or XV-3080 saves its user memory in (`\ROLAND\SOUND_nn.SVD`, on a card or a disk): a halfword,
+the length of the head less two; `SVD1`; ten zero bytes; then sixteen bytes for each chunk, its tag, the model
+(`XV88`, in both machines' files) and the chunk's place and size (longs), all big-endian.  A chunk starts with its
+records' count, a record's size, the length of this head (16) and a zero (longs), and the records follow.  `PRFa`
+holds 64 performances of 926 bytes, `PATa` 128 patches and `RHYa` four rhythm sets of 10808: the battery memory's
+records (above).  A patch's record is 938 bytes in an XV-5080's file and 574 in an XV-3080's (176 890 bytes in
+all, to the XV-5080's 223 482) **[seen]**, which is what tells whose the file is: the format is `XV-5080` or
+`XV-3080` by it.  Each record whose name is twelve printable characters is an entry, numbered by its place, and
+reads as `syx` by its machine's map at the user place of that number.  The other chunks (`SYSa` the system, `FVRa`,
+`CTGa`) are not read.  A file with another model's tag is not told.
+
+Such a file is an image of its own (medium `file`), and on a FAT volume a file named `.SVD` that is one has its
+entries under it, read from the file's bytes: a card or disk the machine saved to opens down to its sounds.
+There they go with their file and are not removed, named or moved by themselves.  Checked on a card an XV-3080
+saved to: a patch read from the file on the card is the Data Sets of the same patch in the memory it was saved
+from.
 
 ## SmartMedia cards
 

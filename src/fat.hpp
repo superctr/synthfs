@@ -57,6 +57,8 @@ public:
 	bool raw(size_t i, uint64_t offset, void *buf, size_t n) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 	//! Written where the image is: files and directories made, removed, named and moved (docs/formats.md, "FAT").
+	//! A sound of a file that holds sounds (an XV-5080's .SVD), listed under the file.
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 	bool writes() const override { return true; }
 	size_t create(size_t parent, syfs_key type, std::string_view name, uint64_t bytes, const Source &from,
 		std::string &why) override;
@@ -67,6 +69,8 @@ public:
 private:
 	fat::Geometry g_;
 	std::vector<uint32_t> first_;  //!< Each entry's first cluster, beside entries.
+	//! Whether an entry is a sound within a file and no entry of a directory.
+	bool within(size_t i) const { return entries[i].kind != SYFS_TYPE_FILE && entries[i].kind != SYFS_TYPE_DIRECTORY; }
 	//! Each entry's directory slots, bytes from the volume's start: its long name's, then its own.
 	std::vector<std::vector<uint64_t>> slots_;
 	uint32_t hint_ = 2;            //!< Where the search for a free cluster starts.

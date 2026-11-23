@@ -52,7 +52,7 @@ patches may use one partial, two partials one sample.
 | `format` | key | the format told, `none` where the library tells none |
 | `container` | key | `vhd` where the image is in a VHD, read through its sectors; `cue` where it is a cue sheet's disc; else `raw` |
 | `sectors` | int | a cue sheet's disc: its sectors, where the lead-out starts |
-| `medium` | key | `disk` (a hard disk's, MO's or CD-ROM's image), `floppy`, `card` (a PCM card's ROM, a DATA card's RAM), `board`, `smartmedia` (a SmartMedia card's pages), `file` (a file of exclusive messages, an XV-5080's `.SVD`), `memory` (a machine's battery memory, opened by `syfs_open_as`) |
+| `medium` | key | `disk` (a hard disk's, MO's or CD-ROM's image), `floppy`, `card` (a PCM card's ROM, a DATA card's RAM), `board`, `smartmedia` (a SmartMedia card's pages), `file` (a file of exclusive messages, an XV's `.SVD`), `memory` (a machine's battery memory, opened by `syfs_open_as`) |
 | `label` | string | the image's own: an S-760/S-770 disk's system line, a floppy's kind line, an S-550 disk's title, an ISO 9660 volume's ID, a FAT volume's label, a board's name; else empty |
 | `volume` | string | an S-760/S-770 disk's name, the twelve characters a machine's drive list shows; the label there is the system line |
 | `model` | string | a board or card of Roland's: the model it was sold as ("SR-JV80-08", "SO-PCM1-01", "SRX-07") |
@@ -109,7 +109,7 @@ What `syfs_read` gives of a node, by the names `exports` lists.
 | `raw` | a track: an audio track's sectors, a data track's user data; a FAT's or CD-ROM's file; an AKAI program, sample, multi or file of another type | the file's bytes as its volume keeps them, as far as its chain reads |
 | `wav` | a node with a wave | a WAV file of 16-bit values, the channels as stored, with a `smpl` chunk for the original key and the loop where the sample has either; zeros where the wave is cut short in the image |
 | `s16` | a node with a wave | the values alone, in the host's byte order |
-| `syx` | an S-760/S-770 disk's or floppy's performance, patch, partial or sample; a board's patch or rhythm set of the JV-1080's shape, an SRX board's of an XV-3080's or XV-5080's bank; a JV-1080's DATA card's or battery memory's performance, patch or rhythm set, an XV-5080's or XV-3080's battery memory's and an XV-5080's `.SVD` file's; an entry of a system exclusive file | its parameters as Roland Data Sets by its model's address map (`maps.md`, `formats.md`), ready to send or to keep as a `.syx` file |
+| `syx` | an S-760/S-770 disk's or floppy's performance, patch, partial or sample; a board's patch or rhythm set of the JV-1080's shape, an SRX board's of an XV-3080's or XV-5080's bank; a JV-1080's DATA card's or battery memory's performance, patch or rhythm set, an XV-5080's or XV-3080's battery memory's and an XV-5080's or XV-3080's `.SVD` file's, alone or on a FAT volume; an entry of a system exclusive file | its parameters as Roland Data Sets by its model's address map (`maps.md`, `formats.md`), ready to send or to keep as a `.syx` file |
 
 Not yet: an S-760/S-770 or S-550 record's bytes; a board's patch of another shape than the JV-1080's and the XVs' (the JV-880's, the JD-990's, an SRX's Global and Fantom-S banks), a JV-80's card or an S-550's as system exclusive.
 

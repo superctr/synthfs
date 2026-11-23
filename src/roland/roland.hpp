@@ -5,6 +5,7 @@
 
 #include "../internal.hpp"
 
+#include <functional>
 #include <map>
 
 namespace syfs::map {
@@ -212,7 +213,7 @@ private:
 	mutable std::vector<int16_t> frames_;
 };
 
-//! An XV-5080's file of its user memory (.SVD): its performances, patches and rhythm sets.
+//! An XV-5080's or XV-3080's file of its user memory (.SVD): its performances, patches and rhythm sets.
 class Svd final : public Medium {
 public:
 	using Medium::Medium;
@@ -221,6 +222,23 @@ public:
 	void list() override;
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 };
+
+//! An XV-5080's or XV-3080's .SVD file wherever its bytes are: an image of its own, or a file of a volume.
+namespace svd {
+using Read = std::function<bool(uint64_t at, void *buf, size_t n)>;
+struct Record {
+	syfs_key kind;
+	uint32_t number;
+	std::string name;
+	uint64_t bytes, at;  //!< Its bytes that are read, and where they start in the file.
+};
+//! Whose a file of a size is, SYFS_FORMAT_XV5080 or SYFS_FORMAT_XV3080; SYFS_NONE where it is none.
+syfs_key is(const Read &read, uint64_t size);
+//! Its performances, patches and rhythm sets that have names.
+void list(const Read &read, uint64_t size, const std::function<void(const Record &)> &found);
+//! A record's parameters as Data Sets, at the user place of its number.
+bool data_sets(const Read &read, syfs_key format, syfs_key kind, uint32_t number, uint64_t at, std::vector<uint8_t> &out);
+}
 
 //! Whether a packed record's first eleven bytes are a name of twelve printable characters.
 bool named(const uint8_t *rec, bool from_top);

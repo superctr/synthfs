@@ -1,6 +1,7 @@
 // Copyright 2026 Ian Karlsson
 // A FAT volume, bare or behind an MBR: its directories and files (docs/formats.md, "FAT")
 #include "fat.hpp"
+#include "roland/roland.hpp"
 
 #include "audio.hpp"
 
@@ -351,6 +352,41 @@ void Fat::list()
 	}
 	if (label.empty() && memcmp(g_.label, "NO NAME    ", 11))
 		label = label_of(g_.label);
+	// a file that holds sounds has them under it: an XV's .SVD, by its name and its head
+	const size_t files = entries.size();
+	for (size_t i = 0; i < files; i++) {
+		const std::string_view name = entries[i].name;
+		if (entries[i].kind != SYFS_TYPE_FILE || name.size() < 4 || name[name.size() - 4] != '.'
+			|| (name[name.size() - 3] | 0x20) != 's' || (name[name.size() - 2] | 0x20) != 'v' || (name[name.size() - 1] | 0x20) != 'd')
+			continue;
+		const uint64_t bytes = entries[i].bytes;
+		const auto clusters = chain(first_[i], (bytes + g_.cluster - 1) / g_.cluster);
+		if (clusters.size() * uint64_t(g_.cluster) < bytes)
+			continue;
+		const roland::svd::Read read = [&](uint64_t at, void *buf, size_t n) {
+			return at <= bytes && n <= bytes - at && read_file(clusters, at, buf, n);
+		};
+		const syfs_key whose = roland::svd::is(read, bytes);
+		if (whose == SYFS_NONE)
+			continue;
+		roland::svd::list(read, bytes, [&](const roland::svd::Record &r) {
+			add(r.kind, whose, r.number, i, r.name, r.bytes, r.at);
+			first_.push_back(0);
+			slots_.emplace_back();
+		});
+	}
+}
+
+bool Fat::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	if (!within(i) || entries[i].parent == syfs::NONE)
+		return false;
+	const size_t file = entries[i].parent;
+	const uint64_t bytes = entries[file].bytes;
+	const auto clusters = chain(first_[file], (bytes + g_.cluster - 1) / g_.cluster);
+	return roland::svd::data_sets([&](uint64_t at, void *buf, size_t n) {
+		return at <= bytes && n <= bytes - at && read_file(clusters, at, buf, n);
+	}, entries[i].format, entries[i].kind, entries[i].number, where[i], out);
 }
 
 bool Fat::sample(size_t i, syfs::Sample &out) const

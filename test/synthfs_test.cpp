@@ -3540,13 +3540,14 @@ static void test_syx_xv()
 			&& syx_of(sx, find(sx, "Seq:Template")) == perf);
 		if (sx)
 			close_image(sx);
-		// an XV-5080's .SVD file: the same records in chunks, a patch's in 938 bytes
-		if (five) {
+		// the machine's .SVD file: the same records in chunks, a patch's in 938 bytes of an XV-5080's and 574 of an
+		// XV-3080's, which tells whose it is
+		{
 			Bytes svd(0x70, 0);
 			svd[1] = 0x6E;
 			memcpy(&svd[2], "SVD1", 4);
 			const std::tuple<const char *, size_t, uint32_t, uint32_t, uint32_t> chunks[] = { { "PRFa", perfs, 1064, 926, 64 },
-				{ "PATa", patches, 938, 938, 128 }, { "RHYa", sets, 10808, 10808, 4 } };
+				{ "PATa", patches, five ? 938u : 838u, five ? 938u : 574u, 128 }, { "RHYa", sets, 10808, 10808, 4 } };
 			size_t entry = 16;
 			for (auto [tag, at, stride, size, count] : chunks) {
 				memcpy(&svd[entry], tag, 4), memcpy(&svd[entry + 4], "XV88", 4);
@@ -3564,13 +3565,41 @@ static void test_syx_xv()
 			}
 			syfs_io sio = io_of(svd);
 			syfs_key medium = SYFS_NONE;
-			CHECK(probe(&sio, &medium) == SYFS_FORMAT_XV5080 && medium == SYFS_MEDIUM_FILE);
+			CHECK(probe(&sio, &medium) == format && medium == SYFS_MEDIUM_FILE);
 			syfs_image *sv = syfs_open(&sio, nullptr, 0);
 			CHECK(sv && count_of(sv) == 3);
 			if (sv) {
 				CHECK(syx_of(sv, find(sv, "Y2K Concerto")) == syx_of(m, p) && syx_of(sv, find(sv, "Seq:Template")) == syx_of(m, f)
 					&& syx_of(sv, find(sv, "XV Rust Kit")) == syx_of(m, r) && entry_at(sv, find(sv, "XV Rust Kit"))->number == 3);
 				close_image(sv);
+			}
+			// the file on a FAT volume: its sounds are under it, read as from the file alone, and go with it
+			Sparse disk(1440 * 1024);
+			syfs_io w { &disk, sparse_read, sparse_write, disk.size };
+			char err[128];
+			CHECK(syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, nullptr, err, sizeof err));
+			syfs_image *fat = syfs_open(&w, nullptr, 0);
+			CHECK(fat && put_file(fat, SYFS_ROOT, "SOUND_00.SVD", svd) != SYFS_NO_NODE);
+			if (fat)
+				syfs_close(fat);
+			syfs_io ro = io_of(disk);
+			fat = syfs_open(&ro, nullptr, 0);
+			CHECK(fat && count_of(fat) == 4);
+			if (fat) {
+				const size_t file = find(fat, "SOUND_00.SVD"), in = find(fat, "Y2K Concerto");
+				CHECK(file == 0 && entry_at(fat, in)->parent == file && entry_at(fat, in)->format == format
+					&& entry_at(fat, in)->number == 3 && syx_of(fat, in) == syx_of(m, p)
+					&& syx_of(fat, find(fat, "XV Rust Kit")) == syx_of(m, r) && exports(fat, file, "raw") && !exports(fat, file, "syx"));
+				close_image(fat);
+			}
+			// a sound within the file is not removed or named by itself
+			fat = syfs_open(&w, nullptr, 0);
+			syfs_node all[8];
+			CHECK(fat && syfs_list(fat, SYFS_ROOT, SYFS_REL_ALL, all, 8) == 4);
+			if (fat) {
+				CHECK(!syfs_remove(fat, 2) && !syfs_set_str(fat, 2, SYFS_PROP_NAME, "Other") && syfs_remove(fat, 1)
+					&& syfs_list(fat, SYFS_ROOT, SYFS_REL_ALL, all, 8) == 0);
+				syfs_close(fat);
 			}
 		}
 		close_image(m);

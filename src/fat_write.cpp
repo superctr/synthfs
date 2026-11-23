@@ -394,10 +394,19 @@ size_t Fat::create(size_t parent, syfs_key type, std::string_view name, uint64_t
 
 bool Fat::remove(size_t i, std::string &why)
 {
+	// a sound within a file goes with its file only
+	if (within(i))
+		return why = "a sound within a file is not removed by itself", false;
+	dead.resize(entries.size(), false);
 	// what it holds first, so that nothing is left that no directory enters
-	for (size_t k = 0; k < entries.size(); k++)
-		if (!gone(k) && entries[k].parent == i && !remove(k, why))
+	for (size_t k = 0; k < entries.size(); k++) {
+		if (gone(k) || entries[k].parent != i)
+			continue;
+		if (within(k))
+			dead[k] = true;
+		else if (!remove(k, why))
 			return false;
+	}
 	if (!vacate(slots_[i]) || (valid(first_[i]) && !release(first_[i])))
 		return why = "the image could not be written", false;
 	dead.resize(entries.size(), false);
@@ -407,6 +416,8 @@ bool Fat::remove(size_t i, std::string &why)
 
 bool Fat::rename(size_t i, std::string_view name, std::string &why)
 {
+	if (within(i))
+		return why = "a sound within a file is not changed", false;
 	if (same_name(entries[i].name, name) && entries[i].name == name)
 		return true;
 	if (taken(entries[i].parent, name, i))
@@ -427,6 +438,8 @@ bool Fat::rename(size_t i, std::string_view name, std::string &why)
 
 bool Fat::move(size_t i, size_t parent, std::string &why)
 {
+	if (within(i))
+		return why = "a sound within a file is not changed", false;
 	if (parent == entries[i].parent)
 		return true;
 	if (parent != syfs::NONE && (gone(parent) || entries[parent].kind != SYFS_TYPE_DIRECTORY))
