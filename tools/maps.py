@@ -3,6 +3,7 @@
 # maps/*.json made src/maps.cpp: each model's blocks, parameters and addresses as tables (docs/maps.md)
 import json
 import pathlib
+import re
 import sys
 
 root = pathlib.Path(__file__).resolve().parent.parent
@@ -55,13 +56,23 @@ for path in sorted((root / "maps").glob("*.json")):
             if p["offset"] + p["size"] > b["size"]:
                 sys.exit(f"{path.name}: {k}: {p['name']} past the block's {b['size']}")
         params = table("Param", [param(p, f"{path.name}: {k}") for p in b["params"]])
-        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])} }}')
-    entries, sizes = [], set()
+        # the name: the parameters "... Name 1" on, a character each
+        chars = [p for p in b["params"] if re.search(r"Name \d+$", p["name"])]
+        first = chars[0] if chars and chars[0]["name"].endswith("Name 1") else None
+        if first and any(p["size"] != first["size"] or p["offset"] != first["offset"] + n * first["size"]
+                         for n, p in enumerate(chars)):
+            sys.exit(f"{path.name}: {k}: a name not in a row")
+        name = f'{first["offset"]}, {len(chars)}, {first["size"]}' if first else "0, 0, 0"
+        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name} }}')
+    entries, sizes, last = [], set(), -1
     for e in m["blocks"]["top"]["entries"]:
         addr = 0
         for byte in e["addr"]:
             addr = addr * 128 + byte
         sizes.add(len(e["addr"]))
+        if entries and addr <= last:
+            sys.exit(f"{path.name}: {e['name']} not after the entry before it")
+        last = addr
         entries.append(f"{{ 0x{addr:07x}, {ids.index(e['block'])} }}")
     if len(sizes) != 1 or len(m["model_id"]) > 4:
         sys.exit(f"{path.name}: addresses of {sorted(sizes)} bytes, a model ID of {len(m['model_id'])}")
@@ -78,12 +89,34 @@ out.append("""const Block *Map::block(std::string_view id) const
 	return nullptr;
 }
 
-const Entry *Map::first(const Block *b) const
+const Entry *Map::at(const Block *b, uint32_t n) const
 {
-	for (uint32_t n = 0; n < entry_count; n++)
-		if (&blocks[entries[n].block] == b)
-			return &entries[n];
+	for (uint32_t k = 0; k < entry_count; k++)
+		if (&blocks[entries[k].block] == b && !n--)
+			return &entries[k];
 	return nullptr;
+}
+
+uint32_t Map::places(const Block *b) const
+{
+	uint32_t n = 0;
+	for (uint32_t k = 0; k < entry_count; k++)
+		n += &blocks[entries[k].block] == b;
+	return n;
+}
+
+// the entries are in the order of their addresses
+const Entry *Map::entry_of(uint32_t addr) const
+{
+	uint32_t lo = 0, hi = entry_count;
+	while (lo < hi) {
+		const uint32_t mid = (lo + hi) / 2;
+		if (entries[mid].addr <= addr)
+			lo = mid + 1;
+		else
+			hi = mid;
+	}
+	return lo && addr - entries[lo - 1].addr < blocks[entries[lo - 1].block].size ? &entries[lo - 1] : nullptr;
 }
 
 const Map *find(std::string_view id)

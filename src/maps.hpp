@@ -34,6 +34,9 @@ struct Block {
 	uint32_t size;    //!< Units.
 	const Param *params;
 	uint32_t count;
+	uint32_t name_at; //!< Where its name's first character is.
+	uint8_t name_size; //!< Characters of the name, 0 where it has none.
+	uint8_t name_units; //!< Units a character.
 };
 
 //! A block at an address.
@@ -55,8 +58,12 @@ struct Map {
 	uint32_t entry_count;
 
 	const Block *block(std::string_view id) const;
-	//! The first entry of a block, else null.
-	const Entry *first(const Block *b) const;
+	//! The nth place a block is at, else null.
+	const Entry *at(const Block *b, uint32_t n = 0) const;
+	//! How many places a block is at.
+	uint32_t places(const Block *b) const;
+	//! The entry an address is in, else null.
+	const Entry *entry_of(uint32_t addr) const;
 };
 
 //! A map by its file's name, else null.

@@ -104,22 +104,7 @@ std::vector<size_t> S700Floppy::refs(size_t i) const
 		auto rec = image.read(where[i], lists[l].size);
 		if (rec.empty())
 			return {};
-		switch (e.kind) {
-		case SYFS_TYPE_PERFORMANCE:
-			for (int k = 0; k < 32; k++)
-				if (rec[0x10 + k] != 0xFF)
-					nums.push_back(rec[0x10 + k]);
-			break;
-		case SYFS_TYPE_PATCH:
-			for (int k = 0; k < 88; k++)
-				if (rec[0x20 + k] != 0xFF)
-					nums.push_back(rec[0x20 + k]);
-			break;
-		default:
-			for (int k = 0; k < 4; k++)
-				nums.push_back(int16_t(le16(&rec[16 + 16 * k])));
-			break;
-		}
+		named(e.kind, rec.data(), nums);
 	}
 	const auto &list = numbered_[to];
 	std::vector<size_t> out;
@@ -185,6 +170,19 @@ size_t S700Floppy::wave(size_t i, const syfs::Sample &, uint64_t first, int16_t 
 			break;
 	}
 	return done;
+}
+
+// the records are memory's as they are; a DJ-70's have no map
+bool S700Floppy::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	const syfs::Entry &e = entries[i];
+	int l = 0;
+	while (l < 4 && lists[l].kind != e.kind)
+		l++;
+	if (l == 4 || i == volume_)
+		return false;
+	const auto rec = image.read(where[i], lists[l].size);
+	return !rec.empty() && s700::data_sets(format, e.kind, e.number, rec, nullptr, out);
 }
 
 std::unique_ptr<Medium> S700Floppy::open(const syfs_io &io, syfs_key format)

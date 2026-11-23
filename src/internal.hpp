@@ -110,6 +110,8 @@ public:
 	virtual uint64_t raw_size(size_t) const { return 0; }
 	//! Reads n bytes of entry i's file from offset; false where any is missing.
 	virtual bool raw(size_t, uint64_t, void *, size_t) const { return false; }
+	//! Entry i's parameters as exclusive messages, Data Sets by its model's address map; false where it has none.
+	virtual bool data_sets(size_t, std::vector<uint8_t> &) const { return false; }
 	//! The bytes a new entry is made of: n at offset read into buf; false where any is missing.
 	using Source = std::function<bool(uint64_t offset, void *buf, size_t n)>;
 	//! Whether the format's volumes are written at all: its entries made, removed, named and moved.

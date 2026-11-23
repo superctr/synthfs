@@ -1569,6 +1569,14 @@ static void test_s700_floppy()
 	CHECK((used(fs, find(fs, "PAD:Floppy Prt")) == std::vector<std::string> { "PAD:Floppy Smp" }));
 	size_t s = find(fs, "PAD:Floppy Smp");
 	CHECK(sample_at(fs, find(fs, "PAD:Floppy Pch"), 60) == s);
+	{
+		// the records are memory's: Data Sets of the first 256 bytes of the patch, 128 of the partial, 48 of the sample
+		Bytes m(syfs_read(fs, syfs_node(find(fs, "PAD:Floppy Pch") + 1), SYFS_AS_SYX, 0, nullptr, 0));
+		CHECK(m.size() == 4 * (128 + 11) && syfs_read(fs, syfs_node(find(fs, "PAD:Floppy Pch") + 1), SYFS_AS_SYX, 0, m.data(), m.size()) == m.size());
+		CHECK(m[5] == 0 && m[6] == 4 && m[9] == 0x0 && m[10] == 0xF && m[9 + 2 * 0x20] == 0xF && m[139 + 9 + 2 * (0x20 + 39 - 64)] == 0);
+		CHECK(syfs_read(fs, syfs_node(s + 1), SYFS_AS_SYX, 0, nullptr, 0) == 96 + 11);
+		CHECK(!syfs_read(fs, syfs_node(find(fs, "PAD:Floppy Vol") + 1), SYFS_AS_SYX, 0, nullptr, 0));
+	}
 	CHECK(sample_at(fs, find(fs, "PAD:Floppy Pch"), 61) == NONE);
 	CHECK(!strcmp(entry_at(fs, s)->tag, "PAD") && entry_at(fs, s)->bytes == 3 * 9216);
 	syfs::Sample info;
@@ -2984,7 +2992,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 19 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_CDDA
+	CHECK(formats == 20 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_SYX
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -3009,7 +3017,8 @@ static void test_maps()
 		for (auto [name, bytes, addr] : records)
 		{
 			const map::Block *b = m->block(name);
-			CHECK(b && b->size == bytes * 2 && m->first(b) && m->first(b)->addr == addr);
+			CHECK(b && b->size == bytes * 2 && m->at(b) && m->at(b)->addr == addr && m->entry_of(addr + b->size - 1) == m->at(b)
+				&& b->name_size == 16 && b->name_units == 2 && !b->name_at);
 			for (uint32_t n = 0; b && n < b->count; n++)
 				CHECK(b->params[n].bits == 4 && b->params[n].offset + b->params[n].size <= b->size
 					&& b->params[n].min <= b->params[n].max);
@@ -3031,6 +3040,192 @@ static void test_maps()
 	CHECK(select && select->flags == map::SIGNED && select->min == -1 && select->max == 127);
 }
 
+// ---- exclusive messages: an S-700 record as Data Sets, and a file of them read back
+static Bytes syx_of(syfs_image *fs, size_t i)
+{
+	Bytes b(syfs_read(fs, syfs_node(i + 1), SYFS_AS_SYX, 0, nullptr, 0));
+	CHECK(syfs_read(fs, syfs_node(i + 1), SYFS_AS_SYX, 0, b.data(), b.size()) == b.size());
+	return b;
+}
+
+static bool exports(syfs_image *fs, size_t i, const char *as)
+{
+	char text[64] = "";
+	syfs_get_str(fs, syfs_node(i + 1), SYFS_PROP_EXPORTS, text, sizeof text);
+	return (std::string(" ") + text + " ").find(std::string(" ") + as + " ") != std::string::npos;
+}
+
+// the units a file's Data Sets hold by address, read apart from the library: Roland's, model 34, device 0, each
+// within a row of 128 addresses and its sum right
+static std::map<uint32_t, uint8_t> units_of(const Bytes &b, size_t *messages = nullptr)
+{
+	std::map<uint32_t, uint8_t> out;
+	size_t at = 0, count = 0;
+	while (at < b.size()) {
+		size_t end = at + 1;
+		while (end < b.size() && b[end] != 0xF7)
+			end++;
+		CHECK(end < b.size() && end - at >= 11 && b[at] == 0xF0 && b[at + 1] == 0x41 && b[at + 2] == 0 && b[at + 3] == 0x34
+			&& b[at + 4] == 0x12);
+		if (end >= b.size() || end - at < 11)
+			break;
+		unsigned sum = 0;
+		for (size_t k = at + 5; k < end; k++)
+			sum += b[k];
+		const uint32_t addr = uint32_t(b[at + 5]) << 21 | b[at + 6] << 14 | b[at + 7] << 7 | b[at + 8];
+		const size_t n = end - 1 - (at + 9);
+		CHECK(sum % 128 == 0 && n >= 1 && n <= 128 && addr / 128 == (addr + n - 1) / 128);
+		for (size_t k = 0; k < n; k++) {
+			CHECK(b[at + 9 + k] < 16 && !out.count(addr + uint32_t(k)));
+			out[addr + uint32_t(k)] = b[at + 9 + k];
+		}
+		count++;
+		at = end + 1;
+	}
+	if (messages)
+		*messages = count;
+	return out;
+}
+
+// whether the units from an address on are the bytes, a nibble each with the high one first
+static bool units_hold(const std::map<uint32_t, uint8_t> &units, uint32_t addr, const uint8_t *bytes, size_t n)
+{
+	for (size_t k = 0; k < 2 * n; k++) {
+		auto u = units.find(addr + uint32_t(k));
+		if (u == units.end() || u->second != (k & 1 ? bytes[k / 2] & 15 : bytes[k / 2] >> 4))
+			return false;
+	}
+	return true;
+}
+
+static void test_syx()
+{
+	// the disk of test_s700 with its records as a machine keeps them: the names, the numbers memory has, and an
+	// S-760's extended records
+	Bytes b = s700_image(" S-760 System Disk    Ver. 2.24");
+	b.resize((0x19AE + 2) * 512, 0);
+	const size_t perf = 0x8AC * 512, patch = 0xAAC * 512, partial = 0xEAC * 512, sample = 0x12AC * 512, ext = 0x19AE * 512;
+	for (size_t k = 16; k < 256; k++) {
+		b[perf + k] = uint8_t(k * 7);
+		b[patch + k] = uint8_t(k * 5 + 1);
+	}
+	for (size_t k = 0; k < 128; k++) {
+		b[perf + 0x180 + k] = uint8_t(0xE0 ^ k);
+		b[ext + k] = uint8_t(0x30 + k);
+		b[ext + 128 + k] = uint8_t(0xFF - k);
+		if (k >= 80)
+			b[partial + k] = b[partial + 128 + k] = uint8_t(k * 3);
+	}
+	put_name(b, perf, "PRF:One", 16);
+	b[perf + 3] = 0x87;  // a number where the colon is, as a performance's record may have: read as the colon
+	put_name(b, patch, "STR:Strings", 16);
+	put_name(b, partial, "PRT:Low", 16);
+	put_name(b, partial + 128, "PRT:High", 16);
+	put_name(b, sample, "SMP:Low", 16);
+	put_name(b, sample + 96, "SMP:High", 16);
+	memset(&b[perf + 0x10], 0xFF, 32);
+	b[perf + 0x10] = b[perf + 0x11] = 0;
+	for (int k = 0; k < 88; k++)
+		b[patch + 0x20 + k] = k == 87 ? 255 : k < 44 ? 1 : 0;
+	syfs_io io = io_of(b);
+	syfs_image *fs = syfs_open(&io, nullptr, 0);
+	CHECK(fs);
+	if (!fs)
+		return;
+	const size_t one = find(fs, "PRF:One"), strings = find(fs, "STR:Strings"), low = find(fs, "PRT:Low"),
+		high = find(fs, "PRT:High"), slow = find(fs, "SMP:Low"), shigh = find(fs, "SMP:High");
+	CHECK(exports(fs, strings, "syx") && exports(fs, shigh, "syx") && exports(fs, shigh, "wav"));
+	CHECK(!exports(fs, find(fs, "VOL:One"), "syx") && syx_of(fs, find(fs, "VOL:One")).empty());
+	// each record's first half at its number's place, the extended records after their own
+	size_t messages = 0;
+	auto units = units_of(syx_of(fs, one), &messages);
+	CHECK(messages == 6 && units.size() == 768 && units_hold(units, 1 << 14, &b[perf], 256) && units_hold(units, 3 << 14, &b[perf + 0x180], 128));
+	units = units_of(syx_of(fs, strings), &messages);
+	CHECK(messages == 4 && units.size() == 512 && units_hold(units, 4 << 14, &b[patch], 256));
+	units = units_of(syx_of(fs, high), &messages);
+	CHECK(messages == 4 && units.size() == 512 && units_hold(units, (8 << 14) + 256, &b[partial + 128], 128)
+		&& units_hold(units, (1 << 21) + (2 << 14) + 256, &b[ext + 128], 128));
+	units = units_of(syx_of(fs, shigh), &messages);
+	// the third sample's 96 units run over a row's end: two messages
+	CHECK(messages == 2 && units.size() == 96 && units_hold(units, (12 << 14) + 2 * 96, &b[sample + 96], 48));
+	// parts of it read
+	Bytes whole = syx_of(fs, strings), part(100);
+	CHECK(syfs_read(fs, syfs_node(strings + 1), SYFS_AS_SYX, 300, part.data(), 100) == 100 && !memcmp(part.data(), &whole[300], 100));
+	CHECK(syfs_read(fs, syfs_node(strings + 1), SYFS_AS_SYX, whole.size() - 10, part.data(), 100) == 10);
+
+	// the file of all of them: the same entries, each giving the same messages
+	Bytes file;
+	const size_t order[] = { shigh, low, one, high, strings, slow };
+	for (size_t i : order) {
+		Bytes m = syx_of(fs, i);
+		file.insert(file.end(), m.begin(), m.end());
+	}
+	syfs_io fio = io_of(file);
+	syfs_key medium = SYFS_NONE;
+	CHECK(probe(&fio, &medium) == SYFS_FORMAT_SYX && medium == SYFS_MEDIUM_FILE);
+	syfs_image *sx = syfs_open(&fio, nullptr, 0);
+	CHECK(sx);
+	if (sx) {
+		CHECK(format_of(sx) == SYFS_FORMAT_SYX && medium_of(sx) == SYFS_MEDIUM_FILE && count_of(sx) == 6);
+		CHECK((names(sx, SYFS_TYPE_PERFORMANCE) == std::vector<std::string> { "PRF:One" }));
+		CHECK((names(sx, SYFS_TYPE_PARTIAL) == std::vector<std::string> { "PRT:Low", "PRT:High" }));
+		CHECK((names(sx, SYFS_TYPE_SAMPLE) == std::vector<std::string> { "SMP:Low", "SMP:High" }));
+		for (size_t i : order) {
+			const syfs::Entry *e = entry_at(fs, i);
+			const size_t j = find(sx, e->name, e->kind);
+			CHECK(j != NONE && entry_at(sx, j)->number == e->number && entry_at(sx, j)->format == SYFS_FORMAT_S760
+				&& !strcmp(entry_at(sx, j)->tag, e->tag) && syx_of(sx, j) == syx_of(fs, i) && exports(sx, j, "syx")
+				&& !exports(sx, j, "wav"));
+		}
+		CHECK(!strcmp(entry_at(sx, find(sx, "STR:Strings"))->tag, "STR"));
+		CHECK((used(sx, find(sx, "PRF:One")) == std::vector<std::string> { "STR:Strings" }));
+		CHECK((used(sx, find(sx, "STR:Strings")) == std::vector<std::string> { "PRT:High", "PRT:Low" }));
+		CHECK((used(sx, find(sx, "PRT:Low")) == std::vector<std::string> { "SMP:Low" }));
+		CHECK((used(sx, find(sx, "PRT:High")) == std::vector<std::string> { "SMP:High" }));
+		close_image(sx);
+	}
+
+	// a file shorter than a sector; a block with a message missing or its sum wrong is no entry; other messages and
+	// bytes between them are passed over
+	Bytes small = syx_of(fs, shigh);
+	CHECK(small.size() < 512);
+	syfs_io sio = io_of(small);
+	sx = syfs_open(&sio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 1 && !strcmp(entry_at(sx, 0)->name, "SMP:High") && entry_at(sx, 0)->number == 2);
+	if (sx)
+		close_image(sx);
+	Bytes cut = syx_of(fs, slow), patch_syx = syx_of(fs, strings);
+	const uint8_t other[] = { 0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7, 0xFE };
+	cut.insert(cut.end(), other, other + sizeof other);
+	cut.insert(cut.end(), patch_syx.begin(), patch_syx.begin() + 3 * (patch_syx.size() / 4));
+	Bytes wrong = syx_of(fs, low);
+	wrong[20] ^= 1;
+	cut.insert(cut.end(), wrong.begin(), wrong.end());
+	syfs_io cio = io_of(cut);
+	sx = syfs_open(&cio, nullptr, 0);
+	CHECK(sx && count_of(sx) == 1 && !strcmp(entry_at(sx, 0)->name, "SMP:Low"));
+	if (sx)
+		close_image(sx);
+	close_image(fs);
+
+	// an S-770's disk: no extended records, by the S-770's map
+	Bytes c = s700_image(" SYS-772 HardDisk Sys Ver. 2.25");
+	syfs_io io770 = io_of(c);
+	fs = syfs_open(&io770, nullptr, 0);
+	CHECK(fs);
+	if (fs) {
+		units = units_of(syx_of(fs, find(fs, "PRF:One")), &messages);
+		CHECK(messages == 4 && units.size() == 512 && units_hold(units, 1 << 14, &c[perf], 256));
+		units = units_of(syx_of(fs, find(fs, "PRT:High")), &messages);
+		CHECK(messages == 2 && units_hold(units, (8 << 14) + 256, &c[partial + 128], 128));
+		close_image(fs);
+	}
+	// what is no Data Set of a known model is not a file of them
+	Bytes none = { 0xF0, 0x41, 0x10, 0x16, 0x12, 0x00, 0x00, 0x00, 0x00, 0xF7 };
+	syfs_io nio = io_of(none);
+	CHECK(probe(&nio, nullptr) == SYFS_NONE && !syfs_open(&nio, nullptr, 0));
+}
+
 int main()
 {
 	test_keys();
@@ -3042,6 +3237,7 @@ int main()
 	test_akai();
 	test_s550();
 	test_s700_floppy();
+	test_syx();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

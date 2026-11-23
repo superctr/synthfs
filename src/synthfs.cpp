@@ -25,6 +25,7 @@ struct Reader {
 syfs_key disk(const Image &) { return SYFS_MEDIUM_DISK; }
 syfs_key floppy(const Image &) { return SYFS_MEDIUM_FLOPPY; }
 syfs_key card(const Image &) { return SYFS_MEDIUM_CARD; }
+syfs_key file(const Image &) { return SYFS_MEDIUM_FILE; }
 
 // tried in this order (docs/formats.md, "Telling them apart")
 template <class M>
@@ -46,6 +47,7 @@ constexpr Reader readers[] = {
 	reader<emu::Disk>(disk),
 	reader<Iso9660>(disk),
 	reader<Fat>(Fat::medium_of),
+	reader<roland::Syx>(file),
 };
 
 const Reader *reader_of(const Image &im, syfs_key &format)
@@ -118,6 +120,9 @@ struct syfs_image {
 	size_t sample_of = NONE;
 	bool sample_ok = false;
 	Sample sample {};
+	// the last entry's exclusive messages made
+	size_t syx_of = NONE;
+	std::vector<uint8_t> syx;
 
 	~syfs_image()
 	{
@@ -169,7 +174,7 @@ struct syfs_image {
 			if (std::find(types.begin(), types.end(), e[i].kind) == types.end())
 				types.push_back(e[i].kind);
 		}
-		sample_of = NONE;
+		sample_of = syx_of = NONE;
 	}
 
 	// whether the image's volume can be changed: the host gave a writer and the format is one written
@@ -212,11 +217,29 @@ struct syfs_image {
 		return sample_ok ? &sample : nullptr;
 	}
 
+	// entry i's parameters as exclusive messages; empty where it has none
+	const std::vector<uint8_t> &data_sets(size_t i)
+	{
+		if (syx_of != i) {
+			syx_of = i;
+			syx.clear();
+			try {
+				if (!medium->data_sets(i, syx))
+					syx.clear();
+			} catch (...) {
+				syx.clear();
+			}
+		}
+		return syx;
+	}
+
 	// the bytes entry i's contents are in a conversion; 0 where it has none
 	uint64_t exported(size_t i, syfs_key as)
 	{
 		if (as == SYFS_AS_RAW)
 			return medium->raw_size(i);
+		if (as == SYFS_AS_SYX)
+			return data_sets(i).size();
 		const Sample *s = header(i);
 		if (!s || !s->channels || !s->frames)
 			return 0;
@@ -261,7 +284,7 @@ struct syfs_image {
 		case SYFS_PROP_EXPORTS: {
 			// the conversions its contents are read in, a name each
 			std::string names;
-			for (syfs_key as : { SYFS_AS_RAW, SYFS_AS_WAV, SYFS_AS_S16 })
+			for (syfs_key as : { SYFS_AS_RAW, SYFS_AS_WAV, SYFS_AS_S16, SYFS_AS_SYX })
 				if (exported(n - 1, as))
 					names += (names.empty() ? "" : " ") + std::string(syfs_name(as));
 			return names.empty() ? Value {} : string(names);
@@ -329,7 +352,8 @@ syfs_image *syfs_open(const syfs_io *io, char *err, size_t err_size)
 	try {
 		Image image(*io);
 		uint8_t first[512];
-		if (!image.read(0, first, sizeof first))
+		// a file of exclusive messages may be: it is told first
+		if (!image.read(0, first, sizeof first) && roland::Syx::probe(image) == SYFS_NONE)
 			return say(err, err_size, "the image is shorter than a sector"), nullptr;
 		syfs_key format = SYFS_NONE;
 		const Reader *r = reader_of(image, format);
@@ -863,6 +887,10 @@ size_t syfs_read(syfs_image *im, syfs_node n, syfs_key as, uint64_t at, void *bu
 				if (!im->medium->raw(i, at + done, static_cast<uint8_t *>(buf) + done, k = std::min<size_t>(512, size - done)))
 					break;
 			return done;
+		}
+		if (as == SYFS_AS_SYX) {
+			memcpy(buf, im->data_sets(i).data() + at, size);
+			return size;
 		}
 		const Sample header = *im->header(i);
 		const size_t frame = header.channels * sizeof(int16_t);

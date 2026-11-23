@@ -817,11 +817,11 @@ static const Param params4[] = {
 };
 
 static const Block blocks5[] = {
-	{ "volume", 32, params0, 16 },
-	{ "performance", 512, params1, 416 },
-	{ "patch", 512, params2, 228 },
-	{ "partial", 256, params3, 108 },
-	{ "sample", 96, params4, 30 },
+	{ "volume", 32, params0, 16, 0, 16, 2 },
+	{ "performance", 512, params1, 416, 0, 16, 2 },
+	{ "patch", 512, params2, 228, 0, 16, 2 },
+	{ "partial", 256, params3, 108, 0, 16, 2 },
+	{ "sample", 96, params4, 30, 0, 16, 2 },
 };
 
 static const Entry entrys6[] = {
@@ -2427,14 +2427,14 @@ static const Param params12[] = {
 };
 
 static const Block blocks13[] = {
-	{ "volume", 32, params0, 16 },
-	{ "performance", 512, params1, 416 },
-	{ "ext-performance", 256, params7, 192 },
-	{ "patch", 512, params8, 237 },
-	{ "partial", 256, params9, 114 },
-	{ "sample", 96, params10, 28 },
-	{ "sample-load", 4, params11, 1 },
-	{ "ext-partial", 256, params12, 48 },
+	{ "volume", 32, params0, 16, 0, 16, 2 },
+	{ "performance", 512, params1, 416, 0, 16, 2 },
+	{ "ext-performance", 256, params7, 192, 0, 0, 0 },
+	{ "patch", 512, params8, 237, 0, 16, 2 },
+	{ "partial", 256, params9, 114, 0, 16, 2 },
+	{ "sample", 96, params10, 28, 0, 16, 2 },
+	{ "sample-load", 4, params11, 1, 0, 0, 0 },
+	{ "ext-partial", 256, params12, 48, 0, 0, 0 },
 };
 
 static const Entry entrys14[] = {
@@ -4207,13 +4207,13 @@ static const Param params17[] = {
 };
 
 static const Block blocks18[] = {
-	{ "volume", 32, params0, 16 },
-	{ "performance", 512, params1, 416 },
-	{ "ext-performance", 256, params15, 128 },
-	{ "patch", 512, params16, 236 },
-	{ "partial", 256, params17, 111 },
-	{ "sample", 96, params10, 28 },
-	{ "sample-load", 4, params11, 1 },
+	{ "volume", 32, params0, 16, 0, 16, 2 },
+	{ "performance", 512, params1, 416, 0, 16, 2 },
+	{ "ext-performance", 256, params15, 128, 0, 0, 0 },
+	{ "patch", 512, params16, 236, 0, 16, 2 },
+	{ "partial", 256, params17, 111, 0, 16, 2 },
+	{ "sample", 96, params10, 28, 0, 16, 2 },
+	{ "sample-load", 4, params11, 1, 0, 0, 0 },
 };
 
 static const Entry entrys19[] = {
@@ -5260,12 +5260,34 @@ const Block *Map::block(std::string_view id) const
 	return nullptr;
 }
 
-const Entry *Map::first(const Block *b) const
+const Entry *Map::at(const Block *b, uint32_t n) const
 {
-	for (uint32_t n = 0; n < entry_count; n++)
-		if (&blocks[entries[n].block] == b)
-			return &entries[n];
+	for (uint32_t k = 0; k < entry_count; k++)
+		if (&blocks[entries[k].block] == b && !n--)
+			return &entries[k];
 	return nullptr;
+}
+
+uint32_t Map::places(const Block *b) const
+{
+	uint32_t n = 0;
+	for (uint32_t k = 0; k < entry_count; k++)
+		n += &blocks[entries[k].block] == b;
+	return n;
+}
+
+// the entries are in the order of their addresses
+const Entry *Map::entry_of(uint32_t addr) const
+{
+	uint32_t lo = 0, hi = entry_count;
+	while (lo < hi) {
+		const uint32_t mid = (lo + hi) / 2;
+		if (entries[mid].addr <= addr)
+			lo = mid + 1;
+		else
+			hi = mid;
+	}
+	return lo && addr - entries[lo - 1].addr < blocks[entries[lo - 1].block].size ? &entries[lo - 1] : nullptr;
 }
 
 const Map *find(std::string_view id)

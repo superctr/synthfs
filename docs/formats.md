@@ -4,7 +4,7 @@ What synthfs reads of each format.  Every number is little-endian unless it says
 what the images at hand show and the library relies on without a machine's reading behind it.
 
 Each image is also of a medium: a disk (a hard disk's, MO's or CD-ROM's image, which share their layouts), a
-floppy, a card or a board.
+floppy, a card or a board; a file of exclusive messages is a file.
 
 ## Telling them apart
 
@@ -25,6 +25,7 @@ Tried in this order:
 | E-mu | disk | `EMU3` (EIII, E-IV) or `EMX2` (Emax II) at byte 0 |
 | ISO 9660 | disk | `\1CD001` at byte 0x8000 |
 | FAT | floppy, disk | a FAT boot sector at byte 0, or an MBR whose first FAT partition starts with one (below) |
+| System exclusive | file | `F0 41`, a device, the model ID of a model with a map and `12` at byte 0, 16 MB at most |
 
 A cue sheet is told first, by its text (below, "Cue sheets").  An image is 2048-byte sectors (`.iso`, `.cdr`) or raw 2352-byte ones (`.bin`), told by the sync pattern
 `00 FF×10 00` at byte 0; a raw sector's data is at +16 (mode 1) or +24 (mode 2, form 1).
@@ -153,6 +154,16 @@ bytes from sector 0x19AE, record *n* the partial *n*'s four sub-sample blocks (3
 record's bytes 16 to 47) and their enable bytes at +0x7C to +0x7F.  The extended performance is the last 128 bytes
 of the performance record (+0x180).  None of the discs here uses a sub-sample; the library reads neither.
 
+**As Data Sets** (`syfs_read` as `syx`): a performance, patch, partial or sample is its record's first bytes, as
+many as its block of the map (`maps.md`: 256, 256, 128, 48), a nibble a byte of the message with the high one
+first, at the address of the block's place for the entry's number.  Memory has fewer places than a disk's lists
+(64, 128, 256 and 512), so the number is taken within them: entry 130 of the patches goes to place 2.  An S-760's
+disk is read by the S-760's map and adds the extended records, each at the same place of its own block after the
+record's: the performance's last 128 bytes, and the partial's of the reserved segments.  An S-770's disk is read by
+the S-770's map.  The record goes as it is: on a hard disk or a CD-ROM the patches a performance's first half
+names, and a patch's bytes at +32, are the numbers memory had when it was saved, not the disk's (which are in the
+second half), so one entry's messages do not carry what it uses.
+
 ### On a floppy
 
 A volume on a floppy has the same records in another map; 512-byte sectors, 1440 of them on a 2DD disk and 2880 on
@@ -188,6 +199,10 @@ the next.  The disk's own number is at 0x100 of sector 0; the library reads the 
 samples running over two disks here join seamlessly when the two parts are put together **[seen]**.  An S-760 disk
 whose byte 0x1FF is 0xFE keeps its extended records in sectors 252 to 331 of its first disk, and its waves start at
 segment 5; the library reads neither.
+
+As Data Sets a floppy's performance, patch, partial and sample are their records as on a disk, by the format's
+map; the numbers they name are the floppy's own, which are memory's.  The extended records are not read, and a
+DJ-70's floppy has no map.
 
 A volume may be saved without its upper levels: some of Roland's S-760 disks hold a patch and its partials with no
 volume or performance **[seen]**.
@@ -246,6 +261,27 @@ as 16 bits with the low four zero: the S-550 library's floppies decode to the sa
 function sector (134), names the area; a disk whose patches and tones are all blank (an S-330 system or utility disk)
 lists none.  The S-330's and W-30's parameters are read as the S-550's: the S-330 disks here list sensibly so
 **[seen]**; no W-30 disk is at hand.  An S-50 disk is another layout and is told apart only.
+
+## System exclusive files
+
+A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model ID, the command, and for a Data Set
+(`DT1`, command `12`) the address, the data and a sum that brings the address's and data's bytes to a multiple of
+128, then `F7`.  The first message tells the model, by the maps' model IDs (`maps.md`); the S-700 series share ID
+`34` and are read by the S-760's map, which has every block of the others'.  Data Sets of that model with a right sum
+are put where the map has their addresses, in whatever pieces and order they come; other messages, other models'
+and bytes between messages are passed over.
+
+Each place of a block that the file fills whole is an entry: its type the block's (a volume, performance, patch,
+partial or sample), its number the place's, its name the block's name parameters', its format the model's records'
+(`S-760`).  A block filled in part is none.  An S-700 performance's name may have a number with its top bit set
+where the colon is (its fourth character, as the records on some floppies do **[seen]**); it reads as the colon.
+The extended performance and the extended partial belong to the entry of the same number and are no entries of
+their own.  What an entry uses is what its record names among the file's entries: a performance's patches (bytes
+at +0x10, 0xFF none), a patch's partials (88 bytes at +0x20), a partial's samples (halfwords at +16, +32, +48, +64).
+
+An entry reads as `syx`: its block, and its extended block where the file had it, as Data Sets to the device the
+file's had, each within a row of 128 addresses (the address's last byte), so a block of 512 units is four messages.
+The library writes its own Data Sets the same way, to device 0.
 
 ## AKAI
 

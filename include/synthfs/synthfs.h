@@ -287,6 +287,7 @@ syfs_node syfs_transfer(syfs_image *to, syfs_node parent, syfs_image *from, syfs
  *   side, SYFS_PROP_FRAMES frames in all; at and size are whole frames'.  12-bit and 8-bit values come scaled to 16,
  *   wider ones cut to their top 16 bits, floating point rounded and clipped, a board's samples decoded from the tone
  *   generators' code.
+ * - SYFS_AS_SYX: a node's parameters as system exclusive messages, Roland Data Sets by its model's address map.
  *
  * \return The count read: short at the end, where the image ends or a chain breaks; 0 where n has no such contents.
  */

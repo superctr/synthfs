@@ -7,7 +7,20 @@
 
 #include <map>
 
+namespace syfs::map {
+struct Map;
+struct Entry;
+}
+
 namespace syfs::roland {
+
+//! Roland's exclusive messages.
+namespace syx {
+//! Units from an address on, added to out as Data Sets (DT1), none running over a row of 128 addresses.
+void put(std::vector<uint8_t> &out, const map::Map &m, uint8_t device, uint32_t addr, const uint8_t *units, size_t n);
+//! Bytes as nibbles, the high one first.
+std::vector<uint8_t> nibbles(const uint8_t *bytes, size_t n);
+}
 
 //! What the S-700 series' disk and floppy readers share.
 namespace s700 {
@@ -19,6 +32,17 @@ std::string_view category(const uint8_t *name);
 std::string name_of(const uint8_t *p);
 //! Sector 0's line at +0x20: the system a disk was made with, a floppy's kind.
 std::string system_line(const uint8_t *s0);
+//! What a record in memory's form names: a performance's patches, a patch's partials, a partial's samples.
+/*!
+ * \return The type named, SYFS_NONE where the record names nothing.
+ */
+syfs_key named(syfs_key kind, const uint8_t *rec, std::vector<int32_t> &out);
+//! A record as Data Sets by its format's map, at the place its number has in memory; false where there is no map.
+/*!
+ * rec is the record's first bytes, as many as the map's block; ext the extended record's 128 where there is one.
+ */
+bool data_sets(syfs_key format, syfs_key kind, uint32_t number, const std::vector<uint8_t> &rec, const uint8_t *ext,
+	std::vector<uint8_t> &out);
 //! An empty volume written as the machine's own format leaves it.
 /*!
  * An S-760's or S-770's hard disk, an S-760's or S-770's floppy; false with why where the image's size cannot be had.
@@ -46,6 +70,7 @@ public:
 	bool writes() const override { return true; }
 	bool names() const override { return false; }
 	size_t adopt(const Medium &from, size_t i, size_t parent, std::string &why, bool &taken) override;
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 
 private:
 	//! An entry's index by its list and number.
@@ -65,6 +90,7 @@ public:
 	bool sample(size_t i, syfs::Sample &out) const override;
 	size_t wave(size_t i, const syfs::Sample &s, uint64_t first, int16_t *out, size_t frames) const override;
 	size_t sample_at(size_t i, int key) const override;
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 
 private:
 	size_t volume_ = syfs::NONE;
@@ -166,6 +192,27 @@ private:
 	//! The last sample decoded, whole.
 	mutable size_t decoded_ = syfs::NONE;
 	mutable std::vector<int16_t> frames_;
+};
+
+//! A file of Data Sets: what they hold whole of a model's map, each area an entry.
+class Syx final : public Medium {
+public:
+	using Medium::Medium;
+	static syfs_key probe(const Image &im);
+	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
+	void list() override;
+	std::vector<size_t> refs(size_t i) const override;
+	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
+
+private:
+	//! An entry's units as the messages gave them, and its extended block's where they did.
+	struct Record {
+		uint8_t device;
+		const map::Entry *at, *ext_at;
+		std::vector<uint8_t> units, ext;
+	};
+	const map::Map *map_ = nullptr;
+	std::vector<Record> records_;
 };
 
 }

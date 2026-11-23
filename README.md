@@ -61,7 +61,9 @@ if (syfs_get_int(im, n, SYFS_PROP_FRAMES, &frames) && syfs_get_int(im, n, SYFS_P
 ```
 
 A node's `exports` property names what else it reads as: `SYFS_AS_WAV`, the same wave as a WAV file with its key and
-loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample).
+loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample), and `SYFS_AS_SYX`,
+an S-760's or S-770's performance, patch, partial or sample as Roland Data Sets by the model's parameter address map
+([docs/maps.md](docs/maps.md)); a file of such messages (`.syx`) opens as an image whose nodes are what it holds whole.
 `syfs_read` with no buffer gives the size.
 
 A FAT volume, in a raw image or a VHD, is written: `syfs_import` makes a file of the host's bytes or an empty

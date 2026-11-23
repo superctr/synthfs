@@ -32,12 +32,14 @@ enum syfs_keys {
 	SYFS_FORMAT_JV80 = 0x254877a1,            //!< "jv80"
 	SYFS_FORMAT_JV1080 = 0x3d5fb978,          //!< "jv1080"
 	SYFS_FORMAT_CDDA = 0x6ef71f89,            //!< "cdda"
+	SYFS_FORMAT_SYX = 0x4a58aa1b,             //!< "syx"
 
 	SYFS_MEDIUM_DISK = 0x456040a4,            //!< "disk"
 	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
 	SYFS_MEDIUM_CARD = 0x0827595f,            //!< "card"
 	SYFS_MEDIUM_BOARD = 0x6f92fe2b,           //!< "board"
 	SYFS_MEDIUM_SMARTMEDIA = 0x4e2c2132,      //!< "smartmedia"
+	SYFS_MEDIUM_FILE = 0x2aea5743,            //!< "file"
 
 	SYFS_TYPE_IMAGE = 0x335135fa,             //!< "image"
 	SYFS_TYPE_PARTITION = 0x59095409,         //!< "partition"
@@ -111,6 +113,7 @@ enum syfs_keys {
 	SYFS_AS_S16 = 0x17a6396d,                 //!< "s16"
 	SYFS_AS_WAV = 0x13e2bd39,                 //!< "wav"
 	SYFS_AS_RAW = 0x43ff12f1,                 //!< "raw"
+	SYFS_AS_SYX = 0x4a58aa1b,                 //!< "syx"
 };
 
 //! Every key once: X(constant, class, name, title).
@@ -134,11 +137,13 @@ enum syfs_keys {
 	X(SYFS_FORMAT_JV80, "format", "jv80", "JV-80") \
 	X(SYFS_FORMAT_JV1080, "format", "jv1080", "JV-1080") \
 	X(SYFS_FORMAT_CDDA, "format", "cdda", "Audio CD") \
+	X(SYFS_FORMAT_SYX, "format", "syx", "System exclusive") \
 	X(SYFS_MEDIUM_DISK, "medium", "disk", "disk") \
 	X(SYFS_MEDIUM_FLOPPY, "medium", "floppy", "floppy") \
 	X(SYFS_MEDIUM_CARD, "medium", "card", "card") \
 	X(SYFS_MEDIUM_BOARD, "medium", "board", "board") \
 	X(SYFS_MEDIUM_SMARTMEDIA, "medium", "smartmedia", "SmartMedia") \
+	X(SYFS_MEDIUM_FILE, "medium", "file", "file") \
 	X(SYFS_TYPE_IMAGE, "type", "image", "image") \
 	X(SYFS_TYPE_PARTITION, "type", "partition", "partition") \
 	X(SYFS_TYPE_VOLUME, "type", "volume", "volume") \
@@ -204,6 +209,7 @@ enum syfs_keys {
 	X(SYFS_REL_ALL, "rel", "all", "all") \
 	X(SYFS_AS_S16, "as", "s16", "s16") \
 	X(SYFS_AS_WAV, "as", "wav", "WAV") \
-	X(SYFS_AS_RAW, "as", "raw", "raw")
+	X(SYFS_AS_RAW, "as", "raw", "raw") \
+	X(SYFS_AS_SYX, "as", "syx", "System exclusive")
 
 #endif

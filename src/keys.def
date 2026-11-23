@@ -20,12 +20,14 @@ format FAT         fat         "FAT"
 format JV80        jv80        "JV-80"
 format JV1080      jv1080      "JV-1080"
 format CDDA        cdda        "Audio CD"
+format SYX         syx         "System exclusive"
 
 medium DISK        disk
 medium FLOPPY      floppy
 medium CARD        card
 medium BOARD       board
 medium SMARTMEDIA  smartmedia  "SmartMedia"
+medium FILE        file
 
 type IMAGE         image
 type PARTITION     partition
@@ -99,3 +101,4 @@ rel ALL            all
 as S16             s16
 as WAV             wav         "WAV"
 as RAW             raw
+as SYX             syx         "System exclusive"

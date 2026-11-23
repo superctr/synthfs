@@ -3,7 +3,8 @@
 A machine's sounds are reached over MIDI by address: its Data Sets (`DT1`) and Data Requests (`RQ1`) name a place in
 a map its MIDI implementation prints, and each parameter has an offset there.  `maps/<model>.json` is that map for
 one model, transcribed from its manual; `tools/maps.py` makes `src/maps.cpp` of all of them (`just maps`), the tables
-`src/maps.hpp` declares, which is checked in.
+`src/maps.hpp` declares, which is checked in.  The tables keep each parameter's place and range and the place of a
+block's name, not the parameters' names or texts.
 
 A map is the form a sound has whatever holds it: a record on a disk, in a board or in a memory is a packing of the
 same parameters.
@@ -28,7 +29,7 @@ parameter's `bits` gives: 7 where a byte of the message is a unit, 4 where every
 |---|---|
 | `offset`, `size` | its first unit in the block, and how many |
 | `bits` | bits a unit |
-| `name` | the manual's name; one name once in a block |
+| `name` | the manual's name; one name once in a block.  The parameters "... Name 1", "... Name 2" on, in a row, are the block's name, a character each |
 | `min`, `max` | the range of the value |
 | `display` | the values' text as the manual prints it |
 | `signed` | the value is two's complement in its bits |

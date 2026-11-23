@@ -3,6 +3,8 @@
 // S-770")
 #include "roland.hpp"
 
+#include "../maps.hpp"
+
 #include <algorithm>
 #include <map>
 
@@ -91,6 +93,58 @@ void sample_of(const uint8_t *rec, uint64_t frames, syfs::Sample &out)
 	case 6: out.reverse = 1; out.loop = SYFS_LOOP_FORWARD; out.loop_start = p[0]; out.loop_end = p[1] + 1; break;
 	default: break;
 	}
+}
+
+// a performance's parts' patches, bytes at +0x10; a patch's keys' partials, bytes at +0x20; a partial's layers'
+// samples, halfwords at +16, +32, +48, +64
+syfs_key named(syfs_key kind, const uint8_t *rec, std::vector<int32_t> &out)
+{
+	switch (kind) {
+	case SYFS_TYPE_PERFORMANCE:
+		for (int k = 0; k < 32; k++)
+			if (rec[0x10 + k] != 0xFF)
+				out.push_back(rec[0x10 + k]);
+		return SYFS_TYPE_PATCH;
+	case SYFS_TYPE_PATCH:
+		for (int k = 0; k < 88; k++)
+			if (rec[0x20 + k] != 0xFF)
+				out.push_back(rec[0x20 + k]);
+		return SYFS_TYPE_PARTIAL;
+	case SYFS_TYPE_PARTIAL:
+		for (int k = 0; k < 4; k++)
+			out.push_back(int16_t(le16(&rec[16 + 16 * k])));
+		return SYFS_TYPE_SAMPLE;
+	default:
+		return SYFS_NONE;
+	}
+}
+
+// the record's block of the format's map, a nibble a unit, at the block's place for the number (the number within the
+// places the map has: a disk's lists are longer than memory's), and the extended block at the same place after it
+bool data_sets(syfs_key format, syfs_key kind, uint32_t number, const std::vector<uint8_t> &rec, const uint8_t *ext,
+	std::vector<uint8_t> &out)
+{
+	const map::Map *m = format == SYFS_FORMAT_S760 ? map::find("s760") : format == SYFS_FORMAT_S770 ? map::find("s770") : nullptr;
+	const char *id = nullptr, *ext_id = nullptr;
+	switch (kind) {
+	case SYFS_TYPE_PERFORMANCE: id = "performance", ext_id = "ext-performance"; break;
+	case SYFS_TYPE_PATCH: id = "patch"; break;
+	case SYFS_TYPE_PARTIAL: id = "partial", ext_id = "ext-partial"; break;
+	case SYFS_TYPE_SAMPLE: id = "sample"; break;
+	default: break;
+	}
+	const map::Block *b = m && id ? m->block(id) : nullptr;
+	if (!b || rec.size() < b->size / 2)
+		return false;
+	const uint32_t place = number % m->places(b);
+	const auto units = syx::nibbles(rec.data(), b->size / 2);
+	syx::put(out, *m, 0, m->at(b, place)->addr, units.data(), units.size());
+	const map::Block *eb = ext && ext_id ? m->block(ext_id) : nullptr;
+	if (const map::Entry *e = eb ? m->at(eb, place) : nullptr) {
+		const auto more = syx::nibbles(ext, eb->size / 2);
+		syx::put(out, *m, 0, e->addr, more.data(), more.size());
+	}
+	return true;
 }
 
 }
@@ -520,6 +574,25 @@ size_t S700Disk::adopt(const Medium &from, size_t i, size_t parent, std::string 
 std::unique_ptr<Medium> S700Disk::open(const syfs_io &io, syfs_key format)
 {
 	return std::make_unique<S700Disk>(io, format);
+}
+
+// the record's first half, which is memory's; on an S-760's disk a performance's extended record, the record's last
+// 128 bytes, and a partial's, among the extended partials
+bool S700Disk::data_sets(size_t i, std::vector<uint8_t> &out) const
+{
+	const syfs::Entry &e = entries[i];
+	int l = 1;
+	while (l < 5 && lists[l].kind != e.kind)
+		l++;
+	if (l == 5)
+		return false;
+	const auto rec = image.read(where[i], lists[l].size);
+	std::vector<uint8_t> ext;
+	if (format == SYFS_FORMAT_S760 && e.kind == SYFS_TYPE_PERFORMANCE && !rec.empty())
+		ext.assign(rec.begin() + 0x180, rec.end());
+	if (format == SYFS_FORMAT_S760 && e.kind == SYFS_TYPE_PARTIAL)
+		ext = image.read(uint64_t(EXTENDED) * SECTOR + uint64_t(e.number) * 128, 128);
+	return !rec.empty() && s700::data_sets(format, e.kind, e.number, rec, ext.empty() ? nullptr : ext.data(), out);
 }
 
 }
