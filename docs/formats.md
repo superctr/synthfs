@@ -268,7 +268,8 @@ lists none.  The S-330's and W-30's parameters are read as the S-550's: the S-33
 A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model ID, the command, and for a Data Set
 (`DT1`, command `12`) the address, the data and a sum that brings the address's and data's bytes to a multiple of
 128, then `F7`.  The first message tells the model, by the maps' model IDs (`maps.md`); the S-700 series share ID
-`34` and are read by the S-760's map, which has every block of the others'; the JV-2080 shares the JV-1080's `6A`,
+`34` and are read by the S-760's map, which has every block of the others'; the JV-80, JV-880, JV-90 and JV-1000
+share `46` and are read by the JV-880's; the JV-2080 shares the JV-1080's `6A`,
 and what it adds lies after the JV-1080's blocks' ends, where it is passed over; the XV-5080 and XV-3080 share
 `00 10`, and a file is read by the XV-5080's map where a message of it is at an address the XV-3080's map lacks
 (a part past the sixteenth, the system's equalizer), else by the XV-3080's, whose system and performances are whole
@@ -400,8 +401,13 @@ is its parameters as Data Sets to device 0x10, at the user patch (128 of them) o
 has, taken within those; a tone's 129 bytes are two messages.  Checked: every record of the sixteen
 boards here with these shapes (3693 of them) has every value within its parameter's range, and a JV-1080 with the
 board fitted, the sound selected and its temporary patch or rhythm set asked back, answers the same bytes for the
-five patches and three rhythm sets tried, of five boards.  The JV-880's and
-JD-990's shapes are not read as Data Sets.
+five patches and three rhythm sets tried, of five boards.
+
+**The JV-880's records** (type 2) are a DATA card's (below, "Roland DATA cards"): a patch of 362 bytes, a rhythm
+set of 61 keys in 44 bytes each.  They read as `syx` by the JV-880's map at the user patch (64 of them) its number
+has, taken within those, and the user rhythm set.  No JV-880 reads a board's patches, so these are not checked
+against one: of the two million values of every board's here, 46 are outside their parameters' ranges, all two
+LFO depths.  The JD-990's shape is not read as Data Sets.
 
 An SR-JV80 sample:
 
@@ -727,12 +733,25 @@ at the card's patch or rhythm set of their number; a performance is packed likew
 sixteen parts in 12 each, and reads at the card's performance of its number.  Checked: a JV-1080's first user
 performance, as its memory keeps it, read so is what the machine answers for it.
 
-Not read: a JV-80's records beyond their names and its rhythm set, the cards of other machines a JV-1080 also takes.
+**A JV-880's records** are bytes, each parameter of its address map (`maps.md`) a field of one: seven bits a
+level or a character, a nibble a destination or a key follow, the top bits switches, and a signed value kept
+less 64 in its seven bits.  A patch's 362 bytes are its common (26) and four tones (84 each); a performance's 204
+its common (28) and eight parts (22 each); the rhythm set's 2684 keys 36 to 96 in 44 each.  Where each parameter
+stands is `maps/records/jv880.json`.  They read as `syx` at the card's performance, patch or rhythm set of their
+number.  Checked: every value of a card's sixteen performances, 64 patches and rhythm set, read so, is what the
+machine with the card in answers (40 020 of them), and likewise with every record's bytes random.
+
+Not read: the cards of other machines a JV-1080 also takes.
 
 ## Battery memories
 
 A machine's battery memory as a file: its bytes as the machine reads them.  Nothing in one tells whose it is, so
 it is opened by the host that knows (`syfs_open_as`, the format and the medium `memory`), not told.
+
+**A JV-880's** (`JV-80`): 32 KB.  A DATA card's lists 0x90 further on: sixteen performances of 204 bytes from
+0xB0, 64 patches of 362 from 0xD70 and the rhythm set's 2684 from 0x67F0 **[seen]**, the records a card's and read
+the same, at the user places.  A performance or patch is listed where its name is twelve printable characters, the
+rhythm set always.  Checked as the card is, on the machine's own memory.
 
 **A JV-1080's** (`JV-1080`): 64 KB.  The first 256 bytes are the system's; then each list from a multiple of 256,
 its records a DATA card's: 32 performances of 245 bytes from 0x100, 128 patches of 401 from 0x2000, two rhythm sets

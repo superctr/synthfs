@@ -623,11 +623,15 @@ bool WaveRom::data_sets(size_t i, std::vector<uint8_t> &out) const
 		}
 		return false;
 	}
-	if (format != SYFS_FORMAT_SRJV80 || strcmp(shape, patch ? "5" : "4"))
+	if (format != SYFS_FORMAT_SRJV80)
 		return false;
-	std::vector<uint8_t> rec(patch ? 401 : 2699);
+	// the JV-880's shape (type 2): a patch of 362 bytes, a rhythm set of 61 keys in 44 each
+	const bool older = !strcmp(shape, "2");
+	if (!older && strcmp(shape, patch ? "5" : "4"))
+		return false;
+	std::vector<uint8_t> rec(older ? (patch ? 362 : 2684) : patch ? 401 : 2699);
 	return socket_->read(where[i], rec.data(), rec.size())
-		&& syx::packed("jv1080", patch ? "User Patch" : "User Rhythm", e.number, 0x10, rec, out);
+		&& syx::packed(older ? "jv880" : "jv1080", patch ? "User Patch" : "User Rhythm", e.number, 0x10, rec, out);
 }
 
 std::unique_ptr<Medium> WaveRom::open(const syfs_io &io, syfs_key format)
@@ -667,7 +671,7 @@ void DataCard::list()
 		uint32_t at, size, count;
 	};
 	static constexpr Run jv80[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 204, 16 }, { SYFS_TYPE_PATCH, 0xCE0, 362, 64 },
-		{ SYFS_TYPE_RHYTHM_SET, 0x6760, 0, 1 } };
+		{ SYFS_TYPE_RHYTHM_SET, 0x6760, 2684, 1 } };
 	static constexpr Run jv1080[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 245, 16 }, { SYFS_TYPE_PATCH, 0xF70, 401, 64 },
 		{ SYFS_TYPE_RHYTHM_SET, 0x73B0, 2699, 1 } };
 	const bool later = format == SYFS_FORMAT_JV1080;
@@ -683,7 +687,7 @@ void DataCard::list()
 				uint8_t rec[12];
 				if (!image.read(at, rec, sizeof rec))
 					return;
-				add(r.kind, format, number, syfs::NONE, !r.size ? "" : later ? packed(rec, false) : plain(rec, 12), r.size, at);
+				add(r.kind, format, number, syfs::NONE, later ? packed(rec, false) : r.kind == SYFS_TYPE_RHYTHM_SET ? "" : plain(rec, 12), r.size, at);
 			}
 }
 
@@ -694,10 +698,10 @@ bool DataCard::data_sets(size_t i, std::vector<uint8_t> &out) const
 	const syfs::Entry &e = entries[i];
 	const char *bank = e.kind == SYFS_TYPE_PERFORMANCE ? "Card Performance" : e.kind == SYFS_TYPE_PATCH ? "Card Patch"
 		: e.kind == SYFS_TYPE_RHYTHM_SET ? "Card Rhythm" : nullptr;
-	if (format != SYFS_FORMAT_JV1080 || !bank)
+	if (!bank)
 		return false;
 	const auto rec = image.read(where[i], size_t(e.bytes));
-	return !rec.empty() && syx::packed("jv1080", bank, e.number, 0x10, rec, out);
+	return !rec.empty() && syx::packed(format == SYFS_FORMAT_JV1080 ? "jv1080" : "jv880", bank, e.number, 0x10, rec, out);
 }
 
 std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)
@@ -720,17 +724,20 @@ struct MemoryOf {
 	uint64_t size;
 	const char *map;
 	bool from_top;   // its records' bits
+	bool plain;      // a record's name is its first twelve bytes as they are, and a rhythm set has none
 	MemoryRun runs[4];
 };
 constexpr uint32_t FANTOM_USER = 0x1A0400;  // its user block, in a memory of its EEPROM and half its flash
 constexpr MemoryOf memories[] = {
-	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
+	{ SYFS_FORMAT_JV80, 0x8000, "jv880", false, true, { { SYFS_TYPE_PERFORMANCE, 0xB0, 204, 204, 16, "User Performance" },
+		{ SYFS_TYPE_PATCH, 0xD70, 362, 362, 64, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x67F0, 2684, 2684, 1, "User Rhythm" } } },
+	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, false, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x2000, 401, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2699, 2, "User Rhythm" } } },
-	{ SYFS_FORMAT_XV5080, 0x40000, "xv5080", true, { { SYFS_TYPE_PERFORMANCE, 0x1A8, 1064, 926, 64, "User Performance" },
+	{ SYFS_FORMAT_XV5080, 0x40000, "xv5080", true, false, { { SYFS_TYPE_PERFORMANCE, 0x1A8, 1064, 926, 64, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x10BA8, 938, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2E0A8, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
-	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
+	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, false, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x10BA4, 838, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2AEA4, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
-	{ SYFS_FORMAT_FANTOM, 0x200400, "fantom", true, { { SYFS_TYPE_PERFORMANCE, FANTOM_USER + 0x190, 1126, 1126, 64, "User Performance" },
+	{ SYFS_FORMAT_FANTOM, 0x200400, "fantom", true, false, { { SYFS_TYPE_PERFORMANCE, FANTOM_USER + 0x190, 1126, 1126, 64, "User Performance" },
 		{ SYFS_TYPE_MULTI, FANTOM_USER + 0x11B10, 954, 954, 16, "User Multitimbre" },
 		{ SYFS_TYPE_PATCH, FANTOM_USER + 0x156B0, 592, 592, 128, "User Patch" },
 		{ SYFS_TYPE_RHYTHM_SET, FANTOM_USER + 0x27EB0, 10824, 10824, 16, "User Rhythm" } } },
@@ -777,10 +784,19 @@ void Memory::list()
 	for (const MemoryRun &r : m->runs)
 		for (uint32_t k = 0; r.bank && k < r.count; k++) {
 			const uint64_t at = r.at + uint64_t(k) * r.stride;
-			uint8_t rec[11];
+			uint8_t rec[12];
 			if (!image.read(at, rec, sizeof rec))
 				return;
-			if (named(rec, m->from_top))
+			if (m->plain) {
+				// a JV-880's: a name of twelve printable bytes; the rhythm set is always there
+				bool printable = true;
+				for (uint8_t c : rec)
+					printable = printable && c >= 32 && c < 127;
+				if (r.kind == SYFS_TYPE_RHYTHM_SET)
+					add(r.kind, format, k, syfs::NONE, "", r.size, at);
+				else if (printable)
+					add(r.kind, format, k, syfs::NONE, plain(rec, 12), r.size, at);
+			} else if (named(rec, m->from_top))
 				add(r.kind, format, k, syfs::NONE, packed(rec, m->from_top), r.size, at);
 		}
 }

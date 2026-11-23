@@ -30,6 +30,14 @@ struct Param {
 	int64_t min, max;
 };
 
+//! Where a parameter stands in a packed block whose parameters each have a place.
+struct Place {
+	uint16_t byte;
+	uint8_t shift;    //!< The field's lowest bit.
+	uint8_t width;
+	uint8_t bias;     //!< What its value is more than the stored bits, within the field.
+};
+
 //! A block of parameters: one record's worth, wherever it is addressed.
 struct Block {
 	const char *id;   //!< The map's own name for it ("patch").
@@ -41,6 +49,7 @@ struct Block {
 	uint8_t name_units; //!< Units a character.
 	uint32_t packed;  //!< Its bytes in a packed record, 0 where it is in none.
 	uint8_t lead;     //!< The bits of a packed record before its first parameter.
+	const Place *places; //!< Each parameter's place in a packed record, where they do not follow one another.
 };
 
 //! A block at an address.
@@ -133,7 +142,9 @@ const Map *all(size_t &count);
  * units.  Where Map::high_first the bits run from a byte's highest down and a parameter's first unit is first; else
  * from the lowest up, its last unit first.  A parameter of fewer bits than hold its range is kept less what puts 64
  * in the middle of them.  A block of no bytes there has no units.  False where no block of the area is in a packed
- * record or the record is short.
+ * record or the record is short.  A block with Block::places has each parameter in a field of its own instead, its
+ * value the field's bits and Place::bias, within the field's width; a parameter of several units is its value's
+ * bits from the top.
  */
 bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::vector<std::vector<uint8_t>> &units);
 //! The units put back into a record of the area's bytes; what the map has no parameter for is zero.

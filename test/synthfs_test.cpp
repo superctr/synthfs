@@ -1827,9 +1827,9 @@ static void test_boards()
 		CHECK(sample_at(fs, a, 60) == a1 && sample_at(fs, a, 127) == a1 && sample_at(fs, a1, 0) == a1);
 		CHECK(sample_at(fs, find(fs, "Card Piano"), 60) == NONE);
 		// a rhythm set of the JV-1080's shape reads as Data Sets, at the user rhythm set of its number; a JV-880's
-		// patch as none
+		// patch as that machine's, its common and four tones
 		CHECK(syfs_read(fs, syfs_node(find(fs, "Card Drums") + 1), SYFS_AS_SYX, 0, nullptr, 0) == 12 + 64 * 58 + 65 * 11
-			&& !syfs_read(fs, syfs_node(find(fs, "Card Piano") + 1), SYFS_AS_SYX, 0, nullptr, 0));
+			&& syfs_read(fs, syfs_node(find(fs, "Card Piano") + 1), SYFS_AS_SYX, 0, nullptr, 0) == 34 + 11 + 4 * (116 + 11));
 		syfs::Sample sm;
 		CHECK(sample_info(fs, a0, &sm) && sm.rate == 33903 && sm.key == 64 && sm.frames == 6);
 		CHECK(sm.loop == SYFS_LOOP_FORWARD && sm.loop_start == 2 && sm.loop_end == 6 && sm.mode == 0);
@@ -3008,7 +3008,7 @@ static void test_maps()
 	namespace map = syfs::map;
 	size_t count = 0;
 	const map::Map *maps = map::all(count);
-	CHECK(count == 8 && maps == map::find("fantom") && !map::find("s7"));
+	CHECK(count == 9 && maps == map::find("fantom") && !map::find("s7"));
 	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
 		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
 	for (auto [id, model, blocks] : models)
@@ -3780,6 +3780,86 @@ static void test_syx_fantom()
 	close_image(fs);
 }
 
+// the JV-880's records: each parameter in a field of a byte of its own block, a signed value kept less 64
+static void test_syx_jv880()
+{
+	namespace map = syfs::map;
+	const map::Map *jv = map::find("jv880");
+	CHECK(jv && jv->model_id_size == 1 && jv->model_id[0] == 0x46 && jv->areas_of("User Patch") == 64
+		&& jv->areas_of("Card Performance") == 16 && jv->areas_of("User Rhythm") == 1);
+	const map::Area *user = jv ? jv->area("User Patch", 5) : nullptr;
+	CHECK(user && user->count == 5 && jv->blocks[jv->entries[user->first].block].packed == 26
+		&& jv->blocks[jv->entries[user->first + 1].block].packed == 84 && jv->blocks[jv->entries[user->first].block].places);
+	if (!user)
+		return;
+	{
+		// a patch: the common's 26 bytes and four tones of 84; packed again it is the record's fields
+		Bytes rec(362, 0);
+		memcpy(&rec[0], "JV Strings  ", 12);
+		rec[12] = 0x80 | 2 << 3 | 5;                 // velocity switch, chorus type, reverb type in one byte
+		rec[23] = uint8_t(-12) & 0x7F;               // bend range down, signed
+		rec[26 + 84 + 1] = 200, rec[26 + 84] = 0x80 | 1;   // tone 2's wave number, in a byte; its switch and group
+		rec[26 + 3 * 84 + 5] = 0xA3;                 // tone 4's first two modulation destinations, a nibble each
+		rec[26 + 3 * 84 + 7] = uint8_t(-1) & 0x7F;   // and the first's sense
+		std::vector<std::vector<uint8_t>> units;
+		CHECK(map::unpack(*jv, *user, rec.data(), rec.size(), units) && units.size() == 5 && units[0].size() == 34
+			&& units[4].size() == 116 && !map::unpack(*jv, *user, rec.data(), 361, units));
+		CHECK(!memcmp(units[0].data(), "JV Strings  ", 12) && units[0][12] == 1 && units[0][13] == 5 && units[0][17] == 2
+			&& units[0][26] == 52 && units[2][0] == 1 && units[2][1] == 12 && units[2][2] == 8 && units[2][3] == 1
+			&& units[4][10] == 3 && units[4][12] == 10 && units[4][11] == 63);
+		Bytes back;
+		CHECK(map::pack(*jv, *user, units, back) && back == rec);
+	}
+	// a DATA card and a battery memory: the same records, a card's lists 0x90 lower; the rhythm set has no name
+	Bytes card(0x8000, 0), mem(0x8000, 0);
+	memcpy(&card[0], "Roland JV-80D\xBBP\xAF", 16);
+	for (Bytes *b : { &card, &mem }) {
+		const size_t shift = b == &mem ? 0x90 : 0;
+		memcpy(&(*b)[0x20 + shift + 15 * 204], "TUTORIAL    ", 12);
+		(*b)[0x20 + shift + 15 * 204 + 28 + 7 * 22 + 16] = 77;          // the last part's patch number
+		memcpy(&(*b)[0xCE0 + shift + 63 * 362], "REVERSE MAD ", 12);
+		(*b)[0xCE0 + shift + 63 * 362 + 21] = 101;                     // the patch's level
+		(*b)[0x6760 + shift + 60 * 44 + 30] = 99;                      // the last key's level
+	}
+	syfs_io cio = io_of(card), mio = io_of(mem);
+	syfs_image *c = syfs_open(&cio, nullptr, 0), *m = syfs_open_as(&mio, SYFS_FORMAT_JV80, SYFS_MEDIUM_MEMORY, nullptr, 0);
+	CHECK(c && m && format_of(m) == SYFS_FORMAT_JV80 && count_of(m) == 3);
+	if (c && m) {
+		const uint32_t places[2][3] = { { 2u << 21 | 15 << 14 | 0x10 << 7, 2u << 21 | 127 << 14 | 0x20 << 7, 2u << 21 | 127 << 14 | 0x40 << 7 },
+			{ 1u << 21 | 15 << 14 | 0x10 << 7, 1u << 21 | 127 << 14 | 0x20 << 7, 1u << 21 | 127 << 14 | 0x40 << 7 } };
+		int n = 0;
+		for (syfs_image *im : { c, m }) {
+			const size_t perf = find(im, "TUTORIAL"), patch = find(im, "REVERSE MAD");
+			size_t set = NONE;
+			for (size_t i = 0; i < count_of(im); i++)
+				if (entry_at(im, i)->kind == SYFS_TYPE_RHYTHM_SET)
+					set = i;
+			CHECK(perf != NONE && patch != NONE && set != NONE && entry_at(im, patch)->number == 63);
+			auto got = data_sets_of(syx_of(im, perf), 0x10, 0x46);
+			CHECK(got.size() == 9 && got[0].first == places[n][0] && got[0].second.size() == 31 && got[8].second.size() == 35
+				&& got[8].second[23] == 4 && got[8].second[24] == 13);
+			got = data_sets_of(syx_of(im, patch), 0x10, 0x46);
+			CHECK(got.size() == 5 && got[0].first == places[n][1] && got[0].second[24] == 101 && got[4].second.size() == 116);
+			got = data_sets_of(syx_of(im, set), 0x10, 0x46);
+			CHECK(got.size() == 61 && got[0].first == places[n][2] && got[60].second.size() == 52 && got[60].second[36] == 99);
+			n++;
+		}
+		// a file of its messages: under banks, the rhythm set named as its bank
+		Bytes file = syx_of(m, find(m, "REVERSE MAD")), set = syx_of(m, 80 - 80 + count_of(m) - 1);
+		file.insert(file.end(), set.begin(), set.end());
+		syfs_io fio = io_of(file);
+		syfs_image *sx = syfs_open(&fio, nullptr, 0);
+		CHECK(sx && count_of(sx) == 4 && entry_at(sx, find(sx, "REVERSE MAD"))->format == SYFS_FORMAT_JV80
+			&& find(sx, "User Rhythm", SYFS_TYPE_RHYTHM_SET) != NONE && syx_of(sx, find(sx, "REVERSE MAD")) == syx_of(m, find(m, "REVERSE MAD")));
+		if (sx)
+			close_image(sx);
+	}
+	if (c)
+		close_image(c);
+	if (m)
+		close_image(m);
+}
+
 int main()
 {
 	test_keys();
@@ -3795,6 +3875,7 @@ int main()
 	test_syx_jv();
 	test_syx_xv();
 	test_syx_fantom();
+	test_syx_jv880();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

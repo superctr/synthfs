@@ -1,0 +1,6037 @@
+{
+ "model": "JV-880",
+ "model_id": [
+  70
+ ],
+ "parts": 8,
+ "rhythm_part": 7,
+ "names": {
+  "reverb": [
+   "ROOM1",
+   "ROOM2",
+   "STAGE1",
+   "STAGE2",
+   "HALL1",
+   "HALL2",
+   "DELAY",
+   "PAN-DLY"
+  ]
+ },
+ "blocks": {
+  "top": {
+   "name": "top",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "name": "System",
+     "block": "1-1"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      16,
+      0
+     ],
+     "name": "Temporary Performance",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 1)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      1,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 2)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      2,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 3)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      3,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 4)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      4,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 5)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      5,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 6)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      6,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 7)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      0,
+      7,
+      64,
+      0
+     ],
+     "name": "Temporary Rhythm (Performance Mode Part 8)",
+     "block": "1-4"
+    },
+    {
+     "addr": [
+      0,
+      8,
+      32,
+      0
+     ],
+     "name": "Temporary Patch (Patch Mode)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      0,
+      16,
+      0
+     ],
+     "name": "User Performance (01)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      1,
+      16,
+      0
+     ],
+     "name": "User Performance (02)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      2,
+      16,
+      0
+     ],
+     "name": "User Performance (03)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      3,
+      16,
+      0
+     ],
+     "name": "User Performance (04)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      4,
+      16,
+      0
+     ],
+     "name": "User Performance (05)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      5,
+      16,
+      0
+     ],
+     "name": "User Performance (06)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      6,
+      16,
+      0
+     ],
+     "name": "User Performance (07)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      7,
+      16,
+      0
+     ],
+     "name": "User Performance (08)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      8,
+      16,
+      0
+     ],
+     "name": "User Performance (09)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      9,
+      16,
+      0
+     ],
+     "name": "User Performance (10)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      10,
+      16,
+      0
+     ],
+     "name": "User Performance (11)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      11,
+      16,
+      0
+     ],
+     "name": "User Performance (12)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      12,
+      16,
+      0
+     ],
+     "name": "User Performance (13)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      13,
+      16,
+      0
+     ],
+     "name": "User Performance (14)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      14,
+      16,
+      0
+     ],
+     "name": "User Performance (15)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      15,
+      16,
+      0
+     ],
+     "name": "User Performance (16)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      1,
+      64,
+      32,
+      0
+     ],
+     "name": "User Patch (001)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      65,
+      32,
+      0
+     ],
+     "name": "User Patch (002)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      66,
+      32,
+      0
+     ],
+     "name": "User Patch (003)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      67,
+      32,
+      0
+     ],
+     "name": "User Patch (004)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      68,
+      32,
+      0
+     ],
+     "name": "User Patch (005)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      69,
+      32,
+      0
+     ],
+     "name": "User Patch (006)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      70,
+      32,
+      0
+     ],
+     "name": "User Patch (007)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      71,
+      32,
+      0
+     ],
+     "name": "User Patch (008)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      72,
+      32,
+      0
+     ],
+     "name": "User Patch (009)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      73,
+      32,
+      0
+     ],
+     "name": "User Patch (010)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      74,
+      32,
+      0
+     ],
+     "name": "User Patch (011)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      75,
+      32,
+      0
+     ],
+     "name": "User Patch (012)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      76,
+      32,
+      0
+     ],
+     "name": "User Patch (013)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      77,
+      32,
+      0
+     ],
+     "name": "User Patch (014)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      78,
+      32,
+      0
+     ],
+     "name": "User Patch (015)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      79,
+      32,
+      0
+     ],
+     "name": "User Patch (016)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      80,
+      32,
+      0
+     ],
+     "name": "User Patch (017)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      81,
+      32,
+      0
+     ],
+     "name": "User Patch (018)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      82,
+      32,
+      0
+     ],
+     "name": "User Patch (019)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      83,
+      32,
+      0
+     ],
+     "name": "User Patch (020)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      84,
+      32,
+      0
+     ],
+     "name": "User Patch (021)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      85,
+      32,
+      0
+     ],
+     "name": "User Patch (022)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      86,
+      32,
+      0
+     ],
+     "name": "User Patch (023)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      87,
+      32,
+      0
+     ],
+     "name": "User Patch (024)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      88,
+      32,
+      0
+     ],
+     "name": "User Patch (025)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      89,
+      32,
+      0
+     ],
+     "name": "User Patch (026)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      90,
+      32,
+      0
+     ],
+     "name": "User Patch (027)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      91,
+      32,
+      0
+     ],
+     "name": "User Patch (028)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      92,
+      32,
+      0
+     ],
+     "name": "User Patch (029)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      93,
+      32,
+      0
+     ],
+     "name": "User Patch (030)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      94,
+      32,
+      0
+     ],
+     "name": "User Patch (031)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      95,
+      32,
+      0
+     ],
+     "name": "User Patch (032)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      96,
+      32,
+      0
+     ],
+     "name": "User Patch (033)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      97,
+      32,
+      0
+     ],
+     "name": "User Patch (034)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      98,
+      32,
+      0
+     ],
+     "name": "User Patch (035)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      99,
+      32,
+      0
+     ],
+     "name": "User Patch (036)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      100,
+      32,
+      0
+     ],
+     "name": "User Patch (037)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      101,
+      32,
+      0
+     ],
+     "name": "User Patch (038)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      102,
+      32,
+      0
+     ],
+     "name": "User Patch (039)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      103,
+      32,
+      0
+     ],
+     "name": "User Patch (040)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      104,
+      32,
+      0
+     ],
+     "name": "User Patch (041)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      105,
+      32,
+      0
+     ],
+     "name": "User Patch (042)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      106,
+      32,
+      0
+     ],
+     "name": "User Patch (043)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      107,
+      32,
+      0
+     ],
+     "name": "User Patch (044)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      108,
+      32,
+      0
+     ],
+     "name": "User Patch (045)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      109,
+      32,
+      0
+     ],
+     "name": "User Patch (046)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      110,
+      32,
+      0
+     ],
+     "name": "User Patch (047)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      111,
+      32,
+      0
+     ],
+     "name": "User Patch (048)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      112,
+      32,
+      0
+     ],
+     "name": "User Patch (049)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      113,
+      32,
+      0
+     ],
+     "name": "User Patch (050)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      114,
+      32,
+      0
+     ],
+     "name": "User Patch (051)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      115,
+      32,
+      0
+     ],
+     "name": "User Patch (052)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      116,
+      32,
+      0
+     ],
+     "name": "User Patch (053)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      117,
+      32,
+      0
+     ],
+     "name": "User Patch (054)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      118,
+      32,
+      0
+     ],
+     "name": "User Patch (055)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      119,
+      32,
+      0
+     ],
+     "name": "User Patch (056)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      120,
+      32,
+      0
+     ],
+     "name": "User Patch (057)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      121,
+      32,
+      0
+     ],
+     "name": "User Patch (058)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      122,
+      32,
+      0
+     ],
+     "name": "User Patch (059)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      123,
+      32,
+      0
+     ],
+     "name": "User Patch (060)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      124,
+      32,
+      0
+     ],
+     "name": "User Patch (061)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      125,
+      32,
+      0
+     ],
+     "name": "User Patch (062)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      126,
+      32,
+      0
+     ],
+     "name": "User Patch (063)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      127,
+      32,
+      0
+     ],
+     "name": "User Patch (064)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      1,
+      127,
+      64,
+      0
+     ],
+     "name": "User Rhythm (001)",
+     "block": "1-4"
+    },
+    {
+     "addr": [
+      2,
+      0,
+      16,
+      0
+     ],
+     "name": "Card Performance (01)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      1,
+      16,
+      0
+     ],
+     "name": "Card Performance (02)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      2,
+      16,
+      0
+     ],
+     "name": "Card Performance (03)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      3,
+      16,
+      0
+     ],
+     "name": "Card Performance (04)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      4,
+      16,
+      0
+     ],
+     "name": "Card Performance (05)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      5,
+      16,
+      0
+     ],
+     "name": "Card Performance (06)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      6,
+      16,
+      0
+     ],
+     "name": "Card Performance (07)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      7,
+      16,
+      0
+     ],
+     "name": "Card Performance (08)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      8,
+      16,
+      0
+     ],
+     "name": "Card Performance (09)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      9,
+      16,
+      0
+     ],
+     "name": "Card Performance (10)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      10,
+      16,
+      0
+     ],
+     "name": "Card Performance (11)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      11,
+      16,
+      0
+     ],
+     "name": "Card Performance (12)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      12,
+      16,
+      0
+     ],
+     "name": "Card Performance (13)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      13,
+      16,
+      0
+     ],
+     "name": "Card Performance (14)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      14,
+      16,
+      0
+     ],
+     "name": "Card Performance (15)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      15,
+      16,
+      0
+     ],
+     "name": "Card Performance (16)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      64,
+      32,
+      0
+     ],
+     "name": "Card Patch (001)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      65,
+      32,
+      0
+     ],
+     "name": "Card Patch (002)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      66,
+      32,
+      0
+     ],
+     "name": "Card Patch (003)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      67,
+      32,
+      0
+     ],
+     "name": "Card Patch (004)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      68,
+      32,
+      0
+     ],
+     "name": "Card Patch (005)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      69,
+      32,
+      0
+     ],
+     "name": "Card Patch (006)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      70,
+      32,
+      0
+     ],
+     "name": "Card Patch (007)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      71,
+      32,
+      0
+     ],
+     "name": "Card Patch (008)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      72,
+      32,
+      0
+     ],
+     "name": "Card Patch (009)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      73,
+      32,
+      0
+     ],
+     "name": "Card Patch (010)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      74,
+      32,
+      0
+     ],
+     "name": "Card Patch (011)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      75,
+      32,
+      0
+     ],
+     "name": "Card Patch (012)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      76,
+      32,
+      0
+     ],
+     "name": "Card Patch (013)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      77,
+      32,
+      0
+     ],
+     "name": "Card Patch (014)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      78,
+      32,
+      0
+     ],
+     "name": "Card Patch (015)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      79,
+      32,
+      0
+     ],
+     "name": "Card Patch (016)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      80,
+      32,
+      0
+     ],
+     "name": "Card Patch (017)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      81,
+      32,
+      0
+     ],
+     "name": "Card Patch (018)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      82,
+      32,
+      0
+     ],
+     "name": "Card Patch (019)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      83,
+      32,
+      0
+     ],
+     "name": "Card Patch (020)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      84,
+      32,
+      0
+     ],
+     "name": "Card Patch (021)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      85,
+      32,
+      0
+     ],
+     "name": "Card Patch (022)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      86,
+      32,
+      0
+     ],
+     "name": "Card Patch (023)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      87,
+      32,
+      0
+     ],
+     "name": "Card Patch (024)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      88,
+      32,
+      0
+     ],
+     "name": "Card Patch (025)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      89,
+      32,
+      0
+     ],
+     "name": "Card Patch (026)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      90,
+      32,
+      0
+     ],
+     "name": "Card Patch (027)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      91,
+      32,
+      0
+     ],
+     "name": "Card Patch (028)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      92,
+      32,
+      0
+     ],
+     "name": "Card Patch (029)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      93,
+      32,
+      0
+     ],
+     "name": "Card Patch (030)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      94,
+      32,
+      0
+     ],
+     "name": "Card Patch (031)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      95,
+      32,
+      0
+     ],
+     "name": "Card Patch (032)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      96,
+      32,
+      0
+     ],
+     "name": "Card Patch (033)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      97,
+      32,
+      0
+     ],
+     "name": "Card Patch (034)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      98,
+      32,
+      0
+     ],
+     "name": "Card Patch (035)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      99,
+      32,
+      0
+     ],
+     "name": "Card Patch (036)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      100,
+      32,
+      0
+     ],
+     "name": "Card Patch (037)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      101,
+      32,
+      0
+     ],
+     "name": "Card Patch (038)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      102,
+      32,
+      0
+     ],
+     "name": "Card Patch (039)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      103,
+      32,
+      0
+     ],
+     "name": "Card Patch (040)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      104,
+      32,
+      0
+     ],
+     "name": "Card Patch (041)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      105,
+      32,
+      0
+     ],
+     "name": "Card Patch (042)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      106,
+      32,
+      0
+     ],
+     "name": "Card Patch (043)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      107,
+      32,
+      0
+     ],
+     "name": "Card Patch (044)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      108,
+      32,
+      0
+     ],
+     "name": "Card Patch (045)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      109,
+      32,
+      0
+     ],
+     "name": "Card Patch (046)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      110,
+      32,
+      0
+     ],
+     "name": "Card Patch (047)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      111,
+      32,
+      0
+     ],
+     "name": "Card Patch (048)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      112,
+      32,
+      0
+     ],
+     "name": "Card Patch (049)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      113,
+      32,
+      0
+     ],
+     "name": "Card Patch (050)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      114,
+      32,
+      0
+     ],
+     "name": "Card Patch (051)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      115,
+      32,
+      0
+     ],
+     "name": "Card Patch (052)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      116,
+      32,
+      0
+     ],
+     "name": "Card Patch (053)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      117,
+      32,
+      0
+     ],
+     "name": "Card Patch (054)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      118,
+      32,
+      0
+     ],
+     "name": "Card Patch (055)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      119,
+      32,
+      0
+     ],
+     "name": "Card Patch (056)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      120,
+      32,
+      0
+     ],
+     "name": "Card Patch (057)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      121,
+      32,
+      0
+     ],
+     "name": "Card Patch (058)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      122,
+      32,
+      0
+     ],
+     "name": "Card Patch (059)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      123,
+      32,
+      0
+     ],
+     "name": "Card Patch (060)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      124,
+      32,
+      0
+     ],
+     "name": "Card Patch (061)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      125,
+      32,
+      0
+     ],
+     "name": "Card Patch (062)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      126,
+      32,
+      0
+     ],
+     "name": "Card Patch (063)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      127,
+      32,
+      0
+     ],
+     "name": "Card Patch (064)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      127,
+      64,
+      0
+     ],
+     "name": "Card Rhythm (001)",
+     "block": "1-4"
+    }
+   ]
+  },
+  "1-1": {
+   "name": "System",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "System Common",
+     "block": "1-1-1"
+    }
+   ]
+  },
+  "1-2": {
+   "name": "Performance",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Performance Common",
+     "block": "1-2-1"
+    },
+    {
+     "addr": [
+      0,
+      8,
+      0
+     ],
+     "name": "Performance Part (Part 1)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      9,
+      0
+     ],
+     "name": "Performance Part (Part 2)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      10,
+      0
+     ],
+     "name": "Performance Part (Part 3)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      11,
+      0
+     ],
+     "name": "Performance Part (Part 4)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      12,
+      0
+     ],
+     "name": "Performance Part (Part 5)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      13,
+      0
+     ],
+     "name": "Performance Part (Part 6)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      14,
+      0
+     ],
+     "name": "Performance Part (Part 7)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      15,
+      0
+     ],
+     "name": "Performance Part (Part 8)",
+     "block": "1-2-2"
+    }
+   ]
+  },
+  "1-3": {
+   "name": "Patch",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Patch Common",
+     "block": "1-3-1"
+    },
+    {
+     "addr": [
+      0,
+      8,
+      0
+     ],
+     "name": "Patch Tone (Tone 1)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      9,
+      0
+     ],
+     "name": "Patch Tone (Tone 2)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      10,
+      0
+     ],
+     "name": "Patch Tone (Tone 3)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      11,
+      0
+     ],
+     "name": "Patch Tone (Tone 4)",
+     "block": "1-3-2"
+    }
+   ]
+  },
+  "1-4": {
+   "name": "Rhythm Setup",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Rhythm Note (Key # 36)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      1,
+      0
+     ],
+     "name": "Rhythm Note (Key # 37)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      2,
+      0
+     ],
+     "name": "Rhythm Note (Key # 38)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      3,
+      0
+     ],
+     "name": "Rhythm Note (Key # 39)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      4,
+      0
+     ],
+     "name": "Rhythm Note (Key # 40)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      5,
+      0
+     ],
+     "name": "Rhythm Note (Key # 41)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      6,
+      0
+     ],
+     "name": "Rhythm Note (Key # 42)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      7,
+      0
+     ],
+     "name": "Rhythm Note (Key # 43)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      8,
+      0
+     ],
+     "name": "Rhythm Note (Key # 44)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      9,
+      0
+     ],
+     "name": "Rhythm Note (Key # 45)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      10,
+      0
+     ],
+     "name": "Rhythm Note (Key # 46)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      11,
+      0
+     ],
+     "name": "Rhythm Note (Key # 47)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      12,
+      0
+     ],
+     "name": "Rhythm Note (Key # 48)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      13,
+      0
+     ],
+     "name": "Rhythm Note (Key # 49)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      14,
+      0
+     ],
+     "name": "Rhythm Note (Key # 50)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      15,
+      0
+     ],
+     "name": "Rhythm Note (Key # 51)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      16,
+      0
+     ],
+     "name": "Rhythm Note (Key # 52)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      17,
+      0
+     ],
+     "name": "Rhythm Note (Key # 53)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      18,
+      0
+     ],
+     "name": "Rhythm Note (Key # 54)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      19,
+      0
+     ],
+     "name": "Rhythm Note (Key # 55)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      20,
+      0
+     ],
+     "name": "Rhythm Note (Key # 56)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      21,
+      0
+     ],
+     "name": "Rhythm Note (Key # 57)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      22,
+      0
+     ],
+     "name": "Rhythm Note (Key # 58)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      23,
+      0
+     ],
+     "name": "Rhythm Note (Key # 59)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      24,
+      0
+     ],
+     "name": "Rhythm Note (Key # 60)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      25,
+      0
+     ],
+     "name": "Rhythm Note (Key # 61)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      26,
+      0
+     ],
+     "name": "Rhythm Note (Key # 62)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      27,
+      0
+     ],
+     "name": "Rhythm Note (Key # 63)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      28,
+      0
+     ],
+     "name": "Rhythm Note (Key # 64)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      29,
+      0
+     ],
+     "name": "Rhythm Note (Key # 65)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      30,
+      0
+     ],
+     "name": "Rhythm Note (Key # 66)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      31,
+      0
+     ],
+     "name": "Rhythm Note (Key # 67)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      32,
+      0
+     ],
+     "name": "Rhythm Note (Key # 68)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      33,
+      0
+     ],
+     "name": "Rhythm Note (Key # 69)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      34,
+      0
+     ],
+     "name": "Rhythm Note (Key # 70)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      35,
+      0
+     ],
+     "name": "Rhythm Note (Key # 71)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      36,
+      0
+     ],
+     "name": "Rhythm Note (Key # 72)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      37,
+      0
+     ],
+     "name": "Rhythm Note (Key # 73)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      38,
+      0
+     ],
+     "name": "Rhythm Note (Key # 74)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      39,
+      0
+     ],
+     "name": "Rhythm Note (Key # 75)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      40,
+      0
+     ],
+     "name": "Rhythm Note (Key # 76)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      41,
+      0
+     ],
+     "name": "Rhythm Note (Key # 77)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      42,
+      0
+     ],
+     "name": "Rhythm Note (Key # 78)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      43,
+      0
+     ],
+     "name": "Rhythm Note (Key # 79)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      44,
+      0
+     ],
+     "name": "Rhythm Note (Key # 80)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      45,
+      0
+     ],
+     "name": "Rhythm Note (Key # 81)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      46,
+      0
+     ],
+     "name": "Rhythm Note (Key # 82)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      47,
+      0
+     ],
+     "name": "Rhythm Note (Key # 83)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      48,
+      0
+     ],
+     "name": "Rhythm Note (Key # 84)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      49,
+      0
+     ],
+     "name": "Rhythm Note (Key # 85)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      50,
+      0
+     ],
+     "name": "Rhythm Note (Key # 86)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      51,
+      0
+     ],
+     "name": "Rhythm Note (Key # 87)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      52,
+      0
+     ],
+     "name": "Rhythm Note (Key # 88)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      53,
+      0
+     ],
+     "name": "Rhythm Note (Key # 89)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      54,
+      0
+     ],
+     "name": "Rhythm Note (Key # 90)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      55,
+      0
+     ],
+     "name": "Rhythm Note (Key # 91)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      56,
+      0
+     ],
+     "name": "Rhythm Note (Key # 92)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      57,
+      0
+     ],
+     "name": "Rhythm Note (Key # 93)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      58,
+      0
+     ],
+     "name": "Rhythm Note (Key # 94)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      59,
+      0
+     ],
+     "name": "Rhythm Note (Key # 95)",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      60,
+      0
+     ],
+     "name": "Rhythm Note (Key # 96)",
+     "block": "1-4-1"
+    }
+   ]
+  },
+  "1-1-1": {
+   "name": "System Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 1,
+     "name": "Panel mode",
+     "min": 0,
+     "max": 1,
+     "display": "PERFORMANCE, PATCH"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Master tune",
+     "min": 1,
+     "max": 127,
+     "display": "427.4 - 452.6"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Key transpose",
+     "min": 28,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 1,
+     "name": "Transpose switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 1,
+     "name": "Reverb switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 1,
+     "name": "Chorus switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 1,
+     "name": "Hold polarity",
+     "min": 0,
+     "max": 1,
+     "absent": true
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 1,
+     "name": "Pedal 1 polarity",
+     "min": 0,
+     "max": 1,
+     "absent": true
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 2,
+     "name": "Pedal 1 mode",
+     "min": 0,
+     "max": 3,
+     "absent": true
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Pedal 1 assign",
+     "min": 0,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 1,
+     "name": "Pedal 2 polarity",
+     "min": 0,
+     "max": 1,
+     "absent": true
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 2,
+     "name": "Pedal 2 mode",
+     "min": 0,
+     "max": 3,
+     "absent": true
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "Pedal 2 assign",
+     "min": 0,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 2,
+     "name": "C1 mode",
+     "min": 0,
+     "max": 3,
+     "absent": true
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "C1 assign",
+     "min": 0,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Aftertouch threshold",
+     "min": 0,
+     "max": 127,
+     "absent": true
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive volume",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive control change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive channel pressure",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive modulation",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive pitch bend",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive program change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive bank select",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit volume",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit control change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit channel pressure",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit modulation",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit bender",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit program change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit bank select",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 4,
+     "name": "Patch receive channel",
+     "min": 0,
+     "max": 15,
+     "display": "1 - 16"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 5,
+     "name": "Patch transmit channel",
+     "min": 0,
+     "max": 17,
+     "absent": true
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 5,
+     "name": "Control channel",
+     "min": 0,
+     "max": 16,
+     "display": "1 - 16, OFF"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 1,
+     "name": "Output mode",
+     "min": 0,
+     "max": 1,
+     "display": "OUT2, OUT4"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 1,
+     "name": "Rhythm edit key",
+     "min": 0,
+     "max": 1,
+     "display": "MIDI&INT, INT"
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 1,
+     "name": "Scale tune switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 38,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 1 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 49,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 58,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 59,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 2 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 60,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 61,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 62,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 63,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 64,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 65,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 66,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 67,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 68,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 69,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 70,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 71,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 3 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 72,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 73,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 74,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 75,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 76,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 77,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 78,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 79,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 80,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 81,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 82,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 83,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 4 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 84,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 85,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 86,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 87,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 88,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 89,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 90,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 91,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 92,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 93,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 94,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 95,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 5 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 96,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 97,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 98,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 99,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 100,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 101,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 102,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 103,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 104,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 105,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 106,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 107,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 6 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 108,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 109,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 110,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 111,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 112,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 113,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 114,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 115,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 116,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 117,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 118,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 119,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 7 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 120,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 121,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 122,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 123,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 124,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 125,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 126,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 127,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 128,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 129,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 130,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 131,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune part 8 B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 132,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch C",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 133,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch C#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 134,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch D",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 135,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch D#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 136,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch E",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 137,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch F",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 138,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch F#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 139,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch G",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 140,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch G#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 141,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch A",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 142,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch A#",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    },
+    {
+     "offset": 143,
+     "size": 1,
+     "bits": 7,
+     "name": "Scale tune patch B",
+     "min": 0,
+     "max": 127,
+     "display": "-64 - +63"
+    }
+   ],
+   "size": 144
+  },
+  "1-2-1": {
+   "name": "Performance Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 11",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 12",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 2,
+     "name": "Key mode",
+     "min": 0,
+     "max": 2,
+     "absent": true
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 3,
+     "name": "Reverb type",
+     "min": 0,
+     "max": 7,
+     "display": "ROOM1, ROOM2, STAGE1, STAGE2, HALL1, HALL2, DELAY, PAN-DLY"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb time",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb feedback",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 2,
+     "name": "Chorus type",
+     "min": 0,
+     "max": 2,
+     "display": "CHORUS1, CHORUS2, CHORUS3"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus depth",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus rate",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus feedback",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 1,
+     "name": "Chorus output",
+     "min": 0,
+     "max": 1,
+     "display": "MIX, REV"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 1 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 2 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 3 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 4 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 5 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 6 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 7 voice reserve",
+     "min": 0,
+     "max": 28
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 8 voice reserve",
+     "min": 0,
+     "max": 28
+    }
+   ],
+   "size": 31
+  },
+  "1-2-2": {
+   "name": "Performance Part",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 1,
+     "name": "Transmit switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 4,
+     "name": "Transmit channel",
+     "min": 0,
+     "max": 15,
+     "display": "1 - 16",
+     "absent": true
+    },
+    {
+     "offset": 2,
+     "size": 2,
+     "bits": 4,
+     "name": "Transmit program change",
+     "min": 0,
+     "max": 128,
+     "absent": true
+    },
+    {
+     "offset": 4,
+     "size": 2,
+     "bits": 4,
+     "name": "Transmit volume",
+     "min": 0,
+     "max": 128,
+     "absent": true
+    },
+    {
+     "offset": 6,
+     "size": 2,
+     "bits": 4,
+     "name": "Transmit pan",
+     "min": 0,
+     "max": 128,
+     "absent": true
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Transmit key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9",
+     "absent": true
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Transmit key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9",
+     "absent": true
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Transmit key transpose",
+     "min": 28,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Transmit velocity sense",
+     "min": 1,
+     "max": 127,
+     "absent": true
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "Transmit velocity max",
+     "min": 0,
+     "max": 127,
+     "absent": true
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 3,
+     "name": "Transmit velocity curve",
+     "min": 0,
+     "max": 6,
+     "absent": true
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 1,
+     "name": "Internal switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON",
+     "absent": true
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Internal key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9",
+     "absent": true
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "Internal key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9",
+     "absent": true
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "Internal key transpose",
+     "min": 28,
+     "max": 100,
+     "absent": true
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "Internal velocity sense",
+     "min": 1,
+     "max": 127,
+     "absent": true
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "Internal velocity max",
+     "min": 0,
+     "max": 127,
+     "absent": true
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 3,
+     "name": "Internal velocity curve",
+     "min": 0,
+     "max": 6,
+     "absent": true
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 1,
+     "name": "MIDI receive switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 4,
+     "name": "MIDI channel",
+     "min": 0,
+     "max": 15,
+     "display": "1 - 16"
+    },
+    {
+     "offset": 23,
+     "size": 2,
+     "bits": 4,
+     "name": "Patch number",
+     "min": 0,
+     "max": 255,
+     "display": "I01 - I64, C01 - C64, A01 - A64, B01 - B64"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "Part level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 7,
+     "name": "Part pan",
+     "min": 0,
+     "max": 127,
+     "display": "L64 - 63R"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 7,
+     "name": "Part coarse tune",
+     "min": 16,
+     "max": 112,
+     "display": "-48 - +48"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 7,
+     "name": "Part fine tune",
+     "min": 14,
+     "max": 114,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 1,
+     "name": "Reverb switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 1,
+     "name": "Chorus switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive program change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive volume",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive hold-1",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 2,
+     "name": "Output select",
+     "min": 0,
+     "max": 2,
+     "display": "MAIN, SUB, PATCH"
+    }
+   ],
+   "size": 35
+  },
+  "1-3-1": {
+   "name": "Patch Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 11",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 12",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 1,
+     "name": "Velocity switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 3,
+     "name": "Reverb type",
+     "min": 0,
+     "max": 7,
+     "display": "ROOM1, ROOM2, STAGE1, STAGE2, HALL1, HALL2, DELAY, PAN-DLY"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb time",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay feedback",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 2,
+     "name": "Chorus type",
+     "min": 0,
+     "max": 2,
+     "display": "CHORUS1, CHORUS2, CHORUS3"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus depth",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus rate",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus feedback",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 1,
+     "name": "Chorus output",
+     "min": 0,
+     "max": 1,
+     "display": "MIX, REV"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 7,
+     "name": "Analog feel",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch pan",
+     "min": 0,
+     "max": 127,
+     "display": "L64 - 63R"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 7,
+     "name": "Bend range down",
+     "min": 16,
+     "max": 64,
+     "display": "-48 - 0"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 4,
+     "name": "Bend range up",
+     "min": 0,
+     "max": 12
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 1,
+     "name": "Key assign",
+     "min": 0,
+     "max": 1,
+     "display": "POLY, MONO"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 1,
+     "name": "Solo legato",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento mode",
+     "min": 0,
+     "max": 1,
+     "display": "LEGATO, NORMAL"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento type",
+     "min": 0,
+     "max": 1,
+     "display": "TIME, RATE"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "Portamento time",
+     "min": 0,
+     "max": 127
+    }
+   ],
+   "size": 34
+  },
+  "1-3-2": {
+   "name": "Patch Tone",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 2,
+     "name": "Wave group",
+     "min": 0,
+     "max": 2,
+     "display": "INT, EXP, PCM"
+    },
+    {
+     "offset": 1,
+     "size": 2,
+     "bits": 4,
+     "name": "Wave number",
+     "min": 0,
+     "max": 254,
+     "display": "1 - 255"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 1,
+     "name": "Tone switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 1,
+     "name": "FXM switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 4,
+     "name": "FXM depth",
+     "min": 0,
+     "max": 15,
+     "display": "1 - 16"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Velocity range lower",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Velocity range upper",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 1,
+     "name": "Volume switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 1,
+     "name": "Hold-1 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 4,
+     "name": "Modulation destination 1",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Modulation sense 1",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 4,
+     "name": "Modulation destination 2",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "Modulation sense 2",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 4,
+     "name": "Modulation destination 3",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Modulation sense 3",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 4,
+     "name": "Modulation destination 4",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "Modulation sense 4",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 4,
+     "name": "Aftertouch destination 1",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "Aftertouch sense 1",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 4,
+     "name": "Aftertouch destination 2",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 7,
+     "name": "Aftertouch sense 2",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 4,
+     "name": "Aftertouch destination 3",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 7,
+     "name": "Aftertouch sense 3",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 4,
+     "name": "Aftertouch destination 4",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "Aftertouch sense 4",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 4,
+     "name": "Expression destination 1",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 7,
+     "name": "Expression sense 1",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 4,
+     "name": "Expression destination 2",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "Expression sense 2",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 4,
+     "name": "Expression destination 3",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 7,
+     "name": "Expression sense 3",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 4,
+     "name": "Expression destination 4",
+     "min": 0,
+     "max": 12,
+     "display": "OFF, PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "Expression sense 4",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 1 form",
+     "min": 0,
+     "max": 5,
+     "display": "TRI, SIN, SAW, SQR, RND1, RND2"
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 1 offset",
+     "min": 0,
+     "max": 4,
+     "display": "-100, -50, 0, +50, +100"
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 1 synchro",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 rate",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 38,
+     "size": 2,
+     "bits": 4,
+     "name": "LFO 1 delay",
+     "min": 0,
+     "max": 128,
+     "display": "0 - 127, KEY-OFF"
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 1 fade polarity",
+     "min": 0,
+     "max": 1,
+     "display": "IN, OUT"
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 fade time",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 pitch depth",
+     "min": 4,
+     "max": 124,
+     "display": "-600 - +600"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVF depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVA depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 2 form",
+     "min": 0,
+     "max": 5,
+     "display": "TRI, SIN, SAW, SQR, RND1, RND2"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 2 offset",
+     "min": 0,
+     "max": 4,
+     "display": "-100, -50, 0, +50, +100"
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 2 synchro",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 rate",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 49,
+     "size": 2,
+     "bits": 4,
+     "name": "LFO 2 delay",
+     "min": 0,
+     "max": 128,
+     "display": "0 - 127, KEY-OFF"
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 2 fade polarity",
+     "min": 0,
+     "max": 1,
+     "display": "IN, OUT"
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 fade time",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 pitch depth",
+     "min": 4,
+     "max": 124,
+     "display": "-600 - +600"
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVF depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVA depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch coarse",
+     "min": 16,
+     "max": 112,
+     "display": "-48 - +48"
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch fine",
+     "min": 14,
+     "max": 114,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 58,
+     "size": 1,
+     "bits": 4,
+     "name": "Random pitch depth",
+     "min": 0,
+     "max": 15,
+     "display": "0, 5, 10, 20, 30, 40, 50, 70, 100, 200, 300, 400, 500, 600, 800, 1200"
+    },
+    {
+     "offset": 59,
+     "size": 1,
+     "bits": 4,
+     "name": "Pitch key follow",
+     "min": 0,
+     "max": 15,
+     "display": "-100, -70, -50, -30, -10, 0, +10, +20, +30, +40, +50, +70, +100, +120, +150, +200"
+    },
+    {
+     "offset": 60,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 61,
+     "size": 1,
+     "bits": 4,
+     "name": "P-ENV velocity on time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 62,
+     "size": 1,
+     "bits": 4,
+     "name": "P-ENV velocity off time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 63,
+     "size": 1,
+     "bits": 4,
+     "name": "P-ENV time key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 64,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV depth",
+     "min": 52,
+     "max": 76,
+     "display": "-12 - +12"
+    },
+    {
+     "offset": 65,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 66,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 1",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 67,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 68,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 2",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 69,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 70,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 3",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 71,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 72,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 4",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 73,
+     "size": 1,
+     "bits": 2,
+     "name": "Filter mode",
+     "min": 0,
+     "max": 2,
+     "display": "OFF, LPF, HPF"
+    },
+    {
+     "offset": 74,
+     "size": 1,
+     "bits": 7,
+     "name": "Cutoff frequency",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 75,
+     "size": 1,
+     "bits": 7,
+     "name": "Resonance",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 76,
+     "size": 1,
+     "bits": 1,
+     "name": "Resonance mode",
+     "min": 0,
+     "max": 1,
+     "display": "SOFT, HARD"
+    },
+    {
+     "offset": 77,
+     "size": 1,
+     "bits": 4,
+     "name": "Cutoff key follow",
+     "min": 0,
+     "max": 15,
+     "display": "-100, -70, -50, -30, -10, 0, +10, +20, +30, +40, +50, +70, +100, +120, +150, +200"
+    },
+    {
+     "offset": 78,
+     "size": 1,
+     "bits": 3,
+     "name": "TVF-ENV velocity curve",
+     "min": 0,
+     "max": 6,
+     "display": "1 - 7"
+    },
+    {
+     "offset": 79,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 80,
+     "size": 1,
+     "bits": 4,
+     "name": "TVF-ENV velocity on time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 81,
+     "size": 1,
+     "bits": 4,
+     "name": "TVF-ENV velocity off time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 82,
+     "size": 1,
+     "bits": 4,
+     "name": "TVF-ENV time key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 83,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 84,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 85,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 86,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 87,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 88,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 89,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 90,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 91,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 92,
+     "size": 1,
+     "bits": 7,
+     "name": "Level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 93,
+     "size": 1,
+     "bits": 4,
+     "name": "Level key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 94,
+     "size": 2,
+     "bits": 4,
+     "name": "Pan",
+     "min": 0,
+     "max": 128,
+     "display": "L64 - 63R, RND"
+    },
+    {
+     "offset": 96,
+     "size": 1,
+     "bits": 4,
+     "name": "Panning key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 97,
+     "size": 1,
+     "bits": 2,
+     "name": "Tone delay mode",
+     "min": 0,
+     "max": 2,
+     "display": "NORMAL, HOLD, PLAY-MATE"
+    },
+    {
+     "offset": 98,
+     "size": 2,
+     "bits": 4,
+     "name": "Tone delay time",
+     "min": 0,
+     "max": 128,
+     "display": "0 - 127, KEY-OFF"
+    },
+    {
+     "offset": 100,
+     "size": 1,
+     "bits": 3,
+     "name": "TVA-ENV velocity curve",
+     "min": 0,
+     "max": 6,
+     "display": "1 - 7"
+    },
+    {
+     "offset": 101,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 102,
+     "size": 1,
+     "bits": 4,
+     "name": "TVA-ENV velocity on time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 103,
+     "size": 1,
+     "bits": 4,
+     "name": "TVA-ENV velocity off time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 104,
+     "size": 1,
+     "bits": 4,
+     "name": "TVA-ENV time key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 105,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 106,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 107,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 108,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 109,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 110,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 111,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 112,
+     "size": 1,
+     "bits": 7,
+     "name": "Dry level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 113,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb send level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 114,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus send level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 115,
+     "size": 1,
+     "bits": 1,
+     "name": "Output select",
+     "min": 0,
+     "max": 1,
+     "display": "MAIN, SUB"
+    }
+   ],
+   "size": 116
+  },
+  "1-4-1": {
+   "name": "Rhythm Note",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 2,
+     "name": "Wave group",
+     "min": 0,
+     "max": 2,
+     "display": "INT, EXP, PCM"
+    },
+    {
+     "offset": 1,
+     "size": 2,
+     "bits": 4,
+     "name": "Wave number",
+     "min": 0,
+     "max": 254,
+     "display": "1 - 255"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 1,
+     "name": "Tone switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Coarse tune",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 5,
+     "name": "Mute group",
+     "min": 0,
+     "max": 31,
+     "display": "OFF, 1 - 31"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 1,
+     "name": "Envelope mode",
+     "min": 0,
+     "max": 1,
+     "display": "NO-SUSTAIN, SUSTAIN"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch fine",
+     "min": 14,
+     "max": 114,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 4,
+     "name": "Random pitch depth",
+     "min": 0,
+     "max": 15,
+     "display": "0, 5, 10, 20, 30, 40, 50, 70, 100, 200, 300, 400, 500, 600, 800, 1200"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 4,
+     "name": "Pitch bend range",
+     "min": 0,
+     "max": 12
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 4,
+     "name": "P-ENV velocity time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV depth",
+     "min": 52,
+     "max": 76,
+     "display": "-12 - +12"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 1",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 2",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 3",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 4",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 2,
+     "name": "Filter mode",
+     "min": 0,
+     "max": 2,
+     "display": "OFF, LPF, HPF"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 7,
+     "name": "Cutoff",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 7,
+     "name": "Resonance",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 1,
+     "name": "Resonance mode",
+     "min": 0,
+     "max": 1,
+     "display": "SOFT, HARD"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 4,
+     "name": "TVF-ENV velocity time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV depth",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "Level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 37,
+     "size": 2,
+     "bits": 4,
+     "name": "Pan",
+     "min": 0,
+     "max": 128,
+     "display": "L64 - 63R, RND"
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity level sense",
+     "min": 1,
+     "max": 127,
+     "display": "-63 - +63"
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 4,
+     "name": "TVA-ENV velocity time sense",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 1",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 2",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 3",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 4",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 7,
+     "name": "Dry level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 49,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb send level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus send level",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 1,
+     "name": "Output select",
+     "min": 0,
+     "max": 1,
+     "display": "MAIN, SUB"
+    }
+   ],
+   "size": 52
+  }
+ }
+}

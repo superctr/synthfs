@@ -59,7 +59,13 @@ def table(kind, rows):
 records = {}
 for path in sorted((root / "maps/records").glob("*.json")):
     r = json.loads(path.read_text())
-    if r.get("packing") != "bits" or r.get("first", "low") not in ("low", "high") or set(r) - {"map", "packing", "first", "blocks", "lead", "order", "align"}:
+    if r.get("packing") == "fields":
+        # each block's bytes and where its parameters stand in them
+        if set(r) - {"map", "packing", "blocks"}:
+            sys.exit(f"{path.name}: keys {sorted(r)}")
+        r["fields"] = {k: b["fields"] for k, b in r["blocks"].items()}
+        r["blocks"] = {k: b["bytes"] for k, b in r["blocks"].items()}
+    elif r.get("packing") != "bits" or r.get("first", "low") not in ("low", "high") or set(r) - {"map", "packing", "first", "blocks", "lead", "order", "align"}:
         sys.exit(f"{path.name}: packing {r.get('packing')!r}, first {r.get('first')!r}, keys {sorted(r)}")
     records[r["map"]] = r
 
@@ -94,6 +100,22 @@ for path in sorted((root / "maps").glob("*.json")):
             sys.exit(f"{path.name}: {k}: a name not in a row")
         name = f'{first["offset"]}, {len(chars)}, {first["size"]}' if first else "0, 0, 0"
         bytes_packed, before = packed.pop(k, 0), lead.pop(k, 0)
+        # a block whose parameters each have a place of their own: a byte, the field's lowest bit, its width and
+        # what the stored bits are less than the value (64, a signed value's middle)
+        places = "nullptr"
+        if k in record.get("fields", {}):
+            at = {f[0]: f for f in record["fields"][k]}
+            if set(at) != {p["offset"] for p in b["params"]}:
+                sys.exit(f"maps/records/{path.name}: {k}: fields for {sorted(set(at) ^ {p['offset'] for p in b['params']})}")
+            rows = []
+            for p in b["params"]:
+                _, byte, shift, width, *bias = at[p["offset"]]
+                if width < 9 and (shift + width > 8 or byte >= bytes_packed) or width > 8 or width < min(p["bits"] * p["size"], 8):
+                    sys.exit(f"maps/records/{path.name}: {k}: {p['name']}: {byte}, {shift}, {width}")
+                rows.append(f"{{ {byte}, {shift}, {width}, {bias[0] if bias else 0} }}")
+            places = table("Place", rows)
+            blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name}, {bytes_packed}, 0, {places} }}')
+            continue
         used = before
         for p in b["params"]:
             used = (used + 7) // 8 * 8 if p["offset"] in aligned else used
@@ -103,7 +125,7 @@ for path in sorted((root / "maps").glob("*.json")):
         for p in b["params"] if bytes_packed else []:
             if p["size"] == 1 and not 0 <= p["min"] - centre(p) <= p["max"] - centre(p) < 1 << p["bits"]:
                 sys.exit(f"{path.name}: {k}: {p['name']}: {p['min']} to {p['max']} not in {p['bits']} bits")
-        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name}, {bytes_packed}, {before} }}')
+        blocks.append(f'{{ "{k}", {b["size"]}, {params}, {len(b["params"])}, {name}, {bytes_packed}, {before}, nullptr }}')
     if packed or lead:
         sys.exit(f"maps/records/{path.name}: no blocks {sorted(packed) + sorted(lead)}")
 

@@ -183,6 +183,18 @@ bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::v
 			continue;
 		}
 		std::vector<uint8_t> u(b.size, 0);
+		if (b.places) {
+			for (uint32_t p = 0; p < b.count; p++) {
+				const Param &q = b.params[p];
+				const Place &at = b.places[p];
+				const unsigned mask = (1u << at.width) - 1;
+				const unsigned v = ((rec[starts[k] + at.byte] >> at.shift & mask) + at.bias) & mask;
+				for (uint32_t n = 0; n < q.size; n++)
+					u[q.offset + n] = uint8_t(v >> (q.bits * (q.size - 1 - n)) & ((1u << q.bits) - 1));
+			}
+			units.push_back(std::move(u));
+			continue;
+		}
 		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];
@@ -213,6 +225,18 @@ bool pack(const Map &m, const Area &a, const std::vector<std::vector<uint8_t>> &
 			continue;
 		if (units[k].size() != b.size)
 			return false;
+		if (b.places) {
+			for (uint32_t p = 0; p < b.count; p++) {
+				const Param &q = b.params[p];
+				const Place &at = b.places[p];
+				unsigned v = 0;
+				for (uint32_t n = 0; n < q.size; n++)
+					v = v << q.bits | units[k][q.offset + n];
+				const unsigned mask = (1u << at.width) - 1;
+				rec[starts[k] + at.byte] |= uint8_t(((v - at.bias) & mask) << at.shift);
+			}
+			continue;
+		}
 		Bits bits { m.high_first, 8 * starts[k] + b.lead };
 		for (uint32_t p = 0; p < b.count; p++) {
 			const Param &q = b.params[p];

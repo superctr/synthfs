@@ -44,6 +44,12 @@ constexpr Kind jv1080_kinds[] = {
 	{ "1-3", SYFS_TYPE_PATCH, nullptr },
 	{ "1-4", SYFS_TYPE_RHYTHM_SET, nullptr },
 };
+constexpr Kind jv880_kinds[] = {
+	{ "1-1", SYFS_TYPE_SYSTEM, nullptr },
+	{ "1-2", SYFS_TYPE_PERFORMANCE, nullptr },
+	{ "1-3", SYFS_TYPE_PATCH, nullptr },
+	{ "1-4", SYFS_TYPE_RHYTHM_SET, nullptr },
+};
 constexpr Kind xv_kinds[] = {
 	{ "1-1", SYFS_TYPE_SYSTEM, nullptr },
 	{ "1-2", SYFS_TYPE_PERFORMANCE, nullptr },
@@ -65,6 +71,7 @@ constexpr Kind fantom_kinds[] = {
 constexpr Family families[] = {
 	{ "s760", SYFS_FORMAT_S760, nullptr, SYFS_NONE, false, s700_kinds, std::size(s700_kinds) },
 	{ "jv1080", SYFS_FORMAT_JV1080, nullptr, SYFS_NONE, true, jv1080_kinds, std::size(jv1080_kinds) },
+	{ "jv880", SYFS_FORMAT_JV80, nullptr, SYFS_NONE, true, jv880_kinds, std::size(jv880_kinds) },
 	{ "xv5080", SYFS_FORMAT_XV5080, "xv3080", SYFS_FORMAT_XV3080, true, xv_kinds, std::size(xv_kinds) },
 	{ "fantom", SYFS_FORMAT_FANTOM, nullptr, SYFS_NONE, true, fantom_kinds, std::size(fantom_kinds) },
 };

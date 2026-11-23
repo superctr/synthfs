@@ -60,6 +60,12 @@ that have bytes there; a block with none is not in the record (an XV-5080's patc
 | `order` | for a group, its blocks in the record's order where that is not the order of their addresses; a block's places stay together, in the order of their addresses |
 | `align` | for a block, the offsets of the parameters that start on a byte |
 
+Where `packing` is `fields`, a block's parameters do not follow one another: `blocks` gives for each block its
+`bytes` and its `fields`, one for each parameter, `[offset, byte, shift, width]` or `[offset, byte, shift, width,
+bias]`: the parameter at that offset is `width` bits of that byte of the block from bit `shift` up, and its value
+those bits plus the bias within the width (64: a signed value's middle).  A parameter of several units is its
+value's bits from the top.  The blocks follow one another as with `bits`.
+
 A parameter of one unit whose `bits` do not hold its `max` is a value about 64 kept about the middle of its bits:
 what is stored is the value less 64 and plus half the bits' range (61 to 67 in three bits as 1 to 7).  `map::unpack`
 and `map::pack` go between a record and its blocks' units.
@@ -70,6 +76,13 @@ and `map::pack` go between a record and its blocks' units.
 with their count, and the blocks of an area are a list written once.  `src/map.cpp` writes them out, an area and
 an entry for each place, the first time a map is asked for.  An entry of the top whose group holds groups alone is
 an area for each of those, named as the group names them (an XV's part's "Temporary Patch" and "Temporary Rhythm").
+
+## The JV-880
+
+`jv880`: model ID `46`, the JV-80's, JV-90's and JV-1000's too; four-byte addresses, a unit a byte of the message.
+Groups `1-1` the system, `1-2` a performance (common and eight parts), `1-3` a patch (common and four tones) and
+`1-4` the rhythm set (keys 36 to 96).  Its records are packed in fields: a patch's 362 bytes and the rhythm set's
+2684 on an SR-JV80 board, those and a performance's 204 on a DATA card and in the battery memory (`formats.md`).
 
 ## The JV-1080
 
