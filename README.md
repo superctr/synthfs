@@ -1,126 +1,96 @@
 # synthfs
 
-The images synthesizers and samplers keep their sounds in, read: sampler disk images (CD-ROMs, hard disks, floppies)
-and wave expansion ROMs.  The format and the medium are told (Roland S-550, S-330, W-30, S-760, S-770 and DJ-70, AKAI
-S900, S1000 and S3000, E-mu, ISO 9660 and FAT disks and floppies; Roland SR-JV80 and SRX boards and SO-PCM1 cards, a JV's DATA card),
-what the image holds is listed as nodes, each with what it uses (an S-760/S-770 volume's performances down to a
-partial's samples, an AKAI program's samples and a multi's programs, an S-550 patch's tones, a board's banks of
-patches and rhythm sets and its waves, each with its samples by key), and a sample's (or a WAV or AIFF file's) rate,
-key, length and loop are its properties, its wave decoded to 16 bits.  C++20 inside, a C interface
-(`include/synthfs/synthfs.h`, everything `syfs_`), no dependencies.
+A library for reading and writing the disk, card and ROM images of samplers and synthesizers from the late 80s to the
+early 2000s.
 
-The interface is small and meant to stay so as formats are added.  An image is a tree of nodes, node 0 the image
-itself; what a node is and has is told by properties, read by key; and every name (a format, a node's type, a
-property, a relation) is a key, the hash of its string, with a constant in `syfs_keys.h`.
-[docs/properties.md](docs/properties.md) lists them.
+Available as a C library (C++20 inside, no dependencies) and a command-line tool.
 
-The image is read through the host's callback (`syfs_io`: n bytes at an offset), so a file, a buffer or a stream all
-work; `syfs_open_path` opens a file.  Plain images (`.iso`, `.cdr`, `.img`) and raw sector ones (`.bin`) both read,
-as does an image in a VHD (fixed or dynamic) and a compact disc as a cue sheet with its files (by path only: its
-audio tracks are nodes with waves, its data track's volume read as from an image of its own), and `syfs_convert` copies a raw image into a dynamic VHD, which leaves
-out the blocks that hold only zeros (and, for a SmartMedia card, the pages still erased), or a VHD's sectors back
-out.  A host that runs a machine from an image reads and writes it through `syfs_image_io`, the image out of its
-container as an io of its own, which adds a dynamic VHD's blocks as they are first written; a
-SmartMedia card's image is read through its logical sectors; a board or card is read as dumped, and one of Roland's
-tells what it was sold as (`SYFS_PROP_MODEL`, `SYFS_PROP_TITLE`).  Opening tells the format only, which is cheap; the lists are read when first asked
-for.  The formats, and what is not read yet, are in [docs/formats.md](docs/formats.md).
+BSD-3.  No images are included: bring your own.
 
-```c
-syfs_image *im = syfs_open_path("disc.iso", err, sizeof err);
-int64_t format;
-syfs_get_int(im, SYFS_ROOT, SYFS_PROP_FORMAT, &format);       /* SYFS_FORMAT_AKAI_S1000 */
-size_t count = syfs_list(im, SYFS_ROOT, SYFS_REL_ALL, NULL, 0);
-syfs_node *nodes = malloc(count * sizeof *nodes);
-syfs_list(im, SYFS_ROOT, SYFS_REL_ALL, nodes, count);
-for (size_t i = 0; i < count; i++) {
-	syfs_info info;
-	if (syfs_node_info(im, nodes[i], &info) && info.type == SYFS_TYPE_SAMPLE)
-		printf("%s\n", info.name);
-}
-syfs_close(im);
-```
+## Supported formats
 
-`syfs_list` gives a node's children (`SYFS_REL_CHILDREN`), every node under it (`SYFS_REL_ALL`) or the nodes it uses
-(`SYFS_REL_USES`), which is many to many.
+Images synthfs can open and list:
 
-A sample's wave is read in pieces from any frame: `syfs_read` with `SYFS_AS_S16` gives 16-bit values, a frame's
-channels side by side, whatever the format stores (12-bit, 16-bit, a WAV's or AIFF's 8 to 32-bit integers or floating
-point).
+- **Roland S-760, S-770** (and S-750): hard disks, MO, CD-ROMs and floppies, down to each performance's patches,
+  partials and samples
+- **Roland DJ-70** floppies
+- **Roland S-550, S-330, W-30**: S-550 hard disks and floppies of all three, with patches and tones
+- **Roland SR-JV80 and SRX** wave expansion boards and **SO-PCM1** cards: patches, rhythm sets and waves
+- **Roland JV-80 and JV-1080** DATA cards
+- **Roland XV-5080, XV-3080 and Fantom** `.SVD` files
+- **JV-880, JV-1080, XV-5080, XV-3080 and Fantom** battery memory dumps
+- **Roland system exclusive** files (`.syx`)
+- **AKAI S900, S1000, S3000**: S1000 and S3000 disks and floppies, S900 floppies, with programs, samples and multis
+- **E-mu EIII, E-IV, Emax II** discs (recognized only)
+- **ISO 9660** CD-ROMs and **FAT12/16/32** disks and floppies
+- **Audio CDs** as cue sheets
+- **WAV** and **AIFF** files
 
-```c
-int64_t frames, channels;
-int16_t buf[4096];
-if (syfs_get_int(im, n, SYFS_PROP_FRAMES, &frames) && syfs_get_int(im, n, SYFS_PROP_CHANNELS, &channels))
-	for (uint64_t at = 0; at < (uint64_t)frames * channels * 2;) {
-		size_t got = syfs_read(im, n, SYFS_AS_S16, at, buf, sizeof buf - sizeof buf % (channels * 2));
-		if (!got)
-			break;
-		play(buf, got / (channels * 2), channels);
-		at += got;
-	}
-```
+Images can be plain (`.iso`, `.img`, `.cdr`), raw CD sectors (`.bin`), cue sheets (`.cue`), VHD (fixed or dynamic)
+or SmartMedia card dumps.
 
-A node's `exports` property names what else it reads as: `SYFS_AS_WAV`, the same wave as a WAV file with its key and
-loop in a `smpl` chunk, and `SYFS_AS_RAW`, a file's own bytes (a FAT's or CD-ROM's file, an AKAI program or sample), and `SYFS_AS_SYX`,
-an S-760's or S-770's performance, patch, partial or sample, a board's or DATA card's JV-1080 patch or rhythm set, or
-an SRX board's or `.SVD` file's XV-5080 or XV-3080 one,
-as Roland Data Sets by the model's parameter address map (a JV-1080's, XV-5080's or XV-3080's battery memory, which
-tells nothing of itself, opens with `syfs_open_as`)
-([docs/maps.md](docs/maps.md)); a file of such messages (`.syx`) opens as an image whose nodes are what it holds whole.
-`syfs_read` with no buffer gives the size.
+## Features
 
-A FAT volume, in a raw image or a VHD, is written: `syfs_import` makes a file of the host's bytes or an empty
-directory, `syfs_remove` removes a node with what it holds, `syfs_move` gives it another parent, setting
-`SYFS_PROP_NAME` names it anew, and `syfs_transfer` copies a node of another image in, a file as its own bytes and
-a directory or volume with what it holds.  Nodes keep their numbers through every change.  An S-760's or S-770's
-hard disk takes another S-700 disk's entries the same way: `syfs_transfer` of a patch on a CD-ROM brings its
-partials and their samples' waves, leaving out what the disk already has.
-
-What a node sounds at a key, `syfs_at_key`, is the sample (a node with a wave) a patch, partial, program or board's
-wave plays there, so a host can preview a sound at middle C: that sample played at its rate × 2^((60 − key) / 12),
-key its original key.
-
-A blank image is made an empty volume through the host's writer (`syfs_io`'s `write`) by `syfs_create`, with the
-format and the medium: FAT (a 720 KB or 1.44 MB FAT12 floppy; a disk with an MBR and one FAT16 or FAT32 partition),
-with an optional label, and the S-760's and the S-770's (a hard disk or MO as the machine formats it, or its
-formatted 2DD or 2HD floppy, what a sound volume is saved to).  A blank SmartMedia card is made with no format and the
-medium `SYFS_MEDIUM_SMARTMEDIA`.  What each writes is in
-[docs/formats.md](docs/formats.md).
-
-```c
-syfs_io w = { f, NULL, file_write, 1474560 };
-if (!syfs_create(&w, SYFS_FORMAT_FAT, SYFS_MEDIUM_FLOPPY, "SAMPLES", err, sizeof err))
-	fprintf(stderr, "%s\n", err);
-```
+- Every sample can be read as 16-bit audio, whatever the format stores, along with its rate, key and loop.
+- Export:
+	- samples as WAV files, with key and loop
+	- files on FAT volumes, CD-ROMs and AKAI disks as their own bytes
+	- S-760/S-770 and expansion board sounds, DATA cards and `.SVD` files as Roland SysEx (`.syx`)
+- Writing:
+	- FAT volumes: add, remove, rename and move files and directories
+	- S-760/S-770 hard disks: copy sounds in from another S-700 image, bringing everything they use and skipping what
+	  the disk already has
+- Creating blank images:
+	- FAT floppies (720 KB, 1.44 MB) and hard disks (FAT16, FAT32)
+	- S-760/S-770 hard disks and floppies, formatted as the machines format them
+	- SmartMedia cards
+- Converting raw images to dynamic VHD and back.
+- Images shared between programs: a VHD may be written by two processes at once.
 
 ## Building
 
 ```sh
-just build          # the library, the synthfs tool and the tests (CMake 3.23+, C++20)
+just build          # the library, the synthfs tool and the tests
 just test
-just keys           # syfs_keys.h made again after a change to src/keys.def (Python 3)
-just scan DIR       # every image under DIR, one line each
 ```
 
-In another project: `add_subdirectory(synthfs)` and link `synthfs`; the tool and the tests are built only
-where synthfs is the top level (`SYNTHFS_TOOLS`, `SYNTHFS_TESTS`).
+Or with plain CMake:
 
-`synthfs` is the command line: `synthfs COMMAND IMAGE [ARGS...]` runs one command on an image, and `synthfs shell
-[-w] IMAGE` reads them from stdin, walking the image's nodes like a file tree (`cd`, `pwd`).  `ls` lists a node and
-what it holds (`-l` every node under it, `-r` with what each uses and each sample's header), `info` a node's
-properties, `uses` what it uses; `export` writes nodes in a conversion they export (`-t syx -o all.syx /`: the whole
-image's Data Sets), `wav` every sample as a WAV file; `add`, `mkdir`, `rm`, `mv`, `transfer` and `set` change a FAT
-volume; `scan IMAGE...` gives each image's line, `convert` makes a VHD of a raw image or a raw image of a VHD, and
-`create` an empty volume.  A node is named by a path of names, or `TYPE:NUMBER` where names are shared
-(`synthfs --help`).
+```sh
+cmake -S . -B build
+cmake --build build
+```
 
-## Layout
+Needs CMake 3.23 or newer and a C++20 compiler.  Python 3 is needed only to regenerate the key and map tables.
 
-`src/` holds the interface (`synthfs.cpp`, with the order formats are tried in), the names (`keys.def`), the image
-reader and ISO 9660; each maker has a directory and a namespace (`src/roland`, `src/akai`, `src/emu`) declaring its formats in one header, each
-a class with a static `probe` and `open`.
+## Command line
 
-## Later
+```sh
+synthfs ls disc.iso                 # what the image holds
+synthfs ls -l disc.iso              # every node in it
+synthfs wav disc.iso out/           # every sample as a WAV file
+synthfs shell disc.iso              # browse the image like a file tree
+synthfs scan *.iso                  # one line per image
+synthfs convert disk.img disk.vhd   # raw image to dynamic VHD
+```
 
-Writing the samplers' own volumes, and formatting a DJ-70's floppy and an S-760's
-Volume Dump FD disk.
+`synthfs help` lists every command.
+
+For library usage, the full command line and the project layout, see [docs/advanced.md](docs/advanced.md).
+
+## Documentation
+
+- [docs/advanced.md](docs/advanced.md): using the library and the tool
+- [docs/formats.md](docs/formats.md): the formats as read, and what is not read yet
+- [docs/properties.md](docs/properties.md): node types and properties
+- [docs/maps.md](docs/maps.md): the parameter address maps used for SysEx export
+
+## Credits
+
+Created by superctr 2026.
+
+### Disclaimers
+
+This project is not affiliated with Roland Corporation, AKAI or E-mu Systems.
+
+AI disclosure: Anthropic's Claude models were used in this project.
