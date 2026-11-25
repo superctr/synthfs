@@ -89,6 +89,32 @@ private:
 
 namespace {
 
+// A JD-990's sounds: a patch's packed record (a common block and four tones), a performance's and the rhythm set's
+// (a common block and 61 keys); a patch as its parameters, a unit each (the common's, then the tones')
+namespace jd990 {
+constexpr uint32_t RECORD_COMMON = 0x57, RECORD_TONE = 0x49, RECORD = RECORD_COMMON + 4 * RECORD_TONE;
+constexpr uint32_t PERFORMANCE = 0x6B, RHYTHM = 0x2F + 61 * 0x56;
+constexpr uint32_t COMMON = 118, TONE = 92, PATCH = COMMON + 4 * TONE, PATCHES = 64;
+// the memory's patches (docs/formats.md, "Battery memories"): the store's three words, then a node for each patch;
+// the store's room ends where the rhythm set starts
+constexpr uint32_t STORE = 0x6D0, NODES = 0x6D6, NODE = 14, STORE_END = 0x5502, MEMORY = 0x10000, ROM = 0x80000;
+// where the parameters stand in a factory patch and in a patch's stream: the nth there is the common's or a tone's
+// parameter of this offset
+constexpr uint8_t COMMON_ORDER[COMMON] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 33,
+	34, 35, 36, 37, 38, 39, 30, 31, 32, 26, 27, 28, 29, 19, 24, 25, 40, 41, 42, 43, 44, 45, 46, 47,
+	48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 117, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+	71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
+	95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+};
+constexpr uint8_t TONE_ORDER[TONE] = {
+	0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 64, 73, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+	23, 24, 25, 26, 27, 28, 65, 74, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+	45, 66, 75, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 59, 60, 61, 58, 62, 63, 68, 69, 70, 67, 71,
+	72, 56, 57, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 5,
+};
+}
+
 std::string plain(const uint8_t *p, size_t n)
 {
 	std::string s;
@@ -625,6 +651,20 @@ bool WaveRom::data_sets(size_t i, std::vector<uint8_t> &out) const
 	}
 	if (format != SYFS_FORMAT_SRJV80)
 		return false;
+	// the JD-990's shape (type 3): a DATA card's patch, but for a tone's waveform number, whose top bit is the
+	// tone's first bit on a board and the top bit of the number's own byte on a card
+	if (patch && !strcmp(shape, "3")) {
+		std::vector<uint8_t> rec(jd990::RECORD);
+		if (!socket_->read(where[i], rec.data(), rec.size()))
+			return false;
+		for (uint32_t t = 0; t < 4; t++) {
+			uint8_t *tone = &rec[jd990::RECORD_COMMON + t * jd990::RECORD_TONE];
+			if (tone[0] & 1)
+				tone[1] |= 0x80;
+			tone[0] &= 0xFE;
+		}
+		return syx::packed("jd990", "User Patch", e.number, 0x10, rec, out);
+	}
 	// the JV-880's shape (type 2): a patch of 362 bytes, a rhythm set of 61 keys in 44 each
 	const bool older = !strcmp(shape, "2");
 	if (!older && strcmp(shape, patch ? "5" : "4"))
@@ -644,6 +684,7 @@ namespace {
 constexpr uint64_t CARD_32K = 0x8000, CARD_64K = 0x10000;
 constexpr uint8_t JV80_KEY[] = { 'R', 'o', 'l', 'a', 'n', 'd', ' ', 'J', 'V', '-', '8', '0', 'D', 0xBB, 'P', 0xAF };
 constexpr uint8_t JV1080_KEY[] = { 'R', 'o', 'l', 'a', 'n', 'd', 'J', 'V', '-', '9', '9', '0', 'D', 0xBB, 'P', 0xAF };
+constexpr uint8_t JD990_KEY[] = { 'R', 'o', 'l', 'a', 'n', 'd', 'J', 'D', '-', '9', '9', '0', 'E', 0xBA, 'P', 0xAF };
 }
 
 syfs_key DataCard::probe(const Image &im)
@@ -651,13 +692,14 @@ syfs_key DataCard::probe(const Image &im)
 	uint8_t h[16];
 	if ((im.size() != CARD_32K && im.size() != CARD_64K) || !im.read(0, h, sizeof h))
 		return SYFS_NONE;
-	return !memcmp(h, JV80_KEY, sizeof h) ? SYFS_FORMAT_JV80 : !memcmp(h, JV1080_KEY, sizeof h) ? SYFS_FORMAT_JV1080 : SYFS_NONE;
+	return !memcmp(h, JV80_KEY, sizeof h) ? SYFS_FORMAT_JV80 : !memcmp(h, JV1080_KEY, sizeof h) ? SYFS_FORMAT_JV1080
+		: !memcmp(h, JD990_KEY, sizeof h) ? SYFS_FORMAT_JD990 : SYFS_NONE;
 }
 
 void DataCard::identify()
 {
 	uint8_t name[16];
-	if (format == SYFS_FORMAT_JV1080 && image.read(0x10, name, sizeof name))
+	if ((format == SYFS_FORMAT_JV1080 || format == SYFS_FORMAT_JD990) && image.read(0x10, name, sizeof name))
 		label = trimmed(plain(name, sizeof name));
 	label_known = true;
 }
@@ -665,29 +707,33 @@ void DataCard::identify()
 void DataCard::list()
 {
 	// each list's records one after another, a name at the start of each: twelve characters as they are (a JV-80's),
-	// or packed seven bits each (a JV-1080's).  A JV-80's rhythm set has no name.
+	// or packed seven bits each (a JV-1080's), or sixteen as they are (a JD-990's, a patch's after a byte).  A JV-80's
+	// rhythm set has no name.
 	struct Run {
 		syfs_key kind;
 		uint32_t at, size, count;
+		uint8_t name_at, name_size;
 	};
-	static constexpr Run jv80[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 204, 16 }, { SYFS_TYPE_PATCH, 0xCE0, 362, 64 },
-		{ SYFS_TYPE_RHYTHM_SET, 0x6760, 2684, 1 } };
-	static constexpr Run jv1080[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 245, 16 }, { SYFS_TYPE_PATCH, 0xF70, 401, 64 },
-		{ SYFS_TYPE_RHYTHM_SET, 0x73B0, 2699, 1 } };
+	static constexpr Run jv80[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 204, 16, 0, 12 }, { SYFS_TYPE_PATCH, 0xCE0, 362, 64, 0, 12 },
+		{ SYFS_TYPE_RHYTHM_SET, 0x6760, 2684, 1, 0, 0 } };
+	static constexpr Run jv1080[] = { { SYFS_TYPE_PERFORMANCE, 0x20, 245, 16, 0, 0 }, { SYFS_TYPE_PATCH, 0xF70, 401, 64, 0, 0 },
+		{ SYFS_TYPE_RHYTHM_SET, 0x73B0, 2699, 1, 0, 0 } };
+	static constexpr Run jd990[] = { { SYFS_TYPE_PERFORMANCE, 0x20, jd990::PERFORMANCE, 16, 0, 16 },
+		{ SYFS_TYPE_PATCH, 0x6D0, jd990::RECORD, 64, 1, 16 }, { SYFS_TYPE_RHYTHM_SET, 0x6590, jd990::RHYTHM, 1, 0, 16 } };
 	const bool later = format == SYFS_FORMAT_JV1080;
 	// a JV-1080's 64 KB card is two halves alike, the upper's key a byte further on; a half without its key holds
 	// nothing
 	uint8_t upper[17];
 	const bool two = later && image.size() == CARD_64K && image.read(CARD_32K, upper, sizeof upper) && upper[0] == 0xAF
 		&& !memcmp(upper + 1, JV1080_KEY, 13);
-	for (const Run &r : later ? jv1080 : jv80)
+	for (const Run &r : later ? jv1080 : format == SYFS_FORMAT_JD990 ? jd990 : jv80)
 		for (uint32_t half = 0, number = 0; half < (two ? 2u : 1u); half++)
 			for (uint32_t k = 0; k < r.count; k++, number++) {
 				const uint64_t at = half * CARD_32K + r.at + uint64_t(k) * r.size;
-				uint8_t rec[12];
+				uint8_t rec[17];
 				if (!image.read(at, rec, sizeof rec))
 					return;
-				add(r.kind, format, number, syfs::NONE, later ? packed(rec, false) : r.kind == SYFS_TYPE_RHYTHM_SET ? "" : plain(rec, 12), r.size, at);
+				add(r.kind, format, number, syfs::NONE, later ? packed(rec, false) : plain(rec + r.name_at, r.name_size), r.size, at);
 			}
 }
 
@@ -701,7 +747,8 @@ bool DataCard::data_sets(size_t i, std::vector<uint8_t> &out) const
 	if (!bank)
 		return false;
 	const auto rec = image.read(where[i], size_t(e.bytes));
-	return !rec.empty() && syx::packed(format == SYFS_FORMAT_JV1080 ? "jv1080" : "jv880", bank, e.number, 0x10, rec, out);
+	return !rec.empty() && syx::packed(format == SYFS_FORMAT_JV1080 ? "jv1080" : format == SYFS_FORMAT_JD990 ? "jd990" : "jv880", bank,
+		e.number, 0x10, rec, out);
 }
 
 std::unique_ptr<Medium> DataCard::open(const syfs_io &io, syfs_key format)
@@ -724,20 +771,24 @@ struct MemoryOf {
 	uint64_t size;
 	const char *map;
 	bool from_top;   // its records' bits
-	bool plain;      // a record's name is its first twelve bytes as they are, and a rhythm set has none
+	uint8_t plain;   // a record's name is its first bytes as they are, this many (twelve: and a rhythm set has none)
 	MemoryRun runs[4];
 };
 constexpr uint32_t FANTOM_USER = 0x1A0400;  // its user block, in a memory of its EEPROM and half its flash
 constexpr MemoryOf memories[] = {
-	{ SYFS_FORMAT_JV80, 0x8000, "jv880", false, true, { { SYFS_TYPE_PERFORMANCE, 0xB0, 204, 204, 16, "User Performance" },
+	{ SYFS_FORMAT_JV80, 0x8000, "jv880", false, 12, { { SYFS_TYPE_PERFORMANCE, 0xB0, 204, 204, 16, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0xD70, 362, 362, 64, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x67F0, 2684, 2684, 1, "User Rhythm" } } },
-	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, false, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
+	// a JD-990's patches are not records (Memory::patch): a run of no bytes holds their place in the lists' order
+	{ SYFS_FORMAT_JD990, jd990::MEMORY, "jd990", false, 16, { { SYFS_TYPE_PERFORMANCE, 0x20, jd990::PERFORMANCE, jd990::PERFORMANCE, 16, "User Performance" },
+		{ SYFS_TYPE_PATCH, jd990::NODES, jd990::NODE, 0, jd990::PATCHES, "User Patch" },
+		{ SYFS_TYPE_RHYTHM_SET, jd990::STORE_END, jd990::RHYTHM, jd990::RHYTHM, 1, "User Rhythm" } } },
+	{ SYFS_FORMAT_JV1080, 0x10000, "jv1080", false, 0, { { SYFS_TYPE_PERFORMANCE, 0x100, 245, 245, 32, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x2000, 401, 401, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0xE900, 2699, 2699, 2, "User Rhythm" } } },
-	{ SYFS_FORMAT_XV5080, 0x40000, "xv5080", true, false, { { SYFS_TYPE_PERFORMANCE, 0x1A8, 1064, 926, 64, "User Performance" },
+	{ SYFS_FORMAT_XV5080, 0x40000, "xv5080", true, 0, { { SYFS_TYPE_PERFORMANCE, 0x1A8, 1064, 926, 64, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x10BA8, 938, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2E0A8, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
-	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, false, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
+	{ SYFS_FORMAT_XV3080, 0x40000, "xv3080", true, 0, { { SYFS_TYPE_PERFORMANCE, 0x1A4, 1064, 926, 64, "User Performance" },
 		{ SYFS_TYPE_PATCH, 0x10BA4, 838, XV_PATCH, 128, "User Patch" }, { SYFS_TYPE_RHYTHM_SET, 0x2AEA4, XV_RHYTHM, XV_RHYTHM, 4, "User Rhythm" } } },
-	{ SYFS_FORMAT_FANTOM, 0x200400, "fantom", true, false, { { SYFS_TYPE_PERFORMANCE, FANTOM_USER + 0x190, 1126, 1126, 64, "User Performance" },
+	{ SYFS_FORMAT_FANTOM, 0x200400, "fantom", true, 0, { { SYFS_TYPE_PERFORMANCE, FANTOM_USER + 0x190, 1126, 1126, 64, "User Performance" },
 		{ SYFS_TYPE_MULTI, FANTOM_USER + 0x11B10, 954, 954, 16, "User Multitimbre" },
 		{ SYFS_TYPE_PATCH, FANTOM_USER + 0x156B0, 592, 592, 128, "User Patch" },
 		{ SYFS_TYPE_RHYTHM_SET, FANTOM_USER + 0x27EB0, 10824, 10824, 16, "User Rhythm" } } },
@@ -771,31 +822,121 @@ std::string xv_name(const uint8_t *rec)
 	return packed(rec, true);
 }
 
+// a JD-990's memory may have its program ROM after it, whose factory patches its own are kept against
 bool Memory::fits(const syfs_io &io, syfs_key format)
 {
 	const MemoryOf *m = memory_of(format);
-	return m && io.size == m->size;
+	return m && (io.size == m->size || (format == SYFS_FORMAT_JD990 && io.size == jd990::MEMORY + jd990::ROM));
+}
+
+// The factory patches in a JD-990's program ROM: 64 one after another, each its 486 parameters a byte each with the
+// name first, found as that; the ROM as its dump has it (a word's bytes low first) or as the machine reads it
+void Memory::factory()
+{
+	if (format != SYFS_FORMAT_JD990 || image.size() != jd990::MEMORY + jd990::ROM)
+		return;
+	auto rom = image.read(jd990::MEMORY, jd990::ROM);
+	if (rom.size() != jd990::ROM)
+		return;
+	const size_t all = size_t(jd990::PATCHES) * jd990::PATCH;
+	auto named = [&](size_t at) {
+		for (size_t c = 0; c < 16; c++)
+			if (rom[at + c] < 32 || rom[at + c] >= 127)
+				return false;
+		return true;
+	};
+	// either way round the names read as names, a pair of characters changed over: names start at the left, so the
+	// right way has a blank last at least as often as last but one.  Where that does not tell, the dump's way
+	int best = 0;
+	for (int order = 0; order < 2; order++) {
+		for (size_t at = 0; at + all <= rom.size(); at++) {
+			bool is = named(at);
+			for (size_t k = 1; is && k < jd990::PATCHES; k++)
+				is = named(at + k * jd990::PATCH);
+			for (size_t k = 0; is && k < all; k++)
+				is = rom[at + k] < 0x80;
+			if (!is)
+				continue;
+			int blanks = 0;
+			for (size_t k = 0; k < jd990::PATCHES; k++)
+				blanks += (rom[at + k * jd990::PATCH + 15] == ' ') - (rom[at + k * jd990::PATCH + 14] == ' ');
+			if (factory_.empty() || blanks > best || (blanks == best && order))
+				factory_.assign(rom.begin() + at, rom.begin() + at + all), best = blanks;
+			break;
+		}
+		for (size_t k = 0; k + 1 < rom.size(); k += 2)
+			std::swap(rom[k], rom[k + 1]);
+	}
+}
+
+// A JD-990's patch of a number, as its parameters: its node names the factory patches its common block and each
+// tone start from, and its stream goes over the 486 parameters in the factory patches' order: a byte under 80H
+// keeps that many and one more as they are, another is a parameter's value in its low seven bits
+bool Memory::patch(uint32_t k, std::vector<uint8_t> &units) const
+{
+	uint8_t node[jd990::NODE];
+	if (factory_.empty() || !image.read(jd990::NODES + uint64_t(k) * jd990::NODE, node, sizeof node))
+		return false;
+	const uint32_t start = be16(node + 4), end = be16(node + 6);
+	if (start < jd990::NODES + jd990::PATCHES * jd990::NODE || end > jd990::STORE_END || start >= end)
+		return false;
+	for (int b = 0; b < 5; b++)
+		if (node[8 + b] >= jd990::PATCHES)
+			return false;
+	const auto stream = image.read(start, end - start);
+	if (stream.size() != end - start)
+		return false;
+	// where the nth parameter of the order is among the units, and whose it is
+	units.assign(jd990::PATCH, 0);
+	uint32_t n = 0;
+	auto place = [&](uint32_t at, uint32_t &unit, uint32_t &base) {
+		const uint32_t tone = at < jd990::COMMON ? 0 : (at - jd990::COMMON) / jd990::TONE;
+		if (at < jd990::COMMON)
+			unit = jd990::COMMON_ORDER[at], base = node[8];
+		else
+			unit = jd990::COMMON + tone * jd990::TONE + jd990::TONE_ORDER[(at - jd990::COMMON) % jd990::TONE], base = node[9 + tone];
+	};
+	for (uint8_t c : stream) {
+		const uint32_t run = c < 0x80 ? c + 1u : 1u;
+		if (n + run > jd990::PATCH)
+			return false;
+		for (uint32_t r = 0; r < run; r++, n++) {
+			uint32_t unit, base;
+			place(n, unit, base);
+			units[unit] = c < 0x80 ? factory_[size_t(base) * jd990::PATCH + n] : c & 0x7F;
+		}
+	}
+	return n == jd990::PATCH;
 }
 
 // a record whose name is twelve printable characters; a memory never written has none
 void Memory::list()
 {
 	const MemoryOf *m = memory_of(format);
+	factory();
 	for (const MemoryRun &r : m->runs)
 		for (uint32_t k = 0; r.bank && k < r.count; k++) {
 			const uint64_t at = r.at + uint64_t(k) * r.stride;
-			uint8_t rec[12];
+			if (!r.size) {
+				// a JD-990's patch, read where its ROM is there
+				std::vector<uint8_t> units;
+				if (patch(k, units))
+					add(r.kind, format, k, syfs::NONE, plain(units.data(), 16), 0, at);
+				continue;
+			}
+			uint8_t rec[16];
 			if (!image.read(at, rec, sizeof rec))
 				return;
 			if (m->plain) {
-				// a JV-880's: a name of twelve printable bytes; the rhythm set is always there
+				// a JV-880's or a JD-990's: a name of printable bytes; a JV-880's rhythm set has none and is always
+				// there
 				bool printable = true;
-				for (uint8_t c : rec)
-					printable = printable && c >= 32 && c < 127;
-				if (r.kind == SYFS_TYPE_RHYTHM_SET)
+				for (uint8_t c = 0; c < m->plain; c++)
+					printable = printable && rec[c] >= 32 && rec[c] < (m->plain == 16 ? 128 : 127);
+				if (r.kind == SYFS_TYPE_RHYTHM_SET && m->plain == 12)
 					add(r.kind, format, k, syfs::NONE, "", r.size, at);
 				else if (printable)
-					add(r.kind, format, k, syfs::NONE, plain(rec, 12), r.size, at);
+					add(r.kind, format, k, syfs::NONE, plain(rec, m->plain), r.size, at);
 			} else if (named(rec, m->from_top))
 				add(r.kind, format, k, syfs::NONE, packed(rec, m->from_top), r.size, at);
 		}
@@ -807,6 +948,10 @@ bool Memory::data_sets(size_t i, std::vector<uint8_t> &out) const
 	const MemoryOf *m = memory_of(format);
 	for (const MemoryRun &r : m->runs)
 		if (r.bank && r.kind == e.kind) {
+			if (!r.size) {
+				std::vector<uint8_t> units;
+				return patch(e.number, units) && syx::units(m->map, r.bank, e.number, 0x10, units, out);
+			}
 			const auto rec = image.read(where[i], r.size);
 			return !rec.empty() && syx::packed(m->map, r.bank, e.number, 0x10, rec, out);
 		}

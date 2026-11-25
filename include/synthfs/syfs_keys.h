@@ -36,6 +36,8 @@ enum syfs_keys {
 	SYFS_FORMAT_XV5080 = 0x5d9c76ae,          //!< "xv5080"
 	SYFS_FORMAT_XV3080 = 0x600be008,          //!< "xv3080"
 	SYFS_FORMAT_FANTOM = 0x7e0a03fe,          //!< "fantom"
+	SYFS_FORMAT_JD990 = 0x4d4411e7,           //!< "jd990"
+	SYFS_FORMAT_JD800 = 0x35c58f21,           //!< "jd800"
 
 	SYFS_MEDIUM_DISK = 0x456040a4,            //!< "disk"
 	SYFS_MEDIUM_FLOPPY = 0x5e75f89b,          //!< "floppy"
@@ -146,6 +148,8 @@ enum syfs_keys {
 	X(SYFS_FORMAT_XV5080, "format", "xv5080", "XV-5080") \
 	X(SYFS_FORMAT_XV3080, "format", "xv3080", "XV-3080") \
 	X(SYFS_FORMAT_FANTOM, "format", "fantom", "Fantom") \
+	X(SYFS_FORMAT_JD990, "format", "jd990", "JD-990") \
+	X(SYFS_FORMAT_JD800, "format", "jd800", "JD-800") \
 	X(SYFS_MEDIUM_DISK, "medium", "disk", "disk") \
 	X(SYFS_MEDIUM_FLOPPY, "medium", "floppy", "floppy") \
 	X(SYFS_MEDIUM_CARD, "medium", "card", "card") \

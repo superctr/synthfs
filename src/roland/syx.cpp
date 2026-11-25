@@ -50,6 +50,20 @@ constexpr Kind jv880_kinds[] = {
 	{ "1-3", SYFS_TYPE_PATCH, nullptr },
 	{ "1-4", SYFS_TYPE_RHYTHM_SET, nullptr },
 };
+constexpr Kind jd_kinds[] = {
+	{ "1-1", SYFS_TYPE_SYSTEM, nullptr },
+	{ "1-2", SYFS_TYPE_PERFORMANCE, nullptr },
+	{ "1-3", SYFS_TYPE_PATCH, nullptr },
+	{ "1-4", SYFS_TYPE_RHYTHM_SET, nullptr },
+};
+// a JD-800's patch in its patch memory and its temporary area, and one of a multi-mode part, which has no effects;
+// its special setup is the rhythm set
+constexpr Kind jd800_kinds[] = {
+	{ "4-3", SYFS_TYPE_SYSTEM, nullptr },
+	{ "4-5-1", SYFS_TYPE_PATCH, nullptr },
+	{ "4-1-2", SYFS_TYPE_PATCH, nullptr },
+	{ "4-2", SYFS_TYPE_RHYTHM_SET, nullptr },
+};
 constexpr Kind xv_kinds[] = {
 	{ "1-1", SYFS_TYPE_SYSTEM, nullptr },
 	{ "1-2", SYFS_TYPE_PERFORMANCE, nullptr },
@@ -72,6 +86,8 @@ constexpr Family families[] = {
 	{ "s760", SYFS_FORMAT_S760, nullptr, SYFS_NONE, false, s700_kinds, std::size(s700_kinds) },
 	{ "jv1080", SYFS_FORMAT_JV1080, nullptr, SYFS_NONE, true, jv1080_kinds, std::size(jv1080_kinds) },
 	{ "jv880", SYFS_FORMAT_JV80, nullptr, SYFS_NONE, true, jv880_kinds, std::size(jv880_kinds) },
+	{ "jd990", SYFS_FORMAT_JD990, nullptr, SYFS_NONE, true, jd_kinds, std::size(jd_kinds) },
+	{ "jd800", SYFS_FORMAT_JD800, nullptr, SYFS_NONE, true, jd800_kinds, std::size(jd800_kinds) },
 	{ "xv5080", SYFS_FORMAT_XV5080, "xv3080", SYFS_FORMAT_XV3080, true, xv_kinds, std::size(xv_kinds) },
 	{ "fantom", SYFS_FORMAT_FANTOM, nullptr, SYFS_NONE, true, fantom_kinds, std::size(fantom_kinds) },
 };
@@ -152,6 +168,24 @@ bool packed(std::string_view map, std::string_view bank, uint32_t number, uint8_
 		if (!units[k].empty())
 			put(out, *m, device, m->entries[a->first + k].addr, units[k].data(), units[k].size());
 	return true;
+}
+
+bool units(std::string_view map, std::string_view bank, uint32_t number, uint8_t device, const std::vector<uint8_t> &all,
+	std::vector<uint8_t> &out)
+{
+	const map::Map *m = map::find(map);
+	const uint32_t places = m ? m->areas_of(bank) : 0;
+	const map::Area *a = places ? m->area(bank, number % places) : nullptr;
+	size_t at = 0;
+	for (uint32_t k = 0; a && k < a->count; k++) {
+		const map::Entry &e = m->entries[a->first + k];
+		const uint32_t size = m->blocks[e.block].size;
+		if (at + size > all.size())
+			return false;
+		put(out, *m, device, e.addr, &all[at], size);
+		at += size;
+	}
+	return a && at == all.size();
 }
 
 std::vector<uint8_t> nibbles(const uint8_t *bytes, size_t n)

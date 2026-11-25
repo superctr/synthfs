@@ -187,6 +187,8 @@ bool unpack(const Map &m, const Area &a, const uint8_t *rec, size_t size, std::v
 			for (uint32_t p = 0; p < b.count; p++) {
 				const Param &q = b.params[p];
 				const Place &at = b.places[p];
+				if (starts[k] + at.byte >= size)
+					return false;
 				const unsigned mask = (1u << at.width) - 1;
 				const unsigned v = ((rec[starts[k] + at.byte] >> at.shift & mask) + at.bias) & mask;
 				for (uint32_t n = 0; n < q.size; n++)
@@ -233,6 +235,8 @@ bool pack(const Map &m, const Area &a, const std::vector<std::vector<uint8_t>> &
 				for (uint32_t n = 0; n < q.size; n++)
 					v = v << q.bits | units[k][q.offset + n];
 				const unsigned mask = (1u << at.width) - 1;
+				if (starts[k] + at.byte >= rec.size())
+					return false;
 				rec[starts[k] + at.byte] |= uint8_t(((v - at.bias) & mask) << at.shift);
 			}
 			continue;

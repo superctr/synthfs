@@ -18,7 +18,7 @@ Tried in this order:
 | S-550, S-330, W-30, S-50 | floppy | four zero bytes and the system's ID at byte 0, 2 MB at most |
 | SR-JV80 | card, board | `Roland JV80`, `O` at byte 0x0C and `S` at 0x0E, 1, 2, 4 or 8 MB |
 | SRX | board | `Roland SRX` at byte 0, 32 MB |
-| JV-80, JV-1080 | card | a DATA card's key at byte 0 (below), 32 or 64 KB |
+| JV-80, JV-1080, JD-990 | card | a DATA card's key at byte 0 (below), 32 or 64 KB |
 | AKAI S1000, S3000 | disk | a partition header at byte 0 (below); S3000 where any volume is one |
 | AKAI S1000, S3000 | floppy | 800 or 1600 KB, the FAT's first four halfwords (five on 2HD) 0x4000; S3000 where any file's type has its top bit set |
 | AKAI S900 | floppy | whole 1024-byte blocks, 700 to 1600 KB, the FAT's first four halfwords zero, and a directory of at least one file, each with a printable name, an upper-case type and a start past block 3 |
@@ -269,7 +269,8 @@ A file of Roland's exclusive messages (`.syx`): `F0 41`, the device, the model I
 (`DT1`, command `12`) the address, the data and a sum that brings the address's and data's bytes to a multiple of
 128, then `F7`.  The first message tells the model, by the maps' model IDs (`maps.md`); the S-700 series share ID
 `34` and are read by the S-760's map, which has every block of the others'; the JV-80, JV-880, JV-90 and JV-1000
-share `46` and are read by the JV-880's; the JV-2080 shares the JV-1080's `6A`,
+share `46` and are read by the JV-880's; the JD-990 is `57` and the JD-800 `3D`, each its own map (`maps.md` has
+them side by side); the JV-2080 shares the JV-1080's `6A`,
 and what it adds lies after the JV-1080's blocks' ends, where it is passed over; the XV-5080 and XV-3080 share
 `00 10`, and a file is read by the XV-5080's map where a message of it is at an address the XV-3080's map lacks
 (a part past the sixteenth, the system's equalizer), else by the XV-3080's, whose system and performances are whole
@@ -372,7 +373,7 @@ address of their records at 0x80 + 4*n*:
 | 0 | 2 | samples | 18 bytes (below) | |
 | 1 | 1 | waves | 60 bytes: the name (12 characters), sixteen top keys, sixteen sample numbers (halfwords) | |
 | 3 | 2 | patches, the JV-880's shape (the JV-80's format, the JV-880 its rack version) | 362 bytes, the name first | JV-880 Patches |
-| 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters **[seen]** | JD-990 Patches |
+| 3 | 3 | patches, the JD-990's | 379 bytes, a byte and then the name, 16 characters | JD-990 Patches |
 | 3 | 5 | patches, the JV-1080's | 401 bytes, bit-packed: the name twelve 7-bit characters from bit 0 up | JV-1080 Patches |
 | 4 | 2 | rhythm sets, the JV-880's | 2684 bytes, unnamed: keys 36 to 96, 44 bytes each | JV-880 Rhythm Sets |
 | 4 | 4 | rhythm sets, the JV-1080's | 2699 bytes, the name packed as a patch's: 11 bytes, then keys 35 to 98, 42 bytes each | JV-1080 Rhythm Sets |
@@ -407,7 +408,13 @@ five patches and three rhythm sets tried, of five boards.
 set of 61 keys in 44 bytes each.  They read as `syx` by the JV-880's map at the user patch (64 of them) its number
 has, taken within those, and the user rhythm set.  No JV-880 reads a board's patches, so these are not checked
 against one: of the two million values of every board's here, 46 are outside their parameters' ranges, all two
-LFO depths.  The JD-990's shape is not read as Data Sets.
+LFO depths.
+
+**The JD-990's records** (type 3) are a JD-990 DATA card's patch (below), 379 bytes, but for a tone's waveform
+number: on a board its top bit is the tone's first bit, where a card has it as the top bit of the number's own
+byte.  They read as `syx` by the JD-990's map at the user patch (64 of them) its number has, taken within those.
+Checked: thirteen patches of SR-JV80-04, among them some of waveforms past 128, loaded into a JD-990's temporary
+patch by the machine's own page and asked back, are the bytes read here (6318 values).
 
 An SR-JV80 sample:
 
@@ -721,6 +728,7 @@ list's records one after another with a name at the start of each.  **[seen]**
 |---|---|---|---|
 | `Roland JV-80D`, 0xBB, `P`, 0xAF | a JV-80's or JV-880's | `Use M-256E only!` | 16 performances of 204 bytes from 0x20; 64 patches of 362 from 0xCE0; a rhythm set from 0x6760 |
 | `RolandJV-990D`, 0xBB, `P`, 0xAF | a JV-1080's | the card's name, which is the label | 16 performances of 245 bytes from 0x20; 64 patches of 401 from 0xF70; a rhythm set of 2699 from 0x73B0 |
+| `RolandJD-990E`, 0xBA, `P`, 0xAF | a JD-990's | the card's name, which is the label (`JD-990 DATA CARD` as formatted) | 16 performances of 107 bytes from 0x20; 64 patches of 379 from 0x6D0; the rhythm setup's 5293 from 0x6590; four zero bytes and the system's 40 from 0x7A41 |
 
 A JV-80's names are twelve characters as they are, and its rhythm set has none.  A JV-1080's are twelve characters
 of seven bits each, packed from bit 0 of the record's first byte up, as on a wave board's later patches.  A
@@ -741,7 +749,20 @@ stands is `maps/records/jv880.json`.  They read as `syx` at the card's performan
 number.  Checked: every value of a card's sixteen performances, 64 patches and rhythm set, read so, is what the
 machine with the card in answers (40 020 of them), and likewise with every record's bytes random.
 
-Not read: the cards of other machines a JV-1080 also takes.
+**A JD-990's records** are bytes too, each parameter of its map a field of one (`maps/records/jd990.json`).  A
+performance's name is its first sixteen bytes, a patch's the sixteen after its first byte, the rhythm setup's its
+first sixteen.  A patch's 379 bytes are its common (87) and four tones (73 each); a performance's 107 its common
+(35) and eight parts (9 each), a part's voice reserve, which the map has in the common, among the part's bytes; the
+rhythm setup's 5293 its common (47) and keys 36 to 96 in 86 each, a key's tone first and its own name and settings
+after.  A tone's first byte has its wave group in bits 1 and 2, its second the waveform number whole; the octave
+switch is kept one less within its two bits.  They read as `syx` at the card's performance, patch or rhythm setup
+of their number.  Checked on the machine with the card in: every value of a card it saved itself (39 932 of them)
+is what it answers for the card's areas, and likewise for three cards of records with every parameter random
+within its range.  The system is not read.
+
+Not read: the cards of other machines a JV-1080 also takes; a JD-800's card (`RolandJD-800E`, 0xBA, `P`, 0xAF),
+which a JD-990 reads but does not write: its special setup from 0x90, and from 0x15A4 its 64 patches of 382 bytes,
+a patch's Data Set less its two bytes that are no parameter **[seen]**.
 
 ## Battery memories
 
@@ -752,6 +773,39 @@ it is opened by the host that knows (`syfs_open_as`, the format and the medium `
 0xB0, 64 patches of 362 from 0xD70 and the rhythm set's 2684 from 0x67F0 **[seen]**, the records a card's and read
 the same, at the user places.  A performance or patch is listed where its name is twelve printable characters, the
 rhythm set always.  Checked as the card is, on the machine's own memory.
+
+**A JD-990's** (`JD-990`): 64 KB, and where the host has it the machine's program ROM (512 KB) after it.  The
+memory starts `This is Super JD`.  Sixteen performances of 107 bytes from 0x20 and the rhythm setup's 5293 from
+0x5502 are a DATA card's records and read the same, at the user places; each is listed where its name is sixteen
+characters.
+
+Its 64 patches are not records.  A patch is kept as what it differs by from the factory patches, which are in the
+program ROM, in the room between the performances and the rhythm setup:
+
+| at | |
+|---|---|
+| 0x6D0 | three words, the high byte first: where the streams end, the first node and the last |
+| 0x6D6 | a node of 14 bytes for each patch: the node after it and the one before in the streams' order (0xFFFF none), its stream's start and end, five bytes, a zero |
+| after the nodes | the streams, up to 0x5502 |
+
+A node's five bytes are the factory patches, 0 to 63, its common block and its tones A to D start from: tone B of
+the patch is tone B of the factory patch its third byte names.  Its stream goes once over the patch's 486
+parameters: a byte under 0x80 keeps that many parameters and one more as the factory patch has them; any other is
+the next parameter's value, in its low seven bits.  A patch never written is five bytes, `75 5B 5B 5B 5B`: 118 and
+four times 92 kept.  The parameters there are a unit each as the map has them, but in another order (the tables in
+`src/roland/wave.cpp`): in the common, after the name, level, pan and analog feel come the bend ranges and tone
+control sources, the equalizer, solo, portamento, the voice priority, the layer and active tones, then the
+structures and ranges, the octave switch and the effects; in a tone each LFO's pitch, TVF and TVA depth stands
+after the pitch's, the TVF's and the TVA's own parameters, and the sync slave switch is last.  A factory patch in the ROM is its 486 parameters in that order,
+a byte each, the 64 of them one after another: found there as 64 runs of 486 bytes under 0x80 that each start with
+sixteen characters, whichever way round the ROM's words are (as its dump has them, a word's low byte first, or as
+the machine reads them); the names tell which, a name's last character being a blank at least as often as its last
+but one.
+
+With the ROM the patches are listed and read as `syx` at the user patch of their number; without it the memory has
+its performances and rhythm setup alone.  Checked: the machine started with a memory (its performances and rhythm
+setup of random parameters, every patch a random stream on random factory patches) answers for its internal areas
+what is read here, all 39 932 values, twice.  The system is not read.
 
 **A JV-1080's** (`JV-1080`): 64 KB.  The first 256 bytes are the system's; then each list from a multiple of 256,
 its records a DATA card's: 32 performances of 245 bytes from 0x100, 128 patches of 401 from 0x2000, two rhythm sets
@@ -984,7 +1038,8 @@ own) and the system disks; a DJ-70's floppy, whose format was not read.
 - S-50 floppies: told apart only.
 - S-760, S-770 floppies: the Volume Dump FD disk's slots; a set's waves as one (each disk gives its own part).
 - Boards and cards: the samples' and waves' parameters and sample data, and the patches' other fields; the SO-JD80
-  cards (JD-800, JD-990), another format.
+  cards (JD-800, JD-990), another format, and a JD-990's own wave ROMs, which are of it.
+- A JD-800's DATA card; the system areas of a JD-990's card and memory.
 - AKAI S900: the `O`, `D` and `F` files; the programs' other parameters.
 - AKAI: the drum, effects, cue and take files' contents; the multis' and samples' other parameters.
 - E-mu discs: told apart only.

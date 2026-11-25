@@ -2996,7 +2996,7 @@ static void test_keys()
 	formats += !strcmp(cls, "format");
 	SYFS_KEYS(X)
 #undef X
-	CHECK(formats == 23 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_FANTOM
+	CHECK(formats == 25 && syfs_format_at(0) == SYFS_FORMAT_S550 && syfs_format_at(formats - 1) == SYFS_FORMAT_JD800
 		&& syfs_format_at(formats) == SYFS_NONE);
 	CHECK(!strcmp(syfs_name(SYFS_NONE), "none") && !syfs_name(syfs_key_of("no such name")));
 	CHECK(syfs_key_of("rhythm-set") == SYFS_TYPE_RHYTHM_SET && !strcmp(syfs_title(SYFS_TYPE_RHYTHM_SET), "rhythm set"));
@@ -3008,7 +3008,7 @@ static void test_maps()
 	namespace map = syfs::map;
 	size_t count = 0;
 	const map::Map *maps = map::all(count);
-	CHECK(count == 9 && maps == map::find("fantom") && !map::find("s7"));
+	CHECK(count == 11 && maps == map::find("fantom") && !map::find("s7"));
 	const std::tuple<const char *, const char *, uint32_t> models[] = { { "s750", "S-750", 5 }, { "s760", "S-760", 8 },
 		{ "s770", "S-770", 5 }, { "sp700", "SP-700", 7 } };
 	for (auto [id, model, blocks] : models)
@@ -3860,6 +3860,180 @@ static void test_syx_jv880()
 		close_image(m);
 }
 
+static void test_syx_jd990()
+{
+	namespace map = syfs::map;
+	const map::Map *jd = map::find("jd990");
+	CHECK(jd && jd->model_id_size == 1 && jd->model_id[0] == 0x57 && jd->areas_of("User Patch") == 64
+		&& jd->areas_of("Card Performance") == 16 && jd->areas_of("User Rhythm") == 1);
+	const map::Area *user = jd ? jd->area("User Patch", 5) : nullptr;
+	CHECK(user && user->count == 5 && jd->blocks[jd->entries[user->first].block].packed == 0x57
+		&& jd->blocks[jd->entries[user->first + 1].block].packed == 0x49 && jd->blocks[jd->entries[user->first].block].places);
+	if (!user)
+		return;
+	// a Data Set's units by their addresses, whatever rows they came in
+	auto units_of = [](const Bytes &syx) {
+		std::map<uint32_t, uint8_t> at;
+		for (const auto &[addr, data] : data_sets_of(syx, 0x10, 0x57))
+			for (size_t k = 0; k < data.size(); k++)
+				at[addr + uint32_t(k)] = data[k];
+		return at;
+	};
+	const uint32_t TONE = 118, TONES = 92;
+	// a patch: a byte, the name, the common's 87 bytes in all and four tones of 73; packed again it is the record
+	Bytes rec(379, 0);
+	memcpy(&rec[1], "JD Strings      ", 16);
+	rec[17] = 90;                                // the patch's level
+	rec[22] = 2 << 6;                            // the octave switch, kept one less within its two bits
+	rec[87 + 73] = 1 << 1, rec[87 + 73 + 1] = 200;   // tone B's wave group, and its number in a byte
+	rec[87 + 3 * 73 + 37] = 77;                  // tone D's level
+	{
+		std::vector<std::vector<uint8_t>> units;
+		CHECK(map::unpack(*jd, *user, rec.data(), rec.size(), units) && units.size() == 5 && units[0].size() == TONE
+			&& units[4].size() == TONES && !map::unpack(*jd, *user, rec.data(), 378, units));
+		CHECK(!memcmp(units[0].data(), "JD Strings      ", 16) && units[0][16] == 90 && units[0][117] == 3 && units[2][0] == 1
+			&& units[2][1] == 1 && units[2][2] == 72 && units[4][40] == 77);
+		Bytes back;
+		CHECK(map::pack(*jd, *user, units, back) && back == rec);
+	}
+	// a DATA card: its key and name, sixteen performances, 64 patches, the rhythm set
+	Bytes card(0x8000, 0);
+	memcpy(&card[0], "RolandJD-990E\xBAP\xAF", 16);
+	memcpy(&card[0x10], "My JD Card      ", 16);
+	const size_t perf = 0x20 + 15 * 107, set = 0x6590;
+	memcpy(&card[perf], "TUTORIAL        ", 16);
+	card[perf + 35 + 7 * 9 + 1] = 77;            // the last part's patch number
+	card[perf + 35 + 7 * 9 + 6] = 9;             // and its voice reserve, a parameter of the common's
+	card[perf + 24] = 200;                       // the delay's left tap, two units in a byte
+	memcpy(&card[0x6D0 + 63 * 379], rec.data(), rec.size());
+	memcpy(&card[set], "My Drums        ", 16);
+	card[set + 47 + 60 * 86 + 37] = 99;          // the last key's level
+	card[set + 47 + 60 * 86 + 61] = 5;           // and its mute group
+	syfs_io cio = io_of(card);
+	syfs_key medium;
+	CHECK(probe(&cio, &medium) == SYFS_FORMAT_JD990 && medium == SYFS_MEDIUM_CARD);
+	syfs_image *c = syfs_open(&cio, nullptr, 0);
+	CHECK(c && count_of(c) == 81 && !strcmp(label_of(c), "My JD Card"));
+	Bytes patch_syx;
+	if (c) {
+		const size_t p = find(c, "TUTORIAL"), q = find(c, "JD Strings"), r = find(c, "My Drums");
+		CHECK(p != NONE && q != NONE && r != NONE && entry_at(c, q)->number == 63 && entry_at(c, r)->kind == SYFS_TYPE_RHYTHM_SET
+			&& exports(c, q, "syx"));
+		auto at = units_of(syx_of(c, p));
+		const uint32_t cp = 9u << 21 | 15 << 14, ck = 11u << 21;
+		CHECK(at.size() == 144 && at[cp] == 'T' && at[cp + 48 + 7 * 12 + 3] == 77 && at[cp + 0x18] == 9 && at[cp + 0x22] == 1
+			&& at[cp + 0x23] == 72);
+		patch_syx = syx_of(c, q);
+		at = units_of(patch_syx);
+		const uint32_t ca = 10u << 21 | 63 << 14;
+		CHECK(at.size() == 486 && at[ca + 1] == 'D' && at[ca + 16] == 90 && at[ca + TONE + TONES + 2] == 72
+			&& at[ca + TONE + 3 * TONES + 40] == 77);
+		at = units_of(syx_of(c, r));
+		CHECK(at.size() == 58 + 61 * 106 && at[ck] == 'M' && at[ck + 58 + 60 * 106 + 14 + 40] == 99 && at[ck + 58 + 60 * 106 + 11] == 5);
+		close_image(c);
+	}
+	// a file of the card's patch's messages: one patch under its bank
+	{
+		syfs_io fio = io_of(patch_syx);
+		syfs_image *sx = syfs_open(&fio, nullptr, 0);
+		CHECK(sx && count_of(sx) == 2 && find(sx, "JD Strings") != NONE && entry_at(sx, find(sx, "JD Strings"))->format == SYFS_FORMAT_JD990
+			&& find(sx, "Card Patch", SYFS_TYPE_BANK) != NONE && syx_of(sx, find(sx, "JD Strings")) == patch_syx);
+		if (sx)
+			close_image(sx);
+	}
+	// A battery memory: the performances and the rhythm set as a card's; a patch is what it differs by from factory
+	// patches, which are in the program ROM.  The ROM here: 64 factory patches, each named (fifteen characters: the
+	// names tell which way round the ROM's words are) and with its number as the level and as every tone's delay time,
+	// in their own order of parameters
+	Bytes rom(0x80000, 0xFF);
+	const size_t table = 0x12340;
+	for (size_t k = 0; k < 64; k++) {
+		uint8_t *f = &rom[table + k * 486];
+		memset(f, 0, 486);
+		snprintf(reinterpret_cast<char *>(f), 17, "Factory patch%02d ", int(k));
+		f[15] = ' ';
+		f[16] = uint8_t(k);
+		for (size_t t = 0; t < 4; t++)
+			f[TONE + t * TONES + 6] = uint8_t(k);    // the seventh there is the tone's delay time, its eighth
+	}
+	Bytes mem(0x10000, 0);
+	memcpy(&mem[0], "This is Super JD", 16);
+	memcpy(&mem[0x20 + 15 * 107], &card[perf], 107);
+	memcpy(&mem[0x5502], &card[set], 47 + 61 * 86);
+	// the patches' store: where it ends and its first and last node, then a node each: the next and the one before,
+	// its stream's start and end, the factory patches its common and tones start from
+	size_t heap = 0x6D6 + 64 * 14;
+	auto be = [&](size_t at, size_t v) { mem[at] = uint8_t(v >> 8), mem[at + 1] = uint8_t(v); };
+	for (size_t k = 0; k < 64; k++) {
+		const size_t node = 0x6D6 + 14 * k;
+		// patch 6: its name's first letter, then the level, the rest kept; its common from factory patch 9, tone D
+		// from 33.  The others as a memory never written has them
+		const Bytes fresh { 0x75, 0x5B, 0x5B, 0x5B, 0x5B }, own { 0x80 | 'X', 14, 0x80 | 55, 100, 0x7F, 0x7F, 111 };
+		const Bytes &stream = k == 5 ? own : fresh;
+		be(node, k < 63 ? node + 14 : 0xFFFF), be(node + 2, k ? node - 14 : 0xFFFF), be(node + 4, heap), be(node + 6, heap + stream.size());
+		for (size_t b = 0; b < 5; b++)
+			mem[node + 8 + b] = uint8_t(k == 5 ? (b == 0 ? 9 : b == 4 ? 33 : 5) : k);
+		memcpy(&mem[heap], stream.data(), stream.size());
+		heap += stream.size();
+	}
+	be(0x6D0, heap), be(0x6D2, 0x6D6), be(0x6D4, 0x6D6 + 14 * 63);
+	char err[128] = "";
+	for (int way = 0; way < 3; way++) {
+		// the memory alone has no patches; with its ROM after it, the ROM's words either way round, it has
+		Bytes image = mem;
+		if (way) {
+			image.insert(image.end(), rom.begin(), rom.end());
+			for (size_t k = 0x10000; way == 2 && k < image.size(); k += 2)
+				std::swap(image[k], image[k + 1]);
+		}
+		syfs_io mio = io_of(image);
+		syfs_image *m = syfs_open_as(&mio, SYFS_FORMAT_JD990, SYFS_MEDIUM_MEMORY, err, sizeof err);
+		CHECK(m && format_of(m) == SYFS_FORMAT_JD990 && count_of(m) == (way ? 66u : 2u));
+		if (!m)
+			continue;
+		CHECK(find(m, "TUTORIAL") != NONE && find(m, "My Drums") != NONE);
+		if (way) {
+			const size_t x = find(m, "Xactory patch09"), f = find(m, "Factory patch63");
+			CHECK(x != NONE && f != NONE && entry_at(m, x)->number == 5 && entry_at(m, f)->number == 63);
+			auto at = units_of(syx_of(m, x));
+			const uint32_t up = 6u << 21 | 5 << 14;
+			CHECK(at.size() == 486 && at[up] == 'X' && at[up + 1] == 'a' && at[up + 16] == 55 && at[up + TONE + 7] == 5
+				&& at[up + TONE + 3 * TONES + 7] == 33);
+			at = units_of(syx_of(m, find(m, "TUTORIAL")));
+			CHECK(at.size() == 144 && at[(5u << 21 | 15 << 14) + 48 + 7 * 12 + 3] == 77);
+		}
+		close_image(m);
+	}
+	{
+		Bytes other(0x8000, 0);
+		syfs_io oio = io_of(other);
+		CHECK(!syfs_open_as(&oio, SYFS_FORMAT_JD990, SYFS_MEDIUM_MEMORY, err, sizeof err) && *err);
+	}
+	// a board's bank of the JD-990's shape: a card's patch, but a tone's waveform number's top bit is the tone's
+	// first bit
+	static const uint8_t srjv_lines[19] = { 2, 0, 3, 4, 1, 9, 13, 10, 18, 17, 6, 15, 11, 16, 8, 5, 12, 7, 14 };
+	Rom board { Bytes(1 << 20, 0), srjv_lines, 19 };
+	memcpy(&board.b[0], "Roland JV80 O\xb0S\xac", 16);
+	memcpy(&board.b[0x10], "Card09   Ver1.00", 16);
+	board.put(0x53, 3), board.be(0x66, 1, 2), board.be(0x8C, 0xF1000, 4);
+	Bytes on_board = rec;
+	on_board[87 + 73] = 1, on_board[87 + 73 + 1] = 200 - 128;
+	for (size_t k = 0; k < on_board.size(); k++)
+		board.put(0xF1000 + k, on_board[k]);
+	syfs_io bio = io_of(board.b);
+	syfs_image *b = syfs_open(&bio, nullptr, 0);
+	CHECK(b && find(b, "JD Strings") != NONE);
+	if (b) {
+		const size_t q = find(b, "JD Strings");
+		CHECK(!strcmp(entry_at(b, entry_at(b, q)->parent)->tag, "3") && exports(b, q, "syx"));
+		auto at = units_of(syx_of(b, q));
+		const uint32_t up = 6u << 21;
+		CHECK(at.size() == 486 && at[up + 16] == 90 && at[up + TONE + TONES] == 0 && at[up + TONE + TONES + 1] == 1
+			&& at[up + TONE + TONES + 2] == 72);
+		close_image(b);
+	}
+}
+
 int main()
 {
 	test_keys();
@@ -3876,6 +4050,7 @@ int main()
 	test_syx_xv();
 	test_syx_fantom();
 	test_syx_jv880();
+	test_syx_jd990();
 	test_s550_floppy();
 	test_boards();
 	test_data_cards();

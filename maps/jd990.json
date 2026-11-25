@@ -1,0 +1,9986 @@
+{
+ "model": "JD-990",
+ "model_id": [
+  87
+ ],
+ "parts": 8,
+ "rhythm_part": 7,
+ "names": {
+  "reverb": [
+   "ROOM1",
+   "ROOM2",
+   "HALL1",
+   "HALL2",
+   "HALL3",
+   "HALL4",
+   "GATE",
+   "REVERSE",
+   "FLYING1",
+   "FLYING2"
+  ]
+ },
+ "blocks": {
+  "top": {
+   "name": "top",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "name": "System",
+     "block": "1-1"
+    },
+    {
+     "addr": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "name": "Temporary Performance",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      2,
+      0,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 1)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      1,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 2)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      2,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 3)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      3,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 4)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      4,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 5)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      5,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 6)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      2,
+      6,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Performance Mode Part 7)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      3,
+      0,
+      0,
+      0
+     ],
+     "name": "Temporary Patch (Patch Mode)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      4,
+      0,
+      0,
+      0
+     ],
+     "name": "Temporary Rhythm (Performance Mode Part 8)",
+     "block": "1-4"
+    },
+    {
+     "addr": [
+      5,
+      0,
+      0,
+      0
+     ],
+     "name": "User Performance (01)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      1,
+      0,
+      0
+     ],
+     "name": "User Performance (02)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      2,
+      0,
+      0
+     ],
+     "name": "User Performance (03)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      3,
+      0,
+      0
+     ],
+     "name": "User Performance (04)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      4,
+      0,
+      0
+     ],
+     "name": "User Performance (05)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      5,
+      0,
+      0
+     ],
+     "name": "User Performance (06)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      6,
+      0,
+      0
+     ],
+     "name": "User Performance (07)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      7,
+      0,
+      0
+     ],
+     "name": "User Performance (08)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      8,
+      0,
+      0
+     ],
+     "name": "User Performance (09)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      9,
+      0,
+      0
+     ],
+     "name": "User Performance (10)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      10,
+      0,
+      0
+     ],
+     "name": "User Performance (11)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      11,
+      0,
+      0
+     ],
+     "name": "User Performance (12)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      12,
+      0,
+      0
+     ],
+     "name": "User Performance (13)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      13,
+      0,
+      0
+     ],
+     "name": "User Performance (14)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      14,
+      0,
+      0
+     ],
+     "name": "User Performance (15)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      5,
+      15,
+      0,
+      0
+     ],
+     "name": "User Performance (16)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      6,
+      0,
+      0,
+      0
+     ],
+     "name": "User Patch (001)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      1,
+      0,
+      0
+     ],
+     "name": "User Patch (002)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      2,
+      0,
+      0
+     ],
+     "name": "User Patch (003)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      3,
+      0,
+      0
+     ],
+     "name": "User Patch (004)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      4,
+      0,
+      0
+     ],
+     "name": "User Patch (005)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      5,
+      0,
+      0
+     ],
+     "name": "User Patch (006)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      6,
+      0,
+      0
+     ],
+     "name": "User Patch (007)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      7,
+      0,
+      0
+     ],
+     "name": "User Patch (008)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      8,
+      0,
+      0
+     ],
+     "name": "User Patch (009)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      9,
+      0,
+      0
+     ],
+     "name": "User Patch (010)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      10,
+      0,
+      0
+     ],
+     "name": "User Patch (011)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      11,
+      0,
+      0
+     ],
+     "name": "User Patch (012)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      12,
+      0,
+      0
+     ],
+     "name": "User Patch (013)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      13,
+      0,
+      0
+     ],
+     "name": "User Patch (014)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      14,
+      0,
+      0
+     ],
+     "name": "User Patch (015)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      15,
+      0,
+      0
+     ],
+     "name": "User Patch (016)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      16,
+      0,
+      0
+     ],
+     "name": "User Patch (017)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      17,
+      0,
+      0
+     ],
+     "name": "User Patch (018)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      18,
+      0,
+      0
+     ],
+     "name": "User Patch (019)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      19,
+      0,
+      0
+     ],
+     "name": "User Patch (020)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      20,
+      0,
+      0
+     ],
+     "name": "User Patch (021)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      21,
+      0,
+      0
+     ],
+     "name": "User Patch (022)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      22,
+      0,
+      0
+     ],
+     "name": "User Patch (023)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      23,
+      0,
+      0
+     ],
+     "name": "User Patch (024)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      24,
+      0,
+      0
+     ],
+     "name": "User Patch (025)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      25,
+      0,
+      0
+     ],
+     "name": "User Patch (026)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      26,
+      0,
+      0
+     ],
+     "name": "User Patch (027)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      27,
+      0,
+      0
+     ],
+     "name": "User Patch (028)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      28,
+      0,
+      0
+     ],
+     "name": "User Patch (029)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      29,
+      0,
+      0
+     ],
+     "name": "User Patch (030)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      30,
+      0,
+      0
+     ],
+     "name": "User Patch (031)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      31,
+      0,
+      0
+     ],
+     "name": "User Patch (032)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      32,
+      0,
+      0
+     ],
+     "name": "User Patch (033)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      33,
+      0,
+      0
+     ],
+     "name": "User Patch (034)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      34,
+      0,
+      0
+     ],
+     "name": "User Patch (035)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      35,
+      0,
+      0
+     ],
+     "name": "User Patch (036)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      36,
+      0,
+      0
+     ],
+     "name": "User Patch (037)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      37,
+      0,
+      0
+     ],
+     "name": "User Patch (038)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      38,
+      0,
+      0
+     ],
+     "name": "User Patch (039)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      39,
+      0,
+      0
+     ],
+     "name": "User Patch (040)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      40,
+      0,
+      0
+     ],
+     "name": "User Patch (041)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      41,
+      0,
+      0
+     ],
+     "name": "User Patch (042)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      42,
+      0,
+      0
+     ],
+     "name": "User Patch (043)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      43,
+      0,
+      0
+     ],
+     "name": "User Patch (044)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      44,
+      0,
+      0
+     ],
+     "name": "User Patch (045)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      45,
+      0,
+      0
+     ],
+     "name": "User Patch (046)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      46,
+      0,
+      0
+     ],
+     "name": "User Patch (047)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      47,
+      0,
+      0
+     ],
+     "name": "User Patch (048)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      48,
+      0,
+      0
+     ],
+     "name": "User Patch (049)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      49,
+      0,
+      0
+     ],
+     "name": "User Patch (050)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      50,
+      0,
+      0
+     ],
+     "name": "User Patch (051)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      51,
+      0,
+      0
+     ],
+     "name": "User Patch (052)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      52,
+      0,
+      0
+     ],
+     "name": "User Patch (053)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      53,
+      0,
+      0
+     ],
+     "name": "User Patch (054)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      54,
+      0,
+      0
+     ],
+     "name": "User Patch (055)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      55,
+      0,
+      0
+     ],
+     "name": "User Patch (056)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      56,
+      0,
+      0
+     ],
+     "name": "User Patch (057)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      57,
+      0,
+      0
+     ],
+     "name": "User Patch (058)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      58,
+      0,
+      0
+     ],
+     "name": "User Patch (059)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      59,
+      0,
+      0
+     ],
+     "name": "User Patch (060)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      60,
+      0,
+      0
+     ],
+     "name": "User Patch (061)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      61,
+      0,
+      0
+     ],
+     "name": "User Patch (062)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      62,
+      0,
+      0
+     ],
+     "name": "User Patch (063)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      6,
+      63,
+      0,
+      0
+     ],
+     "name": "User Patch (064)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      7,
+      0,
+      0,
+      0
+     ],
+     "name": "User Rhythm (001)",
+     "block": "1-4"
+    },
+    {
+     "addr": [
+      8,
+      0,
+      0,
+      0
+     ],
+     "name": "Card System",
+     "block": "1-1"
+    },
+    {
+     "addr": [
+      9,
+      0,
+      0,
+      0
+     ],
+     "name": "Card Performance (01)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      1,
+      0,
+      0
+     ],
+     "name": "Card Performance (02)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      2,
+      0,
+      0
+     ],
+     "name": "Card Performance (03)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      3,
+      0,
+      0
+     ],
+     "name": "Card Performance (04)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      4,
+      0,
+      0
+     ],
+     "name": "Card Performance (05)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      5,
+      0,
+      0
+     ],
+     "name": "Card Performance (06)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      6,
+      0,
+      0
+     ],
+     "name": "Card Performance (07)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      7,
+      0,
+      0
+     ],
+     "name": "Card Performance (08)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      8,
+      0,
+      0
+     ],
+     "name": "Card Performance (09)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      9,
+      0,
+      0
+     ],
+     "name": "Card Performance (10)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      10,
+      0,
+      0
+     ],
+     "name": "Card Performance (11)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      11,
+      0,
+      0
+     ],
+     "name": "Card Performance (12)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      12,
+      0,
+      0
+     ],
+     "name": "Card Performance (13)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      13,
+      0,
+      0
+     ],
+     "name": "Card Performance (14)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      14,
+      0,
+      0
+     ],
+     "name": "Card Performance (15)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      9,
+      15,
+      0,
+      0
+     ],
+     "name": "Card Performance (16)",
+     "block": "1-2"
+    },
+    {
+     "addr": [
+      10,
+      0,
+      0,
+      0
+     ],
+     "name": "Card Patch (001)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      1,
+      0,
+      0
+     ],
+     "name": "Card Patch (002)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      2,
+      0,
+      0
+     ],
+     "name": "Card Patch (003)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      3,
+      0,
+      0
+     ],
+     "name": "Card Patch (004)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      4,
+      0,
+      0
+     ],
+     "name": "Card Patch (005)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      5,
+      0,
+      0
+     ],
+     "name": "Card Patch (006)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      6,
+      0,
+      0
+     ],
+     "name": "Card Patch (007)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      7,
+      0,
+      0
+     ],
+     "name": "Card Patch (008)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      8,
+      0,
+      0
+     ],
+     "name": "Card Patch (009)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      9,
+      0,
+      0
+     ],
+     "name": "Card Patch (010)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      10,
+      0,
+      0
+     ],
+     "name": "Card Patch (011)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      11,
+      0,
+      0
+     ],
+     "name": "Card Patch (012)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      12,
+      0,
+      0
+     ],
+     "name": "Card Patch (013)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      13,
+      0,
+      0
+     ],
+     "name": "Card Patch (014)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      14,
+      0,
+      0
+     ],
+     "name": "Card Patch (015)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      15,
+      0,
+      0
+     ],
+     "name": "Card Patch (016)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      16,
+      0,
+      0
+     ],
+     "name": "Card Patch (017)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      17,
+      0,
+      0
+     ],
+     "name": "Card Patch (018)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      18,
+      0,
+      0
+     ],
+     "name": "Card Patch (019)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      19,
+      0,
+      0
+     ],
+     "name": "Card Patch (020)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      20,
+      0,
+      0
+     ],
+     "name": "Card Patch (021)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      21,
+      0,
+      0
+     ],
+     "name": "Card Patch (022)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      22,
+      0,
+      0
+     ],
+     "name": "Card Patch (023)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      23,
+      0,
+      0
+     ],
+     "name": "Card Patch (024)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      24,
+      0,
+      0
+     ],
+     "name": "Card Patch (025)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      25,
+      0,
+      0
+     ],
+     "name": "Card Patch (026)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      26,
+      0,
+      0
+     ],
+     "name": "Card Patch (027)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      27,
+      0,
+      0
+     ],
+     "name": "Card Patch (028)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      28,
+      0,
+      0
+     ],
+     "name": "Card Patch (029)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      29,
+      0,
+      0
+     ],
+     "name": "Card Patch (030)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      30,
+      0,
+      0
+     ],
+     "name": "Card Patch (031)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      31,
+      0,
+      0
+     ],
+     "name": "Card Patch (032)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      32,
+      0,
+      0
+     ],
+     "name": "Card Patch (033)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      33,
+      0,
+      0
+     ],
+     "name": "Card Patch (034)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      34,
+      0,
+      0
+     ],
+     "name": "Card Patch (035)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      35,
+      0,
+      0
+     ],
+     "name": "Card Patch (036)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      36,
+      0,
+      0
+     ],
+     "name": "Card Patch (037)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      37,
+      0,
+      0
+     ],
+     "name": "Card Patch (038)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      38,
+      0,
+      0
+     ],
+     "name": "Card Patch (039)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      39,
+      0,
+      0
+     ],
+     "name": "Card Patch (040)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      40,
+      0,
+      0
+     ],
+     "name": "Card Patch (041)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      41,
+      0,
+      0
+     ],
+     "name": "Card Patch (042)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      42,
+      0,
+      0
+     ],
+     "name": "Card Patch (043)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      43,
+      0,
+      0
+     ],
+     "name": "Card Patch (044)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      44,
+      0,
+      0
+     ],
+     "name": "Card Patch (045)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      45,
+      0,
+      0
+     ],
+     "name": "Card Patch (046)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      46,
+      0,
+      0
+     ],
+     "name": "Card Patch (047)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      47,
+      0,
+      0
+     ],
+     "name": "Card Patch (048)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      48,
+      0,
+      0
+     ],
+     "name": "Card Patch (049)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      49,
+      0,
+      0
+     ],
+     "name": "Card Patch (050)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      50,
+      0,
+      0
+     ],
+     "name": "Card Patch (051)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      51,
+      0,
+      0
+     ],
+     "name": "Card Patch (052)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      52,
+      0,
+      0
+     ],
+     "name": "Card Patch (053)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      53,
+      0,
+      0
+     ],
+     "name": "Card Patch (054)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      54,
+      0,
+      0
+     ],
+     "name": "Card Patch (055)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      55,
+      0,
+      0
+     ],
+     "name": "Card Patch (056)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      56,
+      0,
+      0
+     ],
+     "name": "Card Patch (057)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      57,
+      0,
+      0
+     ],
+     "name": "Card Patch (058)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      58,
+      0,
+      0
+     ],
+     "name": "Card Patch (059)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      59,
+      0,
+      0
+     ],
+     "name": "Card Patch (060)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      60,
+      0,
+      0
+     ],
+     "name": "Card Patch (061)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      61,
+      0,
+      0
+     ],
+     "name": "Card Patch (062)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      62,
+      0,
+      0
+     ],
+     "name": "Card Patch (063)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      10,
+      63,
+      0,
+      0
+     ],
+     "name": "Card Patch (064)",
+     "block": "1-3"
+    },
+    {
+     "addr": [
+      11,
+      0,
+      0,
+      0
+     ],
+     "name": "Card Rhythm (001)",
+     "block": "1-4"
+    }
+   ]
+  },
+  "1-1": {
+   "name": "System",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "System Common",
+     "block": "1-1-1"
+    }
+   ]
+  },
+  "1-2": {
+   "name": "Performance",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Performance Common",
+     "block": "1-2-1"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      48
+     ],
+     "name": "Performance Part (Part 1)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      60
+     ],
+     "name": "Performance Part (Part 2)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      72
+     ],
+     "name": "Performance Part (Part 3)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      84
+     ],
+     "name": "Performance Part (Part 4)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      96
+     ],
+     "name": "Performance Part (Part 5)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      108
+     ],
+     "name": "Performance Part (Part 6)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      120
+     ],
+     "name": "Performance Part (Part 7)",
+     "block": "1-2-2"
+    },
+    {
+     "addr": [
+      0,
+      1,
+      4
+     ],
+     "name": "Performance Part (Part 8)",
+     "block": "1-2-2"
+    }
+   ]
+  },
+  "1-3": {
+   "name": "Patch",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Patch Common",
+     "block": "1-3-1"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      118
+     ],
+     "name": "Patch Tone (Tone 1)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      1,
+      82
+     ],
+     "name": "Patch Tone (Tone 2)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      2,
+      46
+     ],
+     "name": "Patch Tone (Tone 3)",
+     "block": "1-3-2"
+    },
+    {
+     "addr": [
+      0,
+      3,
+      10
+     ],
+     "name": "Patch Tone (Tone 4)",
+     "block": "1-3-2"
+    }
+   ]
+  },
+  "1-4": {
+   "name": "Rhythm Setup",
+   "entries": [
+    {
+     "addr": [
+      0,
+      0,
+      0
+     ],
+     "name": "Rhythm Common",
+     "block": "1-4-1"
+    },
+    {
+     "addr": [
+      0,
+      0,
+      58
+     ],
+     "name": "Rhythm Note (Key # 36)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      1,
+      36
+     ],
+     "name": "Rhythm Note (Key # 37)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      2,
+      14
+     ],
+     "name": "Rhythm Note (Key # 38)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      2,
+      120
+     ],
+     "name": "Rhythm Note (Key # 39)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      3,
+      98
+     ],
+     "name": "Rhythm Note (Key # 40)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      4,
+      76
+     ],
+     "name": "Rhythm Note (Key # 41)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      5,
+      54
+     ],
+     "name": "Rhythm Note (Key # 42)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      6,
+      32
+     ],
+     "name": "Rhythm Note (Key # 43)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      7,
+      10
+     ],
+     "name": "Rhythm Note (Key # 44)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      7,
+      116
+     ],
+     "name": "Rhythm Note (Key # 45)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      8,
+      94
+     ],
+     "name": "Rhythm Note (Key # 46)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      9,
+      72
+     ],
+     "name": "Rhythm Note (Key # 47)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      10,
+      50
+     ],
+     "name": "Rhythm Note (Key # 48)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      11,
+      28
+     ],
+     "name": "Rhythm Note (Key # 49)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      12,
+      6
+     ],
+     "name": "Rhythm Note (Key # 50)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      12,
+      112
+     ],
+     "name": "Rhythm Note (Key # 51)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      13,
+      90
+     ],
+     "name": "Rhythm Note (Key # 52)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      14,
+      68
+     ],
+     "name": "Rhythm Note (Key # 53)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      15,
+      46
+     ],
+     "name": "Rhythm Note (Key # 54)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      16,
+      24
+     ],
+     "name": "Rhythm Note (Key # 55)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      17,
+      2
+     ],
+     "name": "Rhythm Note (Key # 56)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      17,
+      108
+     ],
+     "name": "Rhythm Note (Key # 57)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      18,
+      86
+     ],
+     "name": "Rhythm Note (Key # 58)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      19,
+      64
+     ],
+     "name": "Rhythm Note (Key # 59)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      20,
+      42
+     ],
+     "name": "Rhythm Note (Key # 60)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      21,
+      20
+     ],
+     "name": "Rhythm Note (Key # 61)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      21,
+      126
+     ],
+     "name": "Rhythm Note (Key # 62)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      22,
+      104
+     ],
+     "name": "Rhythm Note (Key # 63)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      23,
+      82
+     ],
+     "name": "Rhythm Note (Key # 64)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      24,
+      60
+     ],
+     "name": "Rhythm Note (Key # 65)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      25,
+      38
+     ],
+     "name": "Rhythm Note (Key # 66)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      26,
+      16
+     ],
+     "name": "Rhythm Note (Key # 67)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      26,
+      122
+     ],
+     "name": "Rhythm Note (Key # 68)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      27,
+      100
+     ],
+     "name": "Rhythm Note (Key # 69)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      28,
+      78
+     ],
+     "name": "Rhythm Note (Key # 70)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      29,
+      56
+     ],
+     "name": "Rhythm Note (Key # 71)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      30,
+      34
+     ],
+     "name": "Rhythm Note (Key # 72)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      31,
+      12
+     ],
+     "name": "Rhythm Note (Key # 73)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      31,
+      118
+     ],
+     "name": "Rhythm Note (Key # 74)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      32,
+      96
+     ],
+     "name": "Rhythm Note (Key # 75)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      33,
+      74
+     ],
+     "name": "Rhythm Note (Key # 76)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      34,
+      52
+     ],
+     "name": "Rhythm Note (Key # 77)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      35,
+      30
+     ],
+     "name": "Rhythm Note (Key # 78)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      36,
+      8
+     ],
+     "name": "Rhythm Note (Key # 79)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      36,
+      114
+     ],
+     "name": "Rhythm Note (Key # 80)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      37,
+      92
+     ],
+     "name": "Rhythm Note (Key # 81)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      38,
+      70
+     ],
+     "name": "Rhythm Note (Key # 82)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      39,
+      48
+     ],
+     "name": "Rhythm Note (Key # 83)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      40,
+      26
+     ],
+     "name": "Rhythm Note (Key # 84)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      41,
+      4
+     ],
+     "name": "Rhythm Note (Key # 85)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      41,
+      110
+     ],
+     "name": "Rhythm Note (Key # 86)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      42,
+      88
+     ],
+     "name": "Rhythm Note (Key # 87)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      43,
+      66
+     ],
+     "name": "Rhythm Note (Key # 88)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      44,
+      44
+     ],
+     "name": "Rhythm Note (Key # 89)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      45,
+      22
+     ],
+     "name": "Rhythm Note (Key # 90)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      46,
+      0
+     ],
+     "name": "Rhythm Note (Key # 91)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      46,
+      106
+     ],
+     "name": "Rhythm Note (Key # 92)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      47,
+      84
+     ],
+     "name": "Rhythm Note (Key # 93)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      48,
+      62
+     ],
+     "name": "Rhythm Note (Key # 94)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      49,
+      40
+     ],
+     "name": "Rhythm Note (Key # 95)",
+     "block": "1-4-2"
+    },
+    {
+     "addr": [
+      0,
+      50,
+      18
+     ],
+     "name": "Rhythm Note (Key # 96)",
+     "block": "1-4-2"
+    }
+   ]
+  },
+  "1-1-1": {
+   "name": "System Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 2,
+     "name": "Panel mode",
+     "min": 0,
+     "max": 2,
+     "display": "PATCH, PERFORMANCE, RHYTHM"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Master tune",
+     "min": 0,
+     "max": 100,
+     "display": "427.5 - 452.9 [Hz]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 3,
+     "name": "LCD contrast",
+     "min": 0,
+     "max": 7,
+     "display": "1 - 8"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 1,
+     "name": "Character style",
+     "min": 0,
+     "max": 1,
+     "display": "TYPE1, TYPE2"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 1,
+     "name": "Rhythm output",
+     "min": 0,
+     "max": 1,
+     "display": "KEY-OUT, ALL-MIX"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 1,
+     "name": "Patch remain",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 1,
+     "name": "Power up mode",
+     "min": 0,
+     "max": 1,
+     "display": "LASTSET, DEFAULT"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 1,
+     "name": "Peak hold:Tone control source 1",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 1,
+     "name": "Peak hold:Tone control source 2",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 1,
+     "name": "Peak hold:Effects control source 1",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 1,
+     "name": "Peak hold:Effects control source 2",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 1,
+     "name": "Chorus switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 1,
+     "name": "Delay switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 1,
+     "name": "Reverb switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 1,
+     "name": "Group A switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 5,
+     "name": "Patch receive channel",
+     "min": 0,
+     "max": 17,
+     "display": "1 - 16, PART, OFF"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 5,
+     "name": "Rhythm receive channel",
+     "min": 0,
+     "max": 18,
+     "display": "1 - 16, PATCH, PART8, OFF"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 5,
+     "name": "Control channel",
+     "min": 0,
+     "max": 16,
+     "display": "1 - 16, OFF"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive program change",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive volume",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive pitch bend",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive aftertouch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive modulation",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive breath",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive expression",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 1,
+     "name": "Receive foot",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 4,
+     "name": "Mix-out EQ high",
+     "min": 0,
+     "max": 10,
+     "display": "-5 - +5"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 4,
+     "name": "Mix-out EQ mid",
+     "min": 0,
+     "max": 10,
+     "display": "-5 - +5"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 4,
+     "name": "Mix-out EQ low",
+     "min": 0,
+     "max": 10,
+     "display": "-5 - +5"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 1,
+     "name": "Preview mode",
+     "min": 0,
+     "max": 1,
+     "display": "SINGLE, CHORD"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview note number 1",
+     "min": 0,
+     "max": 88,
+     "display": "OFF, A0 - C8"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview note number 2",
+     "min": 0,
+     "max": 88,
+     "display": "OFF, A0 - C8"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview note number 3",
+     "min": 0,
+     "max": 88,
+     "display": "OFF, A0 - C8"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview note number 4",
+     "min": 0,
+     "max": 88,
+     "display": "OFF, A0 - C8"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview velocity 1",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview velocity 2",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview velocity 3",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "Preview velocity 4",
+     "min": 1,
+     "max": 127
+    }
+   ],
+   "size": 38
+  },
+  "1-2-1": {
+   "name": "Performance Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 11",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 12",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 13",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 14",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 15",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Performance name 16",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 3,
+     "name": "Available sync part",
+     "min": 0,
+     "max": 7,
+     "display": "NONE, PART1 - PART7"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 1 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 2 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 3 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 4 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 5 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 6 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 7 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 5,
+     "name": "Part 8 voice reserve",
+     "min": 0,
+     "max": 24
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Rate",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 10.0 [Hz]"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Delay time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 50ms",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "41ms",
+      "42ms",
+      "43ms",
+      "44ms",
+      "45ms",
+      "46ms",
+      "47ms",
+      "48ms",
+      "49ms",
+      "50ms"
+     ]
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 2,
+     "name": "Delay:Mode",
+     "min": 0,
+     "max": 2,
+     "display": "NORMAL, MIDI TEMPO, MANUAL TEMPO"
+    },
+    {
+     "offset": 31,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Center tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Center level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 34,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Left tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Left level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 37,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Right tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Right level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 4,
+     "name": "Reverb:Type",
+     "min": 0,
+     "max": 9,
+     "display": "ROOM1, ROOM2, HALL1, HALL2, HALL3, HALL4, GATE, REVERSE, FLYING1, FLYING2"
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Pre delay",
+     "min": 0,
+     "max": 120,
+     "display": "0 - 120 [ms]"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Early reflection level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 5,
+     "name": "Reverb:HF damp",
+     "min": 0,
+     "max": 16,
+     "display": "500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, BYPASS"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 20s (ROOM1 - HALL4), 5 - 500ms (GATE - FLYING2)"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 1,
+     "name": "Dummy",
+     "min": 0,
+     "max": 0,
+     "absent": true
+    }
+   ],
+   "size": 48
+  },
+  "1-2-2": {
+   "name": "Performance Part",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 1,
+     "name": "MIDI receive switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 4,
+     "name": "MIDI channel",
+     "min": 0,
+     "max": 15,
+     "display": "1 - 16"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 1,
+     "name": "Bank",
+     "min": 0,
+     "max": 1,
+     "display": "INT/CARD, PRESET A/B"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch number",
+     "min": 0,
+     "max": 127,
+     "display": "1 - 128"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Part level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Part pan",
+     "min": 0,
+     "max": 100,
+     "display": "L50 - 50R"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Part coarse tune",
+     "min": 0,
+     "max": 96,
+     "display": "-48 - +48"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Part fine tune",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 2,
+     "name": "Output assign",
+     "min": 0,
+     "max": 3,
+     "display": "MIX, DIR-1, DIR-2, DIR-3"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 2,
+     "name": "Effect send mode",
+     "min": 0,
+     "max": 3,
+     "display": "DRY, REV, C+R, D+R"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect send level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 1,
+     "name": "Dummy",
+     "min": 0,
+     "max": 0,
+     "absent": true
+    }
+   ],
+   "size": 12
+  },
+  "1-3-1": {
+   "name": "Patch Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 11",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 12",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 13",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 14",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 15",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch name 16",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "Patch pan",
+     "min": 0,
+     "max": 100,
+     "display": "L50 - 50R"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "Analog feel",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 1,
+     "name": "Voice priority",
+     "min": 0,
+     "max": 1,
+     "display": "LAST, LOUDEST"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 6,
+     "name": "Bend range down",
+     "min": 0,
+     "max": 48
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 4,
+     "name": "Bend range up",
+     "min": 0,
+     "max": 12
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone control source 1",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone control source 2",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 4,
+     "name": "Layer tone",
+     "min": 0,
+     "max": 15,
+     "display": "OFF, A, B, AB, C, AC, BC, ABC, D, AD, BD, ABD, CD, ACD, BCD, ABCD"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 4,
+     "name": "Active tone",
+     "min": 0,
+     "max": 15,
+     "display": "OFF, A, B, AB, C, AC, BC, ABC, D, AD, BD, ABD, CD, ACD, BCD, ABCD"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento mode",
+     "min": 0,
+     "max": 1,
+     "display": "NORMAL, LEGATO"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 1,
+     "name": "Portamento type",
+     "min": 0,
+     "max": 1,
+     "display": "TIME, RATE"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "Portamento time",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 1,
+     "name": "Solo switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 1,
+     "name": "Solo legato",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 3,
+     "name": "Solo sync master",
+     "min": 0,
+     "max": 4,
+     "display": "OFF, A, B, C, D"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 1,
+     "name": "EQ:Low frequency",
+     "min": 0,
+     "max": 1,
+     "display": "200, 400 [Hz]"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Low gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Mid frequency",
+     "min": 0,
+     "max": 16,
+     "display": "200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000 [Hz]"
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 3,
+     "name": "EQ:Mid Q",
+     "min": 0,
+     "max": 4,
+     "display": "0.5, 1.0, 2.0, 4.0, 9.0"
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Mid gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 38,
+     "size": 1,
+     "bits": 1,
+     "name": "EQ:High frequency",
+     "min": 0,
+     "max": 1,
+     "display": "4000, 8000 [Hz]"
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:High gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 3,
+     "name": "Structure A&B",
+     "min": 0,
+     "max": 5,
+     "display": "1 - 6"
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 3,
+     "name": "Structure C&D",
+     "min": 0,
+     "max": 5,
+     "display": "1 - 6"
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone A key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone B key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone C key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone D key range lower",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone A key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone B key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone C key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 49,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone D key range upper",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 2,
+     "name": "Tone A velocity range",
+     "min": 0,
+     "max": 2,
+     "display": "ALL, LOW, HIGH"
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 2,
+     "name": "Tone B velocity range",
+     "min": 0,
+     "max": 2,
+     "display": "ALL, LOW, HIGH"
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 2,
+     "name": "Tone C velocity range",
+     "min": 0,
+     "max": 2,
+     "display": "ALL, LOW, HIGH"
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 2,
+     "name": "Tone D velocity range",
+     "min": 0,
+     "max": 2,
+     "display": "ALL, LOW, HIGH"
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone A velocity point",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone B velocity point",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone C velocity point",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone D velocity point",
+     "min": 1,
+     "max": 127
+    },
+    {
+     "offset": 58,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone A velocity fade",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 59,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone B velocity fade",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 60,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone C velocity fade",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 61,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone D velocity fade",
+     "min": 0,
+     "max": 127
+    },
+    {
+     "offset": 62,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect:Group B balance",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 63,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control source 1",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 64,
+     "size": 1,
+     "bits": 4,
+     "name": "Effect:Control destination 1",
+     "min": 0,
+     "max": 14,
+     "display": "FX-BAL, DS-DRV, PH-MAN, PH-RAT, PH-DPT, PH-RES, PH-MIX, EN-MIX, CH-RAT, CH-FDB, CH-LVL, DL-FDB, DL-LVL, RV-TIM, RV-LVL"
+    },
+    {
+     "offset": 65,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect:Control depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 66,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control source 2",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 67,
+     "size": 1,
+     "bits": 4,
+     "name": "Effect:Control destination 2",
+     "min": 0,
+     "max": 14,
+     "display": "FX-BAL, DS-DRV, PH-MAN, PH-RAT, PH-DPT, PH-RES, PH-MIX, EN-MIX, CH-RAT, CH-FDB, CH-LVL, DL-FDB, DL-LVL, RV-TIM, RV-LVL"
+    },
+    {
+     "offset": 68,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect:Control depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 69,
+     "size": 1,
+     "bits": 5,
+     "name": "Group A:Sequence",
+     "min": 0,
+     "max": 23,
+     "display": "DS-PH-SP-EN, DS-PH-EN-SP, DS-SP-EN-PH, DS-SP-PH-EN, DS-EN-PH-SP, DS-EN-SP-PH, PH-DS-SP-EN, PH-DS-EN-SP, PH-SP-EN-DS, PH-SP-DS-EN, PH-EN-DS-SP, PH-EN-SP-DS, SP-PH-DS-EN, SP-PH-EN-DS, SP-DS-EN-PH, SP-DS-PH-EN, SP-EN-PH-DS, SP-EN-DS-PH, EN-PH-SP-DS, EN-PH-DS-SP, EN-SP-DS-PH, EN-SP-PH-DS, EN-DS-PH-SP, EN-DS-SP-PH"
+    },
+    {
+     "offset": 70,
+     "size": 1,
+     "bits": 1,
+     "name": "Group A:Block 1 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 71,
+     "size": 1,
+     "bits": 1,
+     "name": "Group A:Block 2 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 72,
+     "size": 1,
+     "bits": 1,
+     "name": "Group A:Block 3 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 73,
+     "size": 1,
+     "bits": 1,
+     "name": "Group A:Block 4 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 74,
+     "size": 1,
+     "bits": 3,
+     "name": "Distortion:Type",
+     "min": 0,
+     "max": 6,
+     "display": "MELLOW DRIVE, OVERDRIVE, CRY DRIVE, MELLOW DIST, LIGHT DIST, FAT DIST, FUZZ DIST"
+    },
+    {
+     "offset": 75,
+     "size": 1,
+     "bits": 7,
+     "name": "Distortion:Drive",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 76,
+     "size": 1,
+     "bits": 7,
+     "name": "Distortion:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 77,
+     "size": 1,
+     "bits": 7,
+     "name": "Phaser:Manual",
+     "min": 0,
+     "max": 99,
+     "display": "50Hz - 15kHz",
+     "labels": [
+      "50Hz",
+      "60Hz",
+      "70Hz",
+      "80Hz",
+      "90Hz",
+      "100Hz",
+      "110Hz",
+      "120Hz",
+      "130Hz",
+      "140Hz",
+      "150Hz",
+      "160Hz",
+      "170Hz",
+      "180Hz",
+      "190Hz",
+      "200Hz",
+      "210Hz",
+      "220Hz",
+      "230Hz",
+      "240Hz",
+      "250Hz",
+      "260Hz",
+      "270Hz",
+      "280Hz",
+      "290Hz",
+      "300Hz",
+      "320Hz",
+      "350Hz",
+      "380Hz",
+      "410Hz",
+      "440Hz",
+      "470Hz",
+      "500Hz",
+      "530Hz",
+      "560Hz",
+      "590Hz",
+      "620Hz",
+      "650Hz",
+      "680Hz",
+      "710Hz",
+      "740Hz",
+      "770Hz",
+      "800Hz",
+      "830Hz",
+      "860Hz",
+      "890Hz",
+      "920Hz",
+      "950Hz",
+      "980Hz",
+      "1010Hz",
+      "1.1kHz",
+      "1.3kHz",
+      "1.5kHz",
+      "1.7kHz",
+      "1.9kHz",
+      "2.1kHz",
+      "2.3kHz",
+      "2.5kHz",
+      "2.7kHz",
+      "2.9kHz",
+      "3.1kHz",
+      "3.3kHz",
+      "3.5kHz",
+      "3.7kHz",
+      "3.9kHz",
+      "4.1kHz",
+      "4.3kHz",
+      "4.5kHz",
+      "4.7kHz",
+      "4.9kHz",
+      "5.1kHz",
+      "5.3kHz",
+      "5.5kHz",
+      "5.7kHz",
+      "5.9kHz",
+      "6.1kHz",
+      "6.3kHz",
+      "6.5kHz",
+      "6.7kHz",
+      "6.9kHz",
+      "7.1kHz",
+      "7.3kHz",
+      "7.5kHz",
+      "7.7kHz",
+      "7.9kHz",
+      "8.1kHz",
+      "8.5kHz",
+      "9kHz",
+      "9.5kHz",
+      "10kHz",
+      "10.5kHz",
+      "11kHz",
+      "11.5kHz",
+      "12kHz",
+      "12.5kHz",
+      "13kHz",
+      "13.5kHz",
+      "14kHz",
+      "14.5kHz",
+      "15kHz"
+     ]
+    },
+    {
+     "offset": 78,
+     "size": 1,
+     "bits": 7,
+     "name": "Phaser:Rate",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 10.0 [Hz]"
+    },
+    {
+     "offset": 79,
+     "size": 1,
+     "bits": 7,
+     "name": "Phaser:Depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 80,
+     "size": 1,
+     "bits": 7,
+     "name": "Phaser:Resonance",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 81,
+     "size": 1,
+     "bits": 7,
+     "name": "Phaser:Mix",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 82,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 1",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 83,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 2",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 84,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 3",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 85,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 4",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 86,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 5",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 87,
+     "size": 1,
+     "bits": 5,
+     "name": "Spectrum:Band 6",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 88,
+     "size": 1,
+     "bits": 3,
+     "name": "Spectrum:Band width",
+     "min": 0,
+     "max": 4,
+     "display": "1 - 5"
+    },
+    {
+     "offset": 89,
+     "size": 1,
+     "bits": 7,
+     "name": "Enhancer:Sens",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 90,
+     "size": 1,
+     "bits": 7,
+     "name": "Enhancer:Mix",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 91,
+     "size": 1,
+     "bits": 3,
+     "name": "Group B:Sequence",
+     "min": 0,
+     "max": 5,
+     "display": "CHO-DLY-REV, CHO-REV-DLY, DLY-CHO-REV, DLY-REV-CHO, REV-CHO-DLY, REV-DLY-CHO"
+    },
+    {
+     "offset": 92,
+     "size": 1,
+     "bits": 1,
+     "name": "Group B:Block 1 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 93,
+     "size": 1,
+     "bits": 1,
+     "name": "Group B:Block 2 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 94,
+     "size": 1,
+     "bits": 1,
+     "name": "Group B:Block 3 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 95,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Rate",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 10.0 [Hz]"
+    },
+    {
+     "offset": 96,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 97,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Delay time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 50ms",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "41ms",
+      "42ms",
+      "43ms",
+      "44ms",
+      "45ms",
+      "46ms",
+      "47ms",
+      "48ms",
+      "49ms",
+      "50ms"
+     ]
+    },
+    {
+     "offset": 98,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 99,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 100,
+     "size": 1,
+     "bits": 2,
+     "name": "Delay:Mode",
+     "min": 0,
+     "max": 2,
+     "display": "NORMAL, MIDI TEMPO, MANUAL TEMPO"
+    },
+    {
+     "offset": 101,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Center tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 103,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Center level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 104,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Left tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 106,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Left level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 107,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Right tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 109,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Right level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 110,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 111,
+     "size": 1,
+     "bits": 4,
+     "name": "Reverb:Type",
+     "min": 0,
+     "max": 9,
+     "display": "ROOM1, ROOM2, HALL1, HALL2, HALL3, HALL4, GATE, REVERSE, FLYING1, FLYING2"
+    },
+    {
+     "offset": 112,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Pre delay",
+     "min": 0,
+     "max": 120,
+     "display": "0 - 120 [ms]"
+    },
+    {
+     "offset": 113,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Early reflection level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 114,
+     "size": 1,
+     "bits": 5,
+     "name": "Reverb:HF damp",
+     "min": 0,
+     "max": 16,
+     "display": "500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, BYPASS"
+    },
+    {
+     "offset": 115,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 20s (ROOM1 - HALL4), 5 - 500ms (GATE - FLYING2)"
+    },
+    {
+     "offset": 116,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 117,
+     "size": 1,
+     "bits": 2,
+     "name": "Octave switch",
+     "min": 0,
+     "max": 2,
+     "display": "-1, 0, +1"
+    }
+   ],
+   "size": 118
+  },
+  "1-3-2": {
+   "name": "Patch Tone",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 2,
+     "name": "Wave group",
+     "min": 0,
+     "max": 2,
+     "display": "INT, PCM, EXP"
+    },
+    {
+     "offset": 1,
+     "size": 2,
+     "bits": 7,
+     "name": "Wave number",
+     "min": 0,
+     "max": 255,
+     "display": "1 - 256"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 3,
+     "name": "FXM color",
+     "min": 0,
+     "max": 7,
+     "display": "1 - 8"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "FXM depth",
+     "min": 0,
+     "max": 100,
+     "display": "OFF, 1 - 100"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 1,
+     "name": "Sync slave switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone delay mode",
+     "min": 0,
+     "max": 4,
+     "display": "NORMAL, HOLD, KEY-OFF-NORMAL, KEY-OFF-DECAY, PLAY-MATE"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone delay time",
+     "min": 0,
+     "max": 127,
+     "display": "0 - 5.0s (NORMAL - KEY-OFF-DECAY), 0 - 254% (PLAY-MATE)"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch coarse",
+     "min": 0,
+     "max": 96,
+     "display": "-48 - +48"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch fine",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Random pitch depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 5,
+     "name": "Pitch key follow",
+     "min": 0,
+     "max": 16,
+     "display": "-100, -50, -20, -10, -5, 0, +5, +10, +20, +50, +98, +99, +100, +101, +102, +150, +200"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 5,
+     "name": "P-ENV depth",
+     "min": 0,
+     "max": 24,
+     "display": "-12 - +12"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 1,
+     "name": "Bender switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 5,
+     "name": "P-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 0",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV sustain level",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 2,
+     "name": "Filter mode",
+     "min": 0,
+     "max": 2,
+     "display": "HPF, BPF, LPF"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 7,
+     "name": "Cutoff frequency",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 7,
+     "name": "Resonance",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 6,
+     "name": "Cutoff key follow",
+     "min": 0,
+     "max": 40,
+     "display": "-100 - +150 [%]",
+     "labels": [
+      "-100%",
+      "-90%",
+      "-80%",
+      "-70%",
+      "-60%",
+      "-50%",
+      "-40%",
+      "-30%",
+      "-20%",
+      "-10%",
+      "0%",
+      "+5%",
+      "+10%",
+      "+15%",
+      "+20%",
+      "+25%",
+      "+30%",
+      "+35%",
+      "+40%",
+      "+45%",
+      "+50%",
+      "+55%",
+      "+60%",
+      "+65%",
+      "+70%",
+      "+75%",
+      "+80%",
+      "+85%",
+      "+90%",
+      "+95%",
+      "+100%",
+      "+105%",
+      "+110%",
+      "+115%",
+      "+120%",
+      "+125%",
+      "+130%",
+      "+135%",
+      "+140%",
+      "+145%",
+      "+150%"
+     ]
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 5,
+     "name": "TVF-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV sustain level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 38,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 7,
+     "name": "Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 2,
+     "name": "Bias direction",
+     "min": 0,
+     "max": 2,
+     "display": "UPPER, LOWER, LOWER&UPPER"
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "Bias point",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 5,
+     "name": "Bias level",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "Pan",
+     "min": 0,
+     "max": 103,
+     "display": "L50 - 50R, RND, ALT-L, ALT-R"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 4,
+     "name": "Panning key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 5,
+     "name": "TVA-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 49,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV sustain level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 3,
+     "name": "Velocity curve",
+     "min": 0,
+     "max": 6,
+     "display": "1 - 7"
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 1,
+     "name": "Hold-1 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 58,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 1 form",
+     "min": 0,
+     "max": 7,
+     "display": "TRI, SIN, SAW, SQR, TRP, S&H, RND, CHS"
+    },
+    {
+     "offset": 59,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 rate",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 60,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 delay",
+     "min": 0,
+     "max": 101,
+     "display": "0 - 100, REL"
+    },
+    {
+     "offset": 61,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 fade",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 62,
+     "size": 1,
+     "bits": 2,
+     "name": "LFO 1 offset",
+     "min": 0,
+     "max": 2,
+     "display": "+, 0, -"
+    },
+    {
+     "offset": 63,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 1 key trigger",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 64,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 pitch depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 65,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVF depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 66,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVA depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 67,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 2 form",
+     "min": 0,
+     "max": 7,
+     "display": "TRI, SIN, SAW, SQR, TRP, S&H, RND, CHS"
+    },
+    {
+     "offset": 68,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 rate",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 69,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 delay",
+     "min": 0,
+     "max": 101,
+     "display": "0 - 100, REL"
+    },
+    {
+     "offset": 70,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 fade",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 71,
+     "size": 1,
+     "bits": 2,
+     "name": "LFO 2 offset",
+     "min": 0,
+     "max": 2,
+     "display": "+, 0, -"
+    },
+    {
+     "offset": 72,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 2 key trigger",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 73,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 pitch depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 74,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVF depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 75,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVA depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 76,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 1",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 77,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 78,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 2",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 79,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 80,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 3",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 81,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 82,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 4",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 83,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 4",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 84,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 1",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 85,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 86,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 2",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 87,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 88,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 3",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 89,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 90,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 4",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 91,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 4",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    }
+   ],
+   "size": 92
+  },
+  "1-4-1": {
+   "name": "Rhythm Common",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 11",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 12",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 13",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 14",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 15",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 15,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm name 16",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 16,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm pan",
+     "min": 0,
+     "max": 100,
+     "display": "L50 - 50R"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "Analog feel",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 6,
+     "name": "Bend range down",
+     "min": 0,
+     "max": 48
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 4,
+     "name": "Bend range up",
+     "min": 0,
+     "max": 12
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone control source 1",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone control source 2",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 1,
+     "name": "EQ:Low frequency",
+     "min": 0,
+     "max": 1,
+     "display": "200, 400 [Hz]"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Low gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Mid frequency",
+     "min": 0,
+     "max": 16,
+     "display": "200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000 [Hz]"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 3,
+     "name": "EQ:Mid Q",
+     "min": 0,
+     "max": 4,
+     "display": "0.5, 1.0, 2.0, 4.0, 9.0"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:Mid gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 1,
+     "name": "EQ:High frequency",
+     "min": 0,
+     "max": 1,
+     "display": "4000, 8000 [Hz]"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 5,
+     "name": "EQ:High gain",
+     "min": 0,
+     "max": 30,
+     "display": "-15 - +15 [dB]"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control source 1",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control destination 1",
+     "min": 0,
+     "max": 6,
+     "display": "CH-RAT, CH-FDB, CH-LVL, DL-FDB, DL-LVL, RV-TIM, RV-LVL"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect:Control depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control source 2",
+     "min": 0,
+     "max": 5,
+     "display": "CC01, AFT, CC11, CC02, BEND, CC04"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect:Control destination 2",
+     "min": 0,
+     "max": 6,
+     "display": "CH-RAT, CH-FDB, CH-LVL, DL-FDB, DL-LVL, RV-TIM, RV-LVL"
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect:Control depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Rate",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 10.0 [Hz]"
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 38,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Delay time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 50ms",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "41ms",
+      "42ms",
+      "43ms",
+      "44ms",
+      "45ms",
+      "46ms",
+      "47ms",
+      "48ms",
+      "49ms",
+      "50ms"
+     ]
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 7,
+     "name": "Chorus:Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 2,
+     "name": "Delay:Mode",
+     "min": 0,
+     "max": 2,
+     "display": "NORMAL, MIDI TEMPO, MANUAL TEMPO"
+    },
+    {
+     "offset": 42,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Center tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Center level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 45,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Left tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Left level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 48,
+     "size": 2,
+     "bits": 7,
+     "name": "Delay:Right tap",
+     "min": 0,
+     "max": 255,
+     "display": "0.1ms - 3.0s, 16th note - Whole note",
+     "labels": [
+      "0.1ms",
+      "0.2ms",
+      "0.3ms",
+      "0.4ms",
+      "0.5ms",
+      "0.6ms",
+      "0.7ms",
+      "0.8ms",
+      "0.9ms",
+      "1ms",
+      "1.1ms",
+      "1.2ms",
+      "1.3ms",
+      "1.4ms",
+      "1.5ms",
+      "1.6ms",
+      "1.7ms",
+      "1.8ms",
+      "1.9ms",
+      "2ms",
+      "2.1ms",
+      "2.2ms",
+      "2.3ms",
+      "2.4ms",
+      "2.5ms",
+      "2.6ms",
+      "2.7ms",
+      "2.8ms",
+      "2.9ms",
+      "3ms",
+      "3.1ms",
+      "3.2ms",
+      "3.3ms",
+      "3.4ms",
+      "3.5ms",
+      "3.6ms",
+      "3.7ms",
+      "3.8ms",
+      "3.9ms",
+      "4ms",
+      "4.1ms",
+      "4.2ms",
+      "4.3ms",
+      "4.4ms",
+      "4.5ms",
+      "4.6ms",
+      "4.7ms",
+      "4.8ms",
+      "4.9ms",
+      "5ms",
+      "5.5ms",
+      "6ms",
+      "6.5ms",
+      "7ms",
+      "7.5ms",
+      "8ms",
+      "8.5ms",
+      "9ms",
+      "9.5ms",
+      "10ms",
+      "11ms",
+      "12ms",
+      "13ms",
+      "14ms",
+      "15ms",
+      "16ms",
+      "17ms",
+      "18ms",
+      "19ms",
+      "20ms",
+      "21ms",
+      "22ms",
+      "23ms",
+      "24ms",
+      "25ms",
+      "26ms",
+      "27ms",
+      "28ms",
+      "29ms",
+      "30ms",
+      "31ms",
+      "32ms",
+      "33ms",
+      "34ms",
+      "35ms",
+      "36ms",
+      "37ms",
+      "38ms",
+      "39ms",
+      "40ms",
+      "50ms",
+      "60ms",
+      "70ms",
+      "80ms",
+      "90ms",
+      "100ms",
+      "110ms",
+      "120ms",
+      "130ms",
+      "140ms",
+      "150ms",
+      "160ms",
+      "170ms",
+      "180ms",
+      "190ms",
+      "200ms",
+      "220ms",
+      "240ms",
+      "260ms",
+      "280ms",
+      "300ms",
+      "320ms",
+      "340ms",
+      "360ms",
+      "380ms",
+      "400ms",
+      "420ms",
+      "440ms",
+      "460ms",
+      "480ms",
+      "500ms",
+      "520ms",
+      "540ms",
+      "560ms",
+      "580ms",
+      "600ms",
+      "620ms",
+      "640ms",
+      "660ms",
+      "680ms",
+      "700ms",
+      "720ms",
+      "740ms",
+      "760ms",
+      "780ms",
+      "800ms",
+      "820ms",
+      "840ms",
+      "860ms",
+      "880ms",
+      "900ms",
+      "920ms",
+      "940ms",
+      "960ms",
+      "980ms",
+      "1000ms",
+      "1020ms",
+      "1040ms",
+      "1060ms",
+      "1080ms",
+      "1100ms",
+      "1120ms",
+      "1140ms",
+      "1160ms",
+      "1180ms",
+      "1200ms",
+      "1220ms",
+      "1240ms",
+      "1260ms",
+      "1280ms",
+      "1300ms",
+      "1320ms",
+      "1340ms",
+      "1360ms",
+      "1380ms",
+      "1400ms",
+      "1420ms",
+      "1440ms",
+      "1460ms",
+      "1480ms",
+      "1500ms",
+      "1520ms",
+      "1540ms",
+      "1560ms",
+      "1580ms",
+      "1600ms",
+      "1620ms",
+      "1640ms",
+      "1660ms",
+      "1680ms",
+      "1700ms",
+      "1720ms",
+      "1740ms",
+      "1760ms",
+      "1780ms",
+      "1800ms",
+      "1820ms",
+      "1840ms",
+      "1860ms",
+      "1880ms",
+      "1900ms",
+      "1920ms",
+      "1940ms",
+      "1960ms",
+      "1980ms",
+      "2000ms",
+      "2020ms",
+      "2040ms",
+      "2060ms",
+      "2080ms",
+      "2100ms",
+      "2120ms",
+      "2140ms",
+      "2160ms",
+      "2180ms",
+      "2200ms",
+      "2220ms",
+      "2240ms",
+      "2260ms",
+      "2280ms",
+      "2300ms",
+      "2320ms",
+      "2340ms",
+      "2360ms",
+      "2380ms",
+      "2400ms",
+      "2420ms",
+      "2440ms",
+      "2460ms",
+      "2480ms",
+      "2500ms",
+      "2520ms",
+      "2540ms",
+      "2560ms",
+      "2580ms",
+      "2600ms",
+      "2620ms",
+      "2640ms",
+      "2660ms",
+      "2680ms",
+      "2700ms",
+      "2720ms",
+      "2740ms",
+      "2760ms",
+      "2780ms",
+      "2800ms",
+      "2820ms",
+      "2840ms",
+      "2860ms",
+      "2880ms",
+      "2900ms",
+      "2920ms",
+      "2940ms",
+      "2960ms",
+      "2980ms",
+      "3000ms",
+      "16th note",
+      "Triplet 8th note",
+      "8th note",
+      "Triplet quarter note",
+      "Dotted 8th note",
+      "Quarter note",
+      "Triplet half note",
+      "Dotted quarter note",
+      "Half note",
+      "Whole note"
+     ]
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Right level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 7,
+     "name": "Delay:Feedback",
+     "min": 0,
+     "max": 98,
+     "display": "-98 - +98 [%]",
+     "labels": [
+      "-98%",
+      "-96%",
+      "-94%",
+      "-92%",
+      "-90%",
+      "-88%",
+      "-86%",
+      "-84%",
+      "-82%",
+      "-80%",
+      "-78%",
+      "-76%",
+      "-74%",
+      "-72%",
+      "-70%",
+      "-68%",
+      "-66%",
+      "-64%",
+      "-62%",
+      "-60%",
+      "-58%",
+      "-56%",
+      "-54%",
+      "-52%",
+      "-50%",
+      "-48%",
+      "-46%",
+      "-44%",
+      "-42%",
+      "-40%",
+      "-38%",
+      "-36%",
+      "-34%",
+      "-32%",
+      "-30%",
+      "-28%",
+      "-26%",
+      "-24%",
+      "-22%",
+      "-20%",
+      "-18%",
+      "-16%",
+      "-14%",
+      "-12%",
+      "-10%",
+      "-8%",
+      "-6%",
+      "-4%",
+      "-2%",
+      "0%",
+      "+2%",
+      "+4%",
+      "+6%",
+      "+8%",
+      "+10%",
+      "+12%",
+      "+14%",
+      "+16%",
+      "+18%",
+      "+20%",
+      "+22%",
+      "+24%",
+      "+26%",
+      "+28%",
+      "+30%",
+      "+32%",
+      "+34%",
+      "+36%",
+      "+38%",
+      "+40%",
+      "+42%",
+      "+44%",
+      "+46%",
+      "+48%",
+      "+50%",
+      "+52%",
+      "+54%",
+      "+56%",
+      "+58%",
+      "+60%",
+      "+62%",
+      "+64%",
+      "+66%",
+      "+68%",
+      "+70%",
+      "+72%",
+      "+74%",
+      "+76%",
+      "+78%",
+      "+80%",
+      "+82%",
+      "+84%",
+      "+86%",
+      "+88%",
+      "+90%",
+      "+92%",
+      "+94%",
+      "+96%",
+      "+98%"
+     ]
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 4,
+     "name": "Reverb:Type",
+     "min": 0,
+     "max": 9,
+     "display": "ROOM1, ROOM2, HALL1, HALL2, HALL3, HALL4, GATE, REVERSE, FLYING1, FLYING2"
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Pre delay",
+     "min": 0,
+     "max": 120,
+     "display": "0 - 120 [ms]"
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Early reflection level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 5,
+     "name": "Reverb:HF damp",
+     "min": 0,
+     "max": 16,
+     "display": "500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, BYPASS"
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Time",
+     "min": 0,
+     "max": 99,
+     "display": "0.1 - 20s (ROOM1 - HALL4), 5 - 500ms (GATE - FLYING2)"
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 7,
+     "name": "Reverb:Level",
+     "min": 0,
+     "max": 100
+    }
+   ],
+   "size": 58
+  },
+  "1-4-2": {
+   "name": "Rhythm Note",
+   "params": [
+    {
+     "offset": 0,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 1",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 1,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 2",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 2,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 3",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 3,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 4",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 4,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 5",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 5,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 6",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 6,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 7",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 7,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 8",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 8,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 9",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 9,
+     "size": 1,
+     "bits": 7,
+     "name": "Rhythm key name 10",
+     "min": 32,
+     "max": 127,
+     "display": "32 - 127 [ASCII]"
+    },
+    {
+     "offset": 10,
+     "size": 1,
+     "bits": 1,
+     "name": "Envelope mode",
+     "min": 0,
+     "max": 1,
+     "display": "SUSTAIN, NO-SUSTAIN"
+    },
+    {
+     "offset": 11,
+     "size": 1,
+     "bits": 5,
+     "name": "Mute group",
+     "min": 0,
+     "max": 26,
+     "display": "OFF, A - Z"
+    },
+    {
+     "offset": 12,
+     "size": 1,
+     "bits": 3,
+     "name": "Effect mode",
+     "min": 0,
+     "max": 6,
+     "display": "EQ:MIX, EQ+R:MIX, EQ+C+R:MIX, EQ+D+R:MIX, DIR1, DIR2, DIR3"
+    },
+    {
+     "offset": 13,
+     "size": 1,
+     "bits": 7,
+     "name": "Effect send level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 14,
+     "size": 1,
+     "bits": 2,
+     "name": "Wave group",
+     "min": 0,
+     "max": 2,
+     "display": "INT, PCM, EXP"
+    },
+    {
+     "offset": 15,
+     "size": 2,
+     "bits": 7,
+     "name": "Wave number",
+     "min": 0,
+     "max": 255,
+     "display": "1 - 256"
+    },
+    {
+     "offset": 17,
+     "size": 1,
+     "bits": 3,
+     "name": "FXM color",
+     "min": 0,
+     "max": 7,
+     "display": "1 - 8"
+    },
+    {
+     "offset": 18,
+     "size": 1,
+     "bits": 7,
+     "name": "FXM depth",
+     "min": 0,
+     "max": 100,
+     "display": "OFF, 1 - 100"
+    },
+    {
+     "offset": 19,
+     "size": 1,
+     "bits": 1,
+     "name": "Sync slave switch",
+     "min": 0,
+     "max": 0,
+     "display": "OFF"
+    },
+    {
+     "offset": 20,
+     "size": 1,
+     "bits": 3,
+     "name": "Tone delay mode",
+     "min": 0,
+     "max": 4,
+     "display": "NORMAL, HOLD, KEY-OFF-NORMAL, KEY-OFF-DECAY, PLAY-MATE"
+    },
+    {
+     "offset": 21,
+     "size": 1,
+     "bits": 7,
+     "name": "Tone delay time",
+     "min": 0,
+     "max": 127,
+     "display": "0 - 5.0s (NORMAL - KEY-OFF-DECAY), 0 - 254% (PLAY-MATE)"
+    },
+    {
+     "offset": 22,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch coarse",
+     "min": 0,
+     "max": 96,
+     "display": "-48 - +48"
+    },
+    {
+     "offset": 23,
+     "size": 1,
+     "bits": 7,
+     "name": "Pitch fine",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 24,
+     "size": 1,
+     "bits": 7,
+     "name": "Random pitch depth",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 25,
+     "size": 1,
+     "bits": 5,
+     "name": "Pitch key follow",
+     "min": 0,
+     "max": 16,
+     "display": "-100, -50, -20, -10, -5, 0, +5, +10, +20, +50, +98, +99, +100, +101, +102, +150, +200"
+    },
+    {
+     "offset": 26,
+     "size": 1,
+     "bits": 5,
+     "name": "P-ENV depth",
+     "min": 0,
+     "max": 24,
+     "display": "-12 - +12"
+    },
+    {
+     "offset": 27,
+     "size": 1,
+     "bits": 1,
+     "name": "Bender switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 28,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 29,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 30,
+     "size": 1,
+     "bits": 5,
+     "name": "P-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 31,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 0",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 32,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 33,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 34,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 35,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV sustain level",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 36,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 37,
+     "size": 1,
+     "bits": 7,
+     "name": "P-ENV level 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 38,
+     "size": 1,
+     "bits": 2,
+     "name": "Filter mode",
+     "min": 0,
+     "max": 2,
+     "display": "HPF, BPF, LPF"
+    },
+    {
+     "offset": 39,
+     "size": 1,
+     "bits": 7,
+     "name": "Cutoff frequency",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 40,
+     "size": 1,
+     "bits": 7,
+     "name": "Resonance",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 41,
+     "size": 1,
+     "bits": 6,
+     "name": "Cutoff key follow",
+     "min": 0,
+     "max": 40,
+     "display": "-100 - +150 [%]",
+     "labels": [
+      "-100%",
+      "-90%",
+      "-80%",
+      "-70%",
+      "-60%",
+      "-50%",
+      "-40%",
+      "-30%",
+      "-20%",
+      "-10%",
+      "0%",
+      "+5%",
+      "+10%",
+      "+15%",
+      "+20%",
+      "+25%",
+      "+30%",
+      "+35%",
+      "+40%",
+      "+45%",
+      "+50%",
+      "+55%",
+      "+60%",
+      "+65%",
+      "+70%",
+      "+75%",
+      "+80%",
+      "+85%",
+      "+90%",
+      "+95%",
+      "+100%",
+      "+105%",
+      "+110%",
+      "+115%",
+      "+120%",
+      "+125%",
+      "+130%",
+      "+135%",
+      "+140%",
+      "+145%",
+      "+150%"
+     ]
+    },
+    {
+     "offset": 42,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 43,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 44,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 45,
+     "size": 1,
+     "bits": 5,
+     "name": "TVF-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 46,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 47,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 48,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 49,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 50,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 51,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV sustain level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 52,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV time 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 53,
+     "size": 1,
+     "bits": 7,
+     "name": "TVF-ENV level 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 54,
+     "size": 1,
+     "bits": 7,
+     "name": "Level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 55,
+     "size": 1,
+     "bits": 2,
+     "name": "Bias direction",
+     "min": 0,
+     "max": 2,
+     "display": "UPPER, LOWER, LOWER&UPPER"
+    },
+    {
+     "offset": 56,
+     "size": 1,
+     "bits": 7,
+     "name": "Bias point",
+     "min": 0,
+     "max": 127,
+     "display": "C-1 - G9"
+    },
+    {
+     "offset": 57,
+     "size": 1,
+     "bits": 5,
+     "name": "Bias level",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 58,
+     "size": 1,
+     "bits": 7,
+     "name": "Pan",
+     "min": 0,
+     "max": 103,
+     "display": "L50 - 50R, RND, ALT-L, ALT-R"
+    },
+    {
+     "offset": 59,
+     "size": 1,
+     "bits": 4,
+     "name": "Panning key follow",
+     "min": 0,
+     "max": 14,
+     "display": "-100, -70, -50, -40, -30, -20, -10, 0, +10, +20, +30, +40, +50, +70, +100"
+    },
+    {
+     "offset": 60,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity level sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 61,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV velocity time sense",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 62,
+     "size": 1,
+     "bits": 5,
+     "name": "TVA-ENV time key follow",
+     "min": 0,
+     "max": 20,
+     "display": "-10 - +10"
+    },
+    {
+     "offset": 63,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 64,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 1",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 65,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 66,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV level 2",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 67,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 3",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 68,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV sustain level",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 69,
+     "size": 1,
+     "bits": 7,
+     "name": "TVA-ENV time 4",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 70,
+     "size": 1,
+     "bits": 3,
+     "name": "Velocity curve",
+     "min": 0,
+     "max": 6,
+     "display": "1 - 7"
+    },
+    {
+     "offset": 71,
+     "size": 1,
+     "bits": 1,
+     "name": "Hold-1 switch",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 72,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 1 form",
+     "min": 0,
+     "max": 7,
+     "display": "TRI, SIN, SAW, SQR, TRP, S&H, RND, CHS"
+    },
+    {
+     "offset": 73,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 rate",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 74,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 delay",
+     "min": 0,
+     "max": 101,
+     "display": "0 - 100, REL"
+    },
+    {
+     "offset": 75,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 fade",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 76,
+     "size": 1,
+     "bits": 2,
+     "name": "LFO 1 offset",
+     "min": 0,
+     "max": 2,
+     "display": "+, 0, -"
+    },
+    {
+     "offset": 77,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 1 key trigger",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 78,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 pitch depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 79,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVF depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 80,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 1 TVA depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 81,
+     "size": 1,
+     "bits": 3,
+     "name": "LFO 2 form",
+     "min": 0,
+     "max": 7,
+     "display": "TRI, SIN, SAW, SQR, TRP, S&H, RND, CHS"
+    },
+    {
+     "offset": 82,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 rate",
+     "min": 0,
+     "max": 100
+    },
+    {
+     "offset": 83,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 delay",
+     "min": 0,
+     "max": 101,
+     "display": "0 - 100, REL"
+    },
+    {
+     "offset": 84,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 fade",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 85,
+     "size": 1,
+     "bits": 2,
+     "name": "LFO 2 offset",
+     "min": 0,
+     "max": 2,
+     "display": "+, 0, -"
+    },
+    {
+     "offset": 86,
+     "size": 1,
+     "bits": 1,
+     "name": "LFO 2 key trigger",
+     "min": 0,
+     "max": 1,
+     "display": "OFF, ON"
+    },
+    {
+     "offset": 87,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 pitch depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 88,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVF depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 89,
+     "size": 1,
+     "bits": 7,
+     "name": "LFO 2 TVA depth",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 90,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 1",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 91,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 92,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 2",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 93,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 94,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 3",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 95,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 96,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 1 destination 4",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 97,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 1 depth 4",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 98,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 1",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 99,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 1",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 100,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 2",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 101,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 2",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 102,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 3",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 103,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 3",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    },
+    {
+     "offset": 104,
+     "size": 1,
+     "bits": 4,
+     "name": "Controller 2 destination 4",
+     "min": 0,
+     "max": 11,
+     "display": "PCH, CUT, RES, LEV, PIT-LFO1, PIT-LFO2, TVF-LFO1, TVF-LFO2, TVA-LFO1, TVA-LFO2, LFO1-RATE, LFO2-RATE"
+    },
+    {
+     "offset": 105,
+     "size": 1,
+     "bits": 7,
+     "name": "Controller 2 depth 4",
+     "min": 0,
+     "max": 100,
+     "display": "-50 - +50"
+    }
+   ],
+   "size": 106
+  }
+ }
+}

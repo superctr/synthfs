@@ -53,6 +53,16 @@ check '"$synthfs" export one.syx -t syx -o again.syx / > /dev/null && cmp -s one
 check '[ "$("$synthfs" export one.syx SMP:Test | wc -c)" = $(wc -c < one.syx) ]'
 check '"$synthfs" export one.syx sample:1 -u -o twice.syx > /dev/null && "$synthfs" ls twice.syx | grep -q "1 sample"'
 
+# a JD-990's DATA card: its key, a name, a patch named after its first byte; the patch as Data Sets is its 486
+# parameters, eight messages: the common block in one, a tone in one or two by the rows of 128 addresses it crosses
+head -c 32768 /dev/zero > jd.card
+printf 'RolandJD-990E\xbaP\xaf''Test Card       ' | dd of=jd.card conv=notrunc status=none
+printf 'Card Strings    ' | dd of=jd.card bs=1 seek=$((0x6D0 + 1)) conv=notrunc status=none
+check '"$synthfs" scan jd.card | grep -q "^JD-990 .*card .*64 patches.*Test Card"'
+check '"$synthfs" ls jd.card | grep -q "^  patch          1  Card Strings"'
+check '"$synthfs" export jd.card -t syx -o jd.syx "Card Strings" > /dev/null && "$synthfs" ls jd.syx | grep -q "^  bank           1  Card Patch"'
+check '[ $(wc -c < jd.syx) = $((486 + 8 * 11)) ]'
+
 if [ $failures != 0 ]; then
 	echo "$failures failed" >&2
 	exit 1

@@ -64,7 +64,9 @@ Where `packing` is `fields`, a block's parameters do not follow one another: `bl
 `bytes` and its `fields`, one for each parameter, `[offset, byte, shift, width]` or `[offset, byte, shift, width,
 bias]`: the parameter at that offset is `width` bits of that byte of the block from bit `shift` up, and its value
 those bits plus the bias within the width (64: a signed value's middle).  A parameter of several units is its
-value's bits from the top.  The blocks follow one another as with `bits`.
+value's bits from the top.  The blocks follow one another as with `bits`.  A field of no width is a parameter the
+record does not keep, which reads zero; a byte past the block's own is in a later block of the record (a JD-990
+performance keeps each part's voice reserve, a parameter of its common block, among the part's bytes).
 
 A parameter of one unit whose `bits` do not hold its `max` is a value about 64 kept about the middle of its bits:
 what is stored is the value less 64 and plus half the bits' range (61 to 67 in three bits as 1 to 7).  `map::unpack`
@@ -83,6 +85,67 @@ an area for each of those, named as the group names them (an XV's part's "Tempor
 Groups `1-1` the system, `1-2` a performance (common and eight parts), `1-3` a patch (common and four tones) and
 `1-4` the rhythm set (keys 36 to 96).  Its records are packed in fields: a patch's 362 bytes and the rhythm set's
 2684 on an SR-JV80 board, those and a performance's 204 on a DATA card and in the battery memory (`formats.md`).
+
+## The JD-990
+
+`jd990`: model ID `57`, four-byte addresses, a unit a byte of the message; a value past 127 is two units, seven bits
+each, the high one first (a tone's wave number, a delay's taps).  Groups `1-1` the system (38 units), `1-2` a
+performance (its common, 48, and eight parts of 12), `1-3` a patch (its common, 118, and four tones of 92) and `1-4`
+the rhythm setup (its common, 58, and keys 36 to 96, 106 each: the key's own 14 and then a tone's 92).  The address's
+first byte is the area: `00` the system, `01` the temporary performance, `02` the performance mode's seven temporary
+patches (the second byte the part), `03` the patch mode's temporary patch, `04` the temporary rhythm setup, `05` to
+`07` the internal performances (16), patches (64) and rhythm setup, `08` to `0B` the card's system, performances,
+patches and rhythm setup.  A patch's tones follow its common block with no gap, so tone B starts at `01 52` of the
+last two bytes; the rhythm setup's keys likewise.  The banks are named as the JV-880's ("User Patch" the internal
+memory's).
+
+Its records are packed in fields (`maps/records/jd990.json`): a patch's 379 bytes are its common (87) and four
+tones (73 each), a performance's 107 its common (35) and eight parts (9 each), the rhythm setup's 5293 its common
+(47) and 61 keys (86 each).  Where each parameter stands was found on the machine: every bit of each record turned
+over on a DATA card and the card's areas asked for.  A patch is such a record on a DATA card and on an SR-JV80
+board; the battery memory keeps its patches another way (`formats.md`, "Battery memories").
+
+## The JD-800
+
+`jd800`: model ID `3D`, three-byte addresses, a unit a byte of the message.  Areas: `00 00 00` the temporary
+patch, and from `00 10 00` the five multi-mode parts' patches, which have no effect block; `01 00 00` the temporary
+special setup; `02 00 00` the system; `03 00 00` the parts; `04 00 00` the special setup in memory; `05 00 00` the
+64 patches in memory, 384 units each; `07 00 00` the display.  A patch is its common (50 units), its effects (46)
+and four tones (72 each); the special setup its common and equalizer (10) and keys 36 to 96, each a key's own 16
+and a tone's 72.
+
+The JD-990 was made to take a JD-800's sounds, and the two maps name alike what the machines share.  Side by side,
+a JD-800 patch against a JD-990's:
+
+| | JD-800 | JD-990 |
+|---|---|---|
+| the patch | 384 units: common 50, effects 46, four tones of 72 | 486 units: common and effects 118, four tones of 92 |
+| key ranges | a tone's low and high together | the four lows, then the four highs |
+| velocity ranges, structures, tone control sources, patch pan, analog feel, octave switch | none | in the common |
+| the keyboard's own (key mode, split point, the two channels and program changes, hold mode) | in the common | none |
+| portamento | its switch, mode and time | and its type; on a JD-990 it needs no solo |
+| LFO waveform | TRI, SAW, SQU, S/H, RND | TRI, SIN, SAW, SQR, TRP, S&H, RND, CHS |
+| a tone's LFO depths | LFO 1's and LFO 2's to the pitch; for the TVF and for the TVA one LFO chosen and its depth | each LFO's to pitch, TVF and TVA |
+| lever, aftertouch | a tone's lever sens, aftertouch modulation sens, aftertouch bend switch, TVF and TVA aftertouch sens; the patch's aftertouch bend | two controllers of the patch's choosing, four destinations and depths each in every tone |
+| pitch envelope | level 0, three times, levels 1 and 2 | and a sustain level and a depth; the JD-800's level 2 is its level 3 |
+| FXM, sync, tone delay, tone pan | none | in the tone |
+| delay taps | a unit, 0 to 125 | two units, 0 to 255, the first 126 values the JD-800's |
+| wave | internal or card, a number | and the expansion board |
+| the rhythm set | the special setup: a common block of the equalizer and bend, no name, no effects of its own | the rhythm setup: named, with level, pan, effect controls, chorus, delay and reverb |
+| a key's pan | L30 to 30R | L50 to 50R, RND, ALT |
+
+A JD-990 takes a JD-800's Data Sets and converts them itself, at the JD-800's temporary places alone: the
+temporary patch in patch and rhythm mode, the multi-mode parts' patches (into its parts 1 to 5) in performance mode,
+the temporary special setup in any; to the JD-800's memory, system, parts and display it answers an address error,
+and it answers no request of the JD-800's model.  So a patch of a JD-800's bank reaches a JD-990 as its own Data
+Sets at the temporary patch's place, in messages of 256 data bytes at most, which is the host's to do: the library
+gives a file's patches as the JD-800's Data Sets where the file has them.  What the JD-990 makes of them is its own
+conversion: what the two share is copied; key ranges are put in its order and a low limit above its high one
+brought down to it; portamento stays on only where solo is on; the LFO waveforms are renumbered; the JD-800's
+lever, aftertouch and LFO choices become controller destinations and depths (controller 1 the modulation,
+controller 2 the aftertouch) and LFO depths; what a JD-800 has not is set to a fixed value (pan at the centre, the
+structures the first type, no FXM, the pitch envelope's depth +12).  A special setup becomes a rhythm setup named
+"JD-800 Drum Set", its chorus, delay and reverb those of the rhythm setup it replaces.
 
 ## The JV-1080
 

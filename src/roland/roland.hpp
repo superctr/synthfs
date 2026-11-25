@@ -24,6 +24,9 @@ std::vector<uint8_t> nibbles(const uint8_t *bytes, size_t n);
 //! A packed record as Data Sets by a map, at the place its number has among a bank's areas; false where it is none.
 bool packed(std::string_view map, std::string_view bank, uint32_t number, uint8_t device, const std::vector<uint8_t> &rec,
 	std::vector<uint8_t> &out);
+//! An area's units, its blocks' one after another, as Data Sets at the place its number has among a bank's areas.
+bool units(std::string_view map, std::string_view bank, uint32_t number, uint8_t device, const std::vector<uint8_t> &all,
+	std::vector<uint8_t> &out);
 }
 
 //! What the S-700 series' disk and floppy readers share.
@@ -155,7 +158,7 @@ public:
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
 };
 
-//! A JV-1080's, XV-5080's or XV-3080's battery memory: its user performances, patches and rhythm sets.
+//! A machine's battery memory: its user performances, patches and rhythm sets.
 class Memory final : public Medium {
 public:
 	using Medium::Medium;
@@ -164,6 +167,14 @@ public:
 	static std::unique_ptr<Medium> open(const syfs_io &io, syfs_key format);
 	void list() override;
 	bool data_sets(size_t i, std::vector<uint8_t> &out) const override;
+
+private:
+	//! A JD-990's factory patches found in the program ROM after its memory, where the image has one.
+	void factory();
+	//! A JD-990's patch of a number as its parameters, a unit each; false without the factory patches or its node.
+	bool patch(uint32_t k, std::vector<uint8_t> &units) const;
+	//! A JD-990's factory patches as its ROM has them, 64 of 486 bytes; empty where the image has no ROM.
+	std::vector<uint8_t> factory_;
 };
 
 class Socket;

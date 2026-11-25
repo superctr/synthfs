@@ -16,9 +16,9 @@ Images synthfs can open and list:
 - **Roland DJ-70** floppies
 - **Roland S-550, S-330, W-30**: S-550 hard disks and floppies of all three, with patches and tones
 - **Roland SR-JV80 and SRX** wave expansion boards and **SO-PCM1** cards: patches, rhythm sets and waves
-- **Roland JV-80 and JV-1080** DATA cards
+- **Roland JV-80, JV-1080 and JD-990** DATA cards
 - **Roland XV-5080, XV-3080 and Fantom** `.SVD` files
-- **JV-880, JV-1080, XV-5080, XV-3080 and Fantom** battery memory dumps
+- **JV-880, JV-1080, JD-990, XV-5080, XV-3080 and Fantom** battery memory dumps
 - **Roland system exclusive** files (`.syx`)
 - **AKAI S900, S1000, S3000**: S1000 and S3000 disks and floppies, S900 floppies, with programs, samples and multis
 - **E-mu EIII, E-IV, Emax II** discs (recognized only)

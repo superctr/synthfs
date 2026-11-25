@@ -769,7 +769,8 @@ void print_help(FILE *f, bool shell)
 			"       synthfs shell [-w] [IMAGE]        commands read from stdin; -w opens for writing\n"
 			"       synthfs COMMAND --help\n"
 			"An IMAGE of the form FORMAT:MEDIUM=FILE is opened as that kind where the file does not tell it\n"
-			"(jv1080:memory=FILE, and so jv80 (a JV-880's), xv5080, xv3080, fantom: a machine's battery memory).\n");
+			"(jv1080:memory=FILE, and so jv80 (a JV-880's), jd990, xv5080, xv3080, fantom: a machine's battery memory;\n"
+			"a JD-990's with its program ROM after it, for its patches).\n");
 	auto group = [&](const char *head, Need need) {
 		fprintf(f, "\n%s\n", head);
 		for (const Command &c : table)

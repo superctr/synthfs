@@ -110,7 +110,9 @@ for path in sorted((root / "maps").glob("*.json")):
             rows = []
             for p in b["params"]:
                 _, byte, shift, width, *bias = at[p["offset"]]
-                if width < 9 and (shift + width > 8 or byte >= bytes_packed) or width > 8 or width < min(p["bits"] * p["size"], 8):
+                # a field of no width is a parameter the record does not keep; a byte past the block's is in a
+                # later block of the record
+                if width and (shift + width > 8 or width > 8 or width < min(p["bits"] * p["size"], 8)):
                     sys.exit(f"maps/records/{path.name}: {k}: {p['name']}: {byte}, {shift}, {width}")
                 rows.append(f"{{ {byte}, {shift}, {width}, {bias[0] if bias else 0} }}")
             places = table("Place", rows)
